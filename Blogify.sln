@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Domain", "Blogify.Domain\Blogify.Domain.csproj", "{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{76ED0950-693D-4C2D-8C12-C583FB6E71D6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{CC66A4B4-9D12-4A62-87F1-3145466FC0CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Domain.UnitTests", "Blogify.Domain.UnitTests\Blogify.Domain.UnitTests.csproj", "{F3709FC9-70FA-444E-846E-620B7A8AC15C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
+		{F3709FC9-70FA-444E-846E-620B7A8AC15C} = {CC66A4B4-9D12-4A62-87F1-3145466FC0CF}
+	EndGlobalSection
+EndGlobal
