@@ -27,7 +27,7 @@ public class UserTests
             result.Value.Id.Should().NotBe(Guid.Empty);
             result.Value.FirstName.Should().Be(firstName);
             result.Value.LastName.Should().Be(lastName);
-            result.Value.Email.Address.Should().Be(email);
+            result.Value.Email.Address.Should().Be(email.Address);
             result.Value.IdentityId.Should().BeEmpty();
             result.Value.Roles.Should().ContainSingle(r => r == UserData.Registered);
         }
@@ -77,12 +77,25 @@ public class UserTests
         [InlineData(4)] // Index for "user@"
         public void Create_WithInvalidEmail_ShouldReturnInvalidEmailError(int index)
         {
-            // Act
-            var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.InvalidEmails[index]);
+            // Arrange
+            var invalidEmailResult = UserData.InvalidEmails[index];
 
-            // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be(UserErrors.InvalidEmail);
+            // Act
+            // Ensure that the email is valid before passing it to User.Create
+            if (invalidEmailResult.IsSuccess)
+            {
+                var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, invalidEmailResult.Value);
+
+                // Assert
+                result.IsFailure.Should().BeTrue();
+                result.Error.Should().Be(UserErrors.InvalidEmail);
+            }
+            else
+            {
+                // If the email is invalid, the test should pass because the email creation failed
+                invalidEmailResult.IsFailure.Should().BeTrue();
+                invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
+            }
         }
     }
 
@@ -159,13 +172,13 @@ public class UserTests
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            user.Email.Address.Should().Be(newEmail);
+            user.Email.Address.Should().Be(newEmail.Address);
             var events = user.GetDomainEvents();
             events.Should().ContainSingle()
                 .Which.Should().BeOfType<EmailChangedDomainEvent>()
                 .Which.Should().Match<EmailChangedDomainEvent>(e =>
                     e.UserId == user.Id &&
-                    e.NewEmail == newEmail);
+                    e.NewEmail == newEmail.Address);
         }
 
         [Fact]
@@ -180,7 +193,7 @@ public class UserTests
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            user.Email.Address.Should().Be(UserData.DefaultEmail);
+            user.Email.Address.Should().Be(UserData.DefaultEmail.Address);
             user.GetDomainEvents().Should().BeEmpty();
         }
 
@@ -197,14 +210,25 @@ public class UserTests
             var originalEmail = user.Email;
             user.ClearDomainEvents();
 
-            // Act
-            var result = user.ChangeEmail(UserData.InvalidEmails[index]);
+            var invalidEmailResult = UserData.InvalidEmails[index];
 
-            // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be(UserErrors.InvalidEmail);
-            user.Email.Should().Be(originalEmail);
-            user.GetDomainEvents().Should().BeEmpty();
+            // Act
+            if (invalidEmailResult.IsSuccess)
+            {
+                var result = user.ChangeEmail(invalidEmailResult.Value);
+
+                // Assert
+                result.IsFailure.Should().BeTrue();
+                result.Error.Should().Be(UserErrors.InvalidEmail);
+                user.Email.Should().Be(originalEmail);
+                user.GetDomainEvents().Should().BeEmpty();
+            }
+            else
+            {
+                // If the email is invalid, the test should pass because the email creation failed
+                invalidEmailResult.IsFailure.Should().BeTrue();
+                invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
+            }
         }
     }
 

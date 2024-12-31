@@ -8,6 +8,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{CC66A4B4-9
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Domain.UnitTests", "Blogify.Domain.UnitTests\Blogify.Domain.UnitTests.csproj", "{F3709FC9-70FA-444E-846E-620B7A8AC15C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Application", "Blogify.Application\Blogify.Application.csproj", "{38C0E1E9-A868-4688-81FB-F8250D66A9A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Application.UnitTests", "Blogify.Application.UnitTests\Blogify.Application.UnitTests.csproj", "{65695503-B889-4FD1-8B98-FC69B4769B24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,9 +26,19 @@ Global
 		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3709FC9-70FA-444E-846E-620B7A8AC15C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38C0E1E9-A868-4688-81FB-F8250D66A9A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38C0E1E9-A868-4688-81FB-F8250D66A9A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38C0E1E9-A868-4688-81FB-F8250D66A9A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38C0E1E9-A868-4688-81FB-F8250D66A9A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65695503-B889-4FD1-8B98-FC69B4769B24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65695503-B889-4FD1-8B98-FC69B4769B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65695503-B889-4FD1-8B98-FC69B4769B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65695503-B889-4FD1-8B98-FC69B4769B24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
 		{F3709FC9-70FA-444E-846E-620B7A8AC15C} = {CC66A4B4-9D12-4A62-87F1-3145466FC0CF}
+		{38C0E1E9-A868-4688-81FB-F8250D66A9A2} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
+		{65695503-B889-4FD1-8B98-FC69B4769B24} = {CC66A4B4-9D12-4A62-87F1-3145466FC0CF}
 	EndGlobalSection
 EndGlobal

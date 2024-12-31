@@ -39,13 +39,24 @@ public sealed class Post : Entity
     public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
     public IReadOnlyCollection<Tag> Tags => _tags.AsReadOnly();
 
-    public static Post Create(
+    public static Result<Post> Create(
         PostTitle title,
         PostContent content,
         PostExcerpt excerpt,
         Guid authorId,
         Guid categoryId)
     {
+        if (title == null)
+            return Result.Failure<Post>(Error.Validation("Post.Title", "Title cannot be null."));
+        if (content == null)
+            return Result.Failure<Post>(Error.Validation("Post.Content", "Content cannot be null."));
+        if (excerpt == null)
+            return Result.Failure<Post>(Error.Validation("Post.Excerpt", "Excerpt cannot be null."));
+        if (authorId == Guid.Empty)
+            return Result.Failure<Post>(Error.Validation("Post.AuthorId", "AuthorId cannot be empty."));
+        if (categoryId == Guid.Empty)
+            return Result.Failure<Post>(Error.Validation("Post.CategoryId", "CategoryId cannot be empty."));
+        
         var post = new Post(
             Guid.NewGuid(),
             title,
@@ -53,12 +64,12 @@ public sealed class Post : Entity
             excerpt,
             authorId,
             categoryId);
+        
         post.RaiseDomainEvent(new PostCreatedDomainEvent(post.Id));
-        return post;
+        return Result.Success(post);
     }
 
-    public void Update(
-        PostTitle title,
+    public void Update(PostTitle title,
         PostContent content,
         PostExcerpt excerpt,
         Guid categoryId)
@@ -71,43 +82,57 @@ public sealed class Post : Entity
         UpdatedAt = DateTime.UtcNow;
 
         RaiseDomainEvent(new PostUpdatedDomainEvent(Id));
+        Result.Success();
     }
     public void Publish()
     {
         if (Status == PostStatus.Published)
         {
-            throw new InvalidOperationException("Post is already published.");
+            Result.Failure(Error.Validation("Post.Status", "Post is already published."));
+            return;
         }
 
         Status = PostStatus.Published;
         PublishedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
+
         RaiseDomainEvent(new PostPublishedDomainEvent(Id));
+        Result.Success();
     }
 
     public void Archive()
     {
         if (Status == PostStatus.Archived)
         {
-            throw new InvalidOperationException("Post is already archived.");
+            Result.Failure(Error.Validation("Post.Status", "Post is already archived."));
+            return;
         }
 
         Status = PostStatus.Archived;
         UpdatedAt = DateTime.UtcNow;
 
         RaiseDomainEvent(new PostArchivedDomainEvent(Id));
+        Result.Success();
     }
+    
     public void AddComment(string content, Guid authorId)
     {
         if (Status != PostStatus.Published)
         {
-            throw new InvalidOperationException("Cannot add comments to unpublished posts.");
+            Result.Failure(Error.Validation("Post.Status", "Cannot add comments to unpublished posts."));
+            return;
         }
 
-        var comment = Comment.Create(content, authorId, Id);
-        _comments.Add(comment.Value);
+        var commentResult = Comment.Create(content, authorId, Id);
+        if (commentResult.IsFailure)
+        {
+            Result.Failure(commentResult.Error);
+            return;
+        }
 
-        RaiseDomainEvent(new CommentAddedDomainEvent(comment.Value.Id));
+        _comments.Add(commentResult.Value);
+        RaiseDomainEvent(new CommentAddedDomainEvent(commentResult.Value.Id));
+        Result.Success();
     }
     
     public void AddTag(Tag tag)
@@ -134,6 +159,10 @@ public sealed class Post : Entity
     
     private static PostSlug GenerateSlug(string title)
     {
-        return PostSlug.Create(title).Value;
+        var slugResult = PostSlug.Create(title);
+        if (slugResult.IsFailure)
+            throw new InvalidOperationException("Failed to generate slug: " + slugResult.Error.Description);
+
+        return slugResult.Value;
     }
 }

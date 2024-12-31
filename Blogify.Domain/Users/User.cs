@@ -29,7 +29,7 @@ public sealed class User : Entity
 
     public IReadOnlyCollection<Role> Roles => _roles.ToList();
 
-    public static Result<User> Create(FirstName firstName, LastName lastName, string email)
+    public static Result<User> Create(FirstName firstName, LastName lastName, Email email)
     {
         if (string.IsNullOrEmpty(firstName.Value))
             return Result.Failure<User>(UserErrors.InvalidFirstName);
@@ -37,7 +37,7 @@ public sealed class User : Entity
         if (string.IsNullOrEmpty(lastName.Value))
             return Result.Failure<User>(UserErrors.InvalidLastName);
 
-        var emailResult = Email.Create(email);
+        var emailResult = Email.Create(email.Address);
         
         if (emailResult.IsFailure)
             return Result.Failure<User>(emailResult.Error);
@@ -58,9 +58,9 @@ public sealed class User : Entity
         _roles.Add(role);
         RaiseDomainEvent(new RoleAssignedDomainEvent(Id, role.Id));
     }
-    public Result ChangeEmail(string newEmail)
+    public Result ChangeEmail(Email newEmail)
     {
-        var emailResult = Email.Create(newEmail);
+        var emailResult = Email.Create(newEmail.Address);
 
         if (emailResult.IsFailure)
             return Result.Failure(emailResult.Error);

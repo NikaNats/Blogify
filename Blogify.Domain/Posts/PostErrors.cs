@@ -35,4 +35,8 @@ public static class PostErrors
     public static Error SlugTooLong => Error.Validation(
         "Post.Slug.TooLong",
         "The post slug cannot be longer than 200 characters.");
+    
+    public static readonly Error Overlap = Error.Failure(
+        "Post.Overlap",
+        "The current Post is overlapping with an existing one");
 }

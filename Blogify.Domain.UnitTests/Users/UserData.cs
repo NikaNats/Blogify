@@ -1,4 +1,5 @@
-﻿using Blogify.Domain.Users;
+﻿using Blogify.Domain.Abstractions;
+using Blogify.Domain.Users;
 
 namespace Blogify.Domain.UnitTests.Users
 {
@@ -10,23 +11,23 @@ namespace Blogify.Domain.UnitTests.Users
         public static readonly Role Premium = Role.Premium;
 
         // Predefined user data
-        public static readonly FirstName DefaultFirstName = new("John");
+        public static readonly FirstName DefaultFirstName = FirstName.Create("John").Value;
         public static readonly LastName DefaultLastName = LastName.Create("Doe").Value;
-        public static readonly string DefaultEmail = "john.doe@example.com";
+        public static readonly Email DefaultEmail = Email.Create("john.doe@example.com").Value;
 
         // Test-specific data
-        public static readonly string NewEmail = "new.email@example.com";
+        public static readonly Email NewEmail = Email.Create("new.email@example.com").Value;
         public static readonly string IdentityId = "auth0|123456";
         public static readonly string SecondIdentityId = "auth0|789012";
 
         // Invalid test data
-        public static readonly string[] InvalidEmails =
+        public static readonly Result<Email>[] InvalidEmails =
         [
-            "",
-            "invalid-email",
-            null,
-            "@example.com",
-            "user@"
+            Email.Create(""),
+            Email.Create("invalid-email"),
+            Email.Create(null),
+            Email.Create("@example.com"),
+            Email.Create("user@")
         ];
 
         public static readonly string[] InvalidNames =

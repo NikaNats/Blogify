@@ -33,4 +33,7 @@ public record Error
     
     public static Error Validation(string code, string description) =>
         new(code, description, ErrorType.Validation);
+    
+    public static Error Unexpected(string code, string description) =>
+        new(code, description, ErrorType.Unexpected);
 }

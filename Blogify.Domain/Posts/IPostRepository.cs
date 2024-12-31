@@ -8,5 +8,7 @@ public interface IPostRepository
     Task<List<Post>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default);
     Task<List<Post>> GetByTagIdAsync(Guid tagId, CancellationToken cancellationToken = default);
     Task AddAsync(Post post, CancellationToken cancellationToken = default);
+    Task<List<Post>> GetAllAsync(CancellationToken cancellationToken);
+    Task UpdateAsync(Post post, CancellationToken cancellationToken);
     void Update(Post post);
 }
