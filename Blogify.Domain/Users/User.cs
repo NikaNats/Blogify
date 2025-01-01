@@ -38,10 +38,10 @@ public sealed class User : Entity
             return Result.Failure<User>(UserErrors.InvalidLastName);
 
         var emailResult = Email.Create(email.Address);
-        
+
         if (emailResult.IsFailure)
             return Result.Failure<User>(emailResult.Error);
-        
+
         var user = new User(Guid.NewGuid(), firstName, lastName, emailResult.Value);
 
         user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id));
@@ -58,13 +58,14 @@ public sealed class User : Entity
         _roles.Add(role);
         RaiseDomainEvent(new RoleAssignedDomainEvent(Id, role.Id));
     }
+
     public Result ChangeEmail(Email newEmail)
     {
         var emailResult = Email.Create(newEmail.Address);
 
         if (emailResult.IsFailure)
             return Result.Failure(emailResult.Error);
-        
+
         if (Email.Address == emailResult.Value.Address)
             return Result.Success();
 
@@ -73,6 +74,7 @@ public sealed class User : Entity
 
         return Result.Success();
     }
+
     public void SetIdentityId(string identityId)
     {
         IdentityId = identityId;

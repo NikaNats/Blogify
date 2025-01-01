@@ -15,7 +15,9 @@ public sealed class Tag : Entity
         CreatedAt = DateTime.UtcNow;
     }
 
-    private Tag() { }
+    private Tag()
+    {
+    }
 
     public string Name { get; private set; }
     public DateTime CreatedAt { get; private set; }

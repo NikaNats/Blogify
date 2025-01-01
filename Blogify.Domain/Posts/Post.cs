@@ -10,7 +10,8 @@ public sealed class Post : Entity
 {
     private readonly List<Comment> _comments = new();
     private readonly List<Tag> _tags = new();
-    private Post(Guid id, PostTitle title, PostContent content,PostExcerpt excerpt, Guid authorId,Guid categoryId)
+
+    private Post(Guid id, PostTitle title, PostContent content, PostExcerpt excerpt, Guid authorId, Guid categoryId)
         : base(id)
     {
         Title = title;
@@ -23,7 +24,9 @@ public sealed class Post : Entity
         Slug = GenerateSlug(title.Value);
     }
 
-    private Post() { }
+    private Post()
+    {
+    }
 
     public PostTitle Title { get; private set; }
     public PostContent Content { get; private set; }
@@ -56,7 +59,7 @@ public sealed class Post : Entity
             return Result.Failure<Post>(Error.Validation("Post.AuthorId", "AuthorId cannot be empty."));
         if (categoryId == Guid.Empty)
             return Result.Failure<Post>(Error.Validation("Post.CategoryId", "CategoryId cannot be empty."));
-        
+
         var post = new Post(
             Guid.NewGuid(),
             title,
@@ -64,7 +67,7 @@ public sealed class Post : Entity
             excerpt,
             authorId,
             categoryId);
-        
+
         post.RaiseDomainEvent(new PostCreatedDomainEvent(post.Id));
         return Result.Success(post);
     }
@@ -84,6 +87,7 @@ public sealed class Post : Entity
         RaiseDomainEvent(new PostUpdatedDomainEvent(Id));
         Result.Success();
     }
+
     public void Publish()
     {
         if (Status == PostStatus.Published)
@@ -100,52 +104,39 @@ public sealed class Post : Entity
         Result.Success();
     }
 
-    public void Archive()
+    public bool Archive()
     {
-        if (Status == PostStatus.Archived)
-        {
-            Result.Failure(Error.Validation("Post.Status", "Post is already archived."));
-            return;
-        }
+        if (Status == PostStatus.Archived) return false; // Post is already archived, no update needed
 
         Status = PostStatus.Archived;
         UpdatedAt = DateTime.UtcNow;
 
         RaiseDomainEvent(new PostArchivedDomainEvent(Id));
-        Result.Success();
+        return true; // Post was archived
     }
-    
-    public void AddComment(string content, Guid authorId)
+
+    public Result AddComment(string content, Guid authorId)
     {
         if (Status != PostStatus.Published)
-        {
-            Result.Failure(Error.Validation("Post.Status", "Cannot add comments to unpublished posts."));
-            return;
-        }
+            return Result.Failure(Error.Validation("Post.Status", "Cannot add comments to unpublished posts."));
 
         var commentResult = Comment.Create(content, authorId, Id);
-        if (commentResult.IsFailure)
-        {
-            Result.Failure(commentResult.Error);
-            return;
-        }
+        if (commentResult.IsFailure) return Result.Failure(commentResult.Error);
 
         _comments.Add(commentResult.Value);
         RaiseDomainEvent(new CommentAddedDomainEvent(commentResult.Value.Id));
-        Result.Success();
+        return Result.Success();
     }
-    
-    public void AddTag(Tag tag)
+
+    public bool AddTag(Tag tag)
     {
-        if (_tags.Any(t => t.Id == tag.Id))
-        {
-            return;
-        }
+        if (_tags.Any(t => t.Id == tag.Id)) return false; // Tag already exists, no update needed
 
         _tags.Add(tag);
         UpdatedAt = DateTime.UtcNow;
 
         RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id));
+        return true; // Tag was added
     }
 
     public void RemoveTag(Tag tag)
@@ -156,7 +147,7 @@ public sealed class Post : Entity
             RaiseDomainEvent(new PostUntaggedDomainEvent(Id, tag.Id));
         }
     }
-    
+
     private static PostSlug GenerateSlug(string title)
     {
         var slugResult = PostSlug.Create(title);

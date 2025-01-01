@@ -9,13 +9,24 @@ public abstract class Entity
         Id = id;
     }
 
-    protected Entity() { }
+    protected Entity()
+    {
+    }
 
     public Guid Id { get; init; }
 
-    public IReadOnlyList<IDomainEvent> GetDomainEvents() => _domainEvents.ToList();
+    public IReadOnlyList<IDomainEvent> GetDomainEvents()
+    {
+        return _domainEvents.ToList();
+    }
 
-    public void ClearDomainEvents() => _domainEvents.Clear();
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
 
-    protected void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    protected void RaiseDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
 }

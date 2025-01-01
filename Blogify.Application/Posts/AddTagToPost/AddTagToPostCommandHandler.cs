@@ -5,29 +5,21 @@ using MediatR;
 
 namespace Blogify.Application.Posts.AddTagToPost;
 
-public sealed class AddTagToPostCommandHandler : IRequestHandler<AddTagToPostCommand, Result>
+public sealed class AddTagToPostCommandHandler(IPostRepository postRepository, ITagRepository tagRepository)
+    : IRequestHandler<AddTagToPostCommand, Result>
 {
-    private readonly IPostRepository _postRepository;
-    private readonly ITagRepository _tagRepository;
-
-    public AddTagToPostCommandHandler(IPostRepository postRepository, ITagRepository tagRepository)
-    {
-        _postRepository = postRepository;
-        _tagRepository = tagRepository;
-    }
-
     public async Task<Result> Handle(AddTagToPostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.PostId, cancellationToken);
+        var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
         if (post is null)
             return Result.Failure(Error.NotFound("Post.NotFound", "Post not found."));
 
-        var tag = await _tagRepository.GetByIdAsync(request.TagId, cancellationToken);
+        var tag = await tagRepository.GetByIdAsync(request.TagId, cancellationToken);
         if (tag is null)
             return Result.Failure(Error.NotFound("Tag.NotFound", "Tag not found."));
 
-        post.AddTag(tag);
-        await _postRepository.UpdateAsync(post, cancellationToken);
+        var tagWasAdded = post.AddTag(tag);
+        if (tagWasAdded) await postRepository.UpdateAsync(post, cancellationToken); // Only update if the tag was added
         return Result.Success();
     }
 }

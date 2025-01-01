@@ -13,7 +13,9 @@ public sealed class Comment : Entity
         CreatedAt = DateTime.UtcNow;
     }
 
-    private Comment() { }
+    private Comment()
+    {
+    }
 
     public string Content { get; private set; }
     public Guid AuthorId { get; private set; }
@@ -23,7 +25,8 @@ public sealed class Comment : Entity
     public static Result<Comment> Create(string content, Guid authorId, Guid postId)
     {
         if (string.IsNullOrEmpty(content))
-            return Result.Failure<Comment>(Error.NullValue);
+            return Result.Failure<Comment>(Error.Validation("Comment.InvalidContent",
+                "Comment content cannot be empty."));
 
         if (authorId == default)
             return Result.Failure<Comment>(Error.Validation("Comment.AuthorId", "AuthorId cannot be default."));

@@ -16,7 +16,9 @@ public sealed class Category : Entity
         CreatedAt = DateTime.UtcNow;
     }
 
-    private Category() { }
+    private Category()
+    {
+    }
 
     public string Name { get; private set; }
     public string Description { get; private set; }

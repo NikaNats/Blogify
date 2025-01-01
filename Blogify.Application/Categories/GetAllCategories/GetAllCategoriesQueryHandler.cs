@@ -25,7 +25,7 @@ public sealed class
         catch (Exception ex)
         {
             // Log the exception if necessary
-            return Result.Failure<List<CategoryResponse>>(Error.Unexpected("Category.UnexpectedError",ex.Message));
+            return Result.Failure<List<CategoryResponse>>(Error.Unexpected("Category.UnexpectedError", ex.Message));
         }
     }
 }

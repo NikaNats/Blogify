@@ -1,8 +1,6 @@
-﻿using Blogify.Domain.Abstractions;
-using Blogify.Domain.Users;
+﻿using Blogify.Domain.Users;
 using Blogify.Domain.Users.Events;
 using FluentAssertions;
-using Xunit;
 
 namespace Blogify.Domain.UnitTests.Users;
 
@@ -281,7 +279,6 @@ public class UserTests
         }
     }
 }
-
 
 // using FluentAssertions;
 // using Xunit;

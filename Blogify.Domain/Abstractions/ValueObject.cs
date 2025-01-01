@@ -2,38 +2,53 @@
 
 public abstract class ValueObject : IEquatable<ValueObject>
 {
-    public static bool operator ==(ValueObject? a, ValueObject? b)
+    private int? _cachedHashCode;
+
+    public bool Equals(ValueObject? other)
     {
-        if (a is null && b is null)
-        {
-            return true;
-        }
-
-        if (a is null || b is null)
-        {
+        if (other is null)
             return false;
-        }
 
-        return a.Equals(b);
+        if (ReferenceEquals(this, other))
+            return true;
+
+        if (GetType() != other.GetType())
+            return false;
+
+        return GetAtomicValues().SequenceEqual(other.GetAtomicValues());
     }
-
-    public static bool operator !=(ValueObject? a, ValueObject? b) =>
-        !(a == b);
-
-    public virtual bool Equals(ValueObject? other) =>
-        other is not null && ValuesAreEqual(other);
-
-    public override bool Equals(object? obj) =>
-        obj is ValueObject valueObject && ValuesAreEqual(valueObject);
-
-    public override int GetHashCode() =>
-        GetAtomicValues().Aggregate(
-            default(int),
-            (hashcode, value) =>
-                HashCode.Combine(hashcode, value.GetHashCode()));
 
     protected abstract IEnumerable<object> GetAtomicValues();
 
-    private bool ValuesAreEqual(ValueObject valueObject) =>
-        GetAtomicValues().SequenceEqual(valueObject.GetAtomicValues());
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as ValueObject);
+    }
+
+    public override int GetHashCode()
+    {
+        if (!_cachedHashCode.HasValue)
+            _cachedHashCode = GetAtomicValues()
+                .Aggregate(default(int), HashCode.Combine);
+
+        return _cachedHashCode.Value;
+    }
+
+    public static bool operator ==(ValueObject? left, ValueObject? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(ValueObject? left, ValueObject? right)
+    {
+        return !(left == right);
+    }
+
+    protected static bool EqualOperator(ValueObject? left, ValueObject? right)
+    {
+        if (left is null ^ right is null)
+            return false;
+
+        return left?.Equals(right) ?? true;
+    }
 }

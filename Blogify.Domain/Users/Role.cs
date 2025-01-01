@@ -5,6 +5,7 @@ public sealed class Role
     public static readonly Role Registered = new(1, "Registered");
     public static readonly Role Administrator = new(2, "Administrator");
     public static readonly Role Premium = new(3, "Premium");
+
     public Role(int id, string name)
     {
         Id = id;

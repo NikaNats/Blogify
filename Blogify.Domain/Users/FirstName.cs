@@ -4,12 +4,12 @@ namespace Blogify.Domain.Users;
 
 public sealed class FirstName : ValueObject
 {
-    public string Value { get; private set; }
-
     private FirstName(string value)
     {
         Value = value;
     }
+
+    public string Value { get; }
 
     public static Result<FirstName> Create(string value)
     {

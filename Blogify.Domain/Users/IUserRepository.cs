@@ -6,5 +6,4 @@ public interface IUserRepository
 
     // void Add(User user);
     Task AddAsync(User user, CancellationToken cancellationToken = default);
-
 }

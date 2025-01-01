@@ -1,40 +1,38 @@
 ﻿using System.Net.Mail;
 using Blogify.Domain.Abstractions;
 
-namespace Blogify.Domain.Users
-{ 
-    public sealed class Email : ValueObject
+namespace Blogify.Domain.Users;
+
+public sealed class Email : ValueObject
+{
+    private Email(string address)
     {
-        public string Address { get; private set; }
+        Address = address;
+    }
 
-        private Email(string address)
+    public string Address { get; }
+
+    public static Result<Email> Create(string emailAddress)
+    {
+        if (string.IsNullOrEmpty(emailAddress))
+            return Result.Failure<Email>(UserErrors.InvalidEmail);
+
+        var trimmedEmail = emailAddress.Trim();
+
+        try
         {
-            Address = address;
+            var mailAddress = new MailAddress(trimmedEmail);
+            var canonicalAddress = mailAddress.Address.ToLowerInvariant();
+            return Result.Success(new Email(canonicalAddress));
         }
-
-        public static Result<Email> Create(string emailAddress)
+        catch (FormatException)
         {
-            if (string.IsNullOrEmpty(emailAddress))
-                return Result.Failure<Email>(UserErrors.InvalidEmail);
-
-            var trimmedEmail = emailAddress.Trim();
-
-            try
-            {
-                var mailAddress = new MailAddress(trimmedEmail);
-                var canonicalAddress = mailAddress.Address.ToLowerInvariant();
-                return Result.Success(new Email(canonicalAddress));
-            }
-            catch (FormatException)
-            {
-                return Result.Failure<Email>(UserErrors.InvalidEmail);
-            }
-        }
-
-        protected override IEnumerable<object> GetAtomicValues()
-        {
-            yield return Address;
+            return Result.Failure<Email>(UserErrors.InvalidEmail);
         }
     }
-    
+
+    protected override IEnumerable<object> GetAtomicValues()
+    {
+        yield return Address;
+    }
 }

@@ -4,23 +4,18 @@ using MediatR;
 
 namespace Blogify.Application.Posts.ArchivePost;
 
-public sealed class ArchivePostCommandHandler : IRequestHandler<ArchivePostCommand, Result>
+public sealed class ArchivePostCommandHandler(IPostRepository postRepository)
+    : IRequestHandler<ArchivePostCommand, Result>
 {
-    private readonly IPostRepository _postRepository;
-
-    public ArchivePostCommandHandler(IPostRepository postRepository)
-    {
-        _postRepository = postRepository;
-    }
-
     public async Task<Result> Handle(ArchivePostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.Id, cancellationToken);
+        var post = await postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null)
             return Result.Failure(Error.NotFound("Post.NotFound", "Post not found."));
 
-        post.Archive();
-        await _postRepository.UpdateAsync(post, cancellationToken);
+        var postWasArchived = post.Archive();
+        if (postWasArchived)
+            await postRepository.UpdateAsync(post, cancellationToken); // Only update if the post was archived
         return Result.Success();
     }
 }
