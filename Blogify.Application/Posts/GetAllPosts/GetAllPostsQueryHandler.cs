@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, Result<List<PostResponse>>>
+public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, Result<List<AllPostResponse>>>
 {
     private readonly IPostRepository _postRepository;
 
@@ -15,10 +15,10 @@ public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, 
         _postRepository = postRepository;
     }
 
-    public async Task<Result<List<PostResponse>>> Handle(GetAllPostsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<AllPostResponse>>> Handle(GetAllPostsQuery request, CancellationToken cancellationToken)
     {
         var posts = await _postRepository.GetAllAsync(cancellationToken);
-        var response = posts.Select(post => new PostResponse(
+        var response = posts.Select(post => new AllPostResponse(
             post.Id,
             post.Title.Value,
             post.Content.Value,
@@ -30,8 +30,8 @@ public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, 
             post.UpdatedAt,
             post.PublishedAt,
             post.Status,
-            post.Comments.Select(c => new CommentResponse(c.Id, c.Content, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
-            post.Tags.Select(t => new TagResponse(t.Id, t.Name, t.CreatedAt)).ToList())).ToList();
+            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
+            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name, t.CreatedAt)).ToList())).ToList();
 
         return Result.Success(response);
     }

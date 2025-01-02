@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Domain", "Blogify.Domain\Blogify.Domain.csproj", "{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{76ED0950-693D-4C2D-8C12-C583FB6E71D6}"
@@ -13,6 +16,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Application.UnitTests", "Blogify.Application.UnitTests\Blogify.Application.UnitTests.csproj", "{65695503-B889-4FD1-8B98-FC69B4769B24}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Infrastructure", "Blogify.Infrastructure\Blogify.Infrastructure.csproj", "{DB37766A-6C25-4B41-9644-84AFE5F8C974}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blogify.Api", "Blogify.Api\Blogify.Api.csproj", "{7229F974-BFFA-4F40-8636-754B90F1E201}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{4C701FD0-ED55-4276-B769-04601634AC20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +47,17 @@ Global
 		{DB37766A-6C25-4B41-9644-84AFE5F8C974}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB37766A-6C25-4B41-9644-84AFE5F8C974}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB37766A-6C25-4B41-9644-84AFE5F8C974}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7229F974-BFFA-4F40-8636-754B90F1E201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7229F974-BFFA-4F40-8636-754B90F1E201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7229F974-BFFA-4F40-8636-754B90F1E201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7229F974-BFFA-4F40-8636-754B90F1E201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C701FD0-ED55-4276-B769-04601634AC20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C701FD0-ED55-4276-B769-04601634AC20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C701FD0-ED55-4276-B769-04601634AC20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C701FD0-ED55-4276-B769-04601634AC20}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A36D2BDE-2C97-4960-AD4E-51AD6EB2E3EE} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
@@ -47,5 +65,6 @@ Global
 		{38C0E1E9-A868-4688-81FB-F8250D66A9A2} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
 		{65695503-B889-4FD1-8B98-FC69B4769B24} = {CC66A4B4-9D12-4A62-87F1-3145466FC0CF}
 		{DB37766A-6C25-4B41-9644-84AFE5F8C974} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
+		{7229F974-BFFA-4F40-8636-754B90F1E201} = {76ED0950-693D-4C2D-8C12-C583FB6E71D6}
 	EndGlobalSection
 EndGlobal

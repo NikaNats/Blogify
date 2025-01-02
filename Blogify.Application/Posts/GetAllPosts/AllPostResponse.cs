@@ -4,7 +4,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed record PostResponse(
+public sealed record AllPostResponse(
     Guid Id,
     string Title,
     string Content,
@@ -16,5 +16,5 @@ public sealed record PostResponse(
     DateTime? UpdatedAt,
     DateTime? PublishedAt,
     PostStatus Status,
-    List<CommentResponse> Comments,
-    List<TagResponse> Tags);
+    List<CommentByIdResponse> Comments,
+    List<AllTagResponse> Tags);

@@ -1,6 +1,6 @@
-﻿namespace Blogify.Application.Categories.GetCategoryById;
+﻿namespace Blogify.Application.Categories.GetAllCategories;
 
-public sealed record CategoryResponse(
+public sealed record AllCategoryResponse(
     Guid Id,
     string Name,
     string Description,

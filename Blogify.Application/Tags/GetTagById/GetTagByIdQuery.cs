@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Blogify.Application.Tags.GetTagById;
 
-public sealed record GetTagByIdQuery(Guid Id) : IRequest<Result<TagResponse>>;
+public sealed record GetTagByIdQuery(Guid Id) : IRequest<Result<TagByIdResponse>>;

@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Blogify.Application.Categories.GetCategoryById;
 
-public sealed record GetCategoryByIdQuery(Guid Id) : IRequest<Result<CategoryResponse>>;
+public sealed record GetCategoryByIdQuery(Guid Id) : IRequest<Result<CategoryByIdResponse>>;

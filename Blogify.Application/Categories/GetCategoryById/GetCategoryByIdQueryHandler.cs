@@ -5,18 +5,18 @@ using MediatR;
 namespace Blogify.Application.Categories.GetCategoryById;
 
 public sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRepository)
-    : IRequestHandler<GetCategoryByIdQuery, Result<CategoryResponse>>
+    : IRequestHandler<GetCategoryByIdQuery, Result<CategoryByIdResponse>>
 {
-    public async Task<Result<CategoryResponse>> Handle(GetCategoryByIdQuery request,
+    public async Task<Result<CategoryByIdResponse>> Handle(GetCategoryByIdQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
             var category = await categoryRepository.GetByIdAsync(request.Id, cancellationToken);
             if (category is null)
-                return Result.Failure<CategoryResponse>(Error.NotFound("Category.NotFound", "Category not found."));
+                return Result.Failure<CategoryByIdResponse>(Error.NotFound("Category.NotFound", "Category not found."));
 
-            var response = new CategoryResponse(
+            var response = new CategoryByIdResponse(
                 category.Id,
                 category.Name,
                 category.Description,
@@ -28,7 +28,7 @@ public sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRepo
         catch (Exception ex)
         {
             // Log the exception if necessary
-            return Result.Failure<CategoryResponse>(
+            return Result.Failure<CategoryByIdResponse>(
                 Error.Unexpected("Category.UnexpectedError", ex.Message));
         }
     }

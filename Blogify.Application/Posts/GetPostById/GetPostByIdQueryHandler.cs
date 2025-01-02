@@ -33,8 +33,8 @@ public sealed class GetPostByIdQueryHandler : IRequestHandler<GetPostByIdQuery, 
             post.UpdatedAt,
             post.PublishedAt,
             post.Status,
-            post.Comments.Select(c => new CommentResponse(c.Id, c.Content, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
-            post.Tags.Select(t => new TagResponse(t.Id, t.Name, t.CreatedAt)).ToList());
+            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
+            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name, t.CreatedAt)).ToList());
 
         return Result.Success(response);
     }

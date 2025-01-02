@@ -1,4 +1,4 @@
-﻿namespace Blogify.Application.Categories.GetAllCategories;
+﻿namespace Blogify.Api.Controllers.Categories;
 
 public sealed record CategoryResponse(
     Guid Id,

@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed record GetAllPostsQuery : IRequest<Result<List<PostResponse>>>;
+public sealed record GetAllPostsQuery : IRequest<Result<List<AllPostResponse>>>;

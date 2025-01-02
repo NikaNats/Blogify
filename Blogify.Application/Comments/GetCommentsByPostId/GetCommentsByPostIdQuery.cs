@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Blogify.Application.Comments.GetCommentsByPostId;
 
-public sealed record GetCommentsByPostIdQuery(Guid PostId) : IRequest<Result<List<CommentResponse>>>;
+public sealed record GetCommentsByPostIdQuery(Guid PostId) : IRequest<Result<List<CommentByPostIdResponse>>>;

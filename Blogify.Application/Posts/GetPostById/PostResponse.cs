@@ -16,5 +16,5 @@ public sealed record PostResponse(
     DateTime? UpdatedAt,
     DateTime? PublishedAt,
     PostStatus Status,
-    List<CommentResponse> Comments,
-    List<TagResponse> Tags);
+    List<CommentByIdResponse> Comments,
+    List<AllTagResponse> Tags);

@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Blogify.Application.Tags.GetAllTags;
 
-public sealed class GetAllTagsQueryHandler : IRequestHandler<GetAllTagsQuery, Result<List<TagResponse>>>
+public sealed class GetAllTagsQueryHandler : IRequestHandler<GetAllTagsQuery, Result<List<AllTagResponse>>>
 {
     private readonly ITagRepository _tagRepository;
 
@@ -13,10 +13,10 @@ public sealed class GetAllTagsQueryHandler : IRequestHandler<GetAllTagsQuery, Re
         _tagRepository = tagRepository;
     }
 
-    public async Task<Result<List<TagResponse>>> Handle(GetAllTagsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<AllTagResponse>>> Handle(GetAllTagsQuery request, CancellationToken cancellationToken)
     {
         var tags = await _tagRepository.GetAllAsync(cancellationToken);
-        var response = tags.Select(tag => new TagResponse(tag.Id, tag.Name, tag.CreatedAt)).ToList();
+        var response = tags.Select(tag => new AllTagResponse(tag.Id, tag.Name, tag.CreatedAt)).ToList();
         return Result.Success(response);
     }
 }

@@ -6,15 +6,15 @@ namespace Blogify.Application.Categories.GetAllCategories;
 
 public sealed class
     GetAllCategoriesQueryHandler(ICategoryRepository categoryRepository)
-    : IRequestHandler<GetAllCategoriesQuery, Result<List<CategoryResponse>>>
+    : IRequestHandler<GetAllCategoriesQuery, Result<List<AllCategoryResponse>>>
 {
-    public async Task<Result<List<CategoryResponse>>> Handle(GetAllCategoriesQuery request,
+    public async Task<Result<List<AllCategoryResponse>>> Handle(GetAllCategoriesQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
             var categories = await categoryRepository.GetAllAsync(cancellationToken);
-            var response = categories.Select(category => new CategoryResponse(
+            var response = categories.Select(category => new AllCategoryResponse(
                 category.Id,
                 category.Name,
                 category.Description,
@@ -25,7 +25,7 @@ public sealed class
         catch (Exception ex)
         {
             // Log the exception if necessary
-            return Result.Failure<List<CategoryResponse>>(Error.Unexpected("Category.UnexpectedError", ex.Message));
+            return Result.Failure<List<AllCategoryResponse>>(Error.Unexpected("Category.UnexpectedError", ex.Message));
         }
     }
 }

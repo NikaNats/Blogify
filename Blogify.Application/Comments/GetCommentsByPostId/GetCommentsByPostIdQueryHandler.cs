@@ -6,16 +6,16 @@ namespace Blogify.Application.Comments.GetCommentsByPostId;
 
 public sealed class
     GetCommentsByPostIdQueryHandler(ICommentRepository commentRepository)
-    : IRequestHandler<GetCommentsByPostIdQuery, Result<List<CommentResponse>>>
+    : IRequestHandler<GetCommentsByPostIdQuery, Result<List<CommentByPostIdResponse>>>
 {
-    public async Task<Result<List<CommentResponse>>> Handle(GetCommentsByPostIdQuery request,
+    public async Task<Result<List<CommentByPostIdResponse>>> Handle(GetCommentsByPostIdQuery request,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var comments = await commentRepository.GetByPostIdAsync(request.PostId, cancellationToken);
         var response = comments.Select(comment =>
-                new CommentResponse(comment.Id, comment.Content, comment.AuthorId, comment.PostId, comment.CreatedAt))
+                new CommentByPostIdResponse(comment.Id, comment.Content, comment.AuthorId, comment.PostId, comment.CreatedAt))
             .ToList();
         return Result.Success(response);
     }

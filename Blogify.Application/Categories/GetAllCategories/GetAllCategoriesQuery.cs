@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Blogify.Application.Categories.GetAllCategories;
 
-public sealed record GetAllCategoriesQuery : IRequest<Result<List<CategoryResponse>>>;
+public sealed record GetAllCategoriesQuery : IRequest<Result<List<AllCategoryResponse>>>;
