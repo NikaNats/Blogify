@@ -21,7 +21,7 @@ public sealed class Post : Entity
         CategoryId = categoryId;
         CreatedAt = DateTime.UtcNow;
         Status = PostStatus.Draft;
-        Slug = GenerateSlug(title.Value);
+        Slug = GenerateSlug(title.Value).Value;
     }
 
     private Post()
@@ -81,7 +81,7 @@ public sealed class Post : Entity
         Content = content;
         Excerpt = excerpt;
         CategoryId = categoryId;
-        Slug = GenerateSlug(title.Value);
+        Slug = GenerateSlug(title.Value).Value;
         UpdatedAt = DateTime.UtcNow;
 
         RaiseDomainEvent(new PostUpdatedDomainEvent(Id));
@@ -148,12 +148,11 @@ public sealed class Post : Entity
         }
     }
 
-    private static PostSlug GenerateSlug(string title)
+    private static Result<PostSlug> GenerateSlug(string title)
     {
         var slugResult = PostSlug.Create(title);
-        if (slugResult.IsFailure)
-            throw new InvalidOperationException("Failed to generate slug: " + slugResult.Error.Description);
-
-        return slugResult.Value;
+        return slugResult.IsFailure
+            ? Result.Failure<PostSlug>(slugResult.Error)
+            : Result.Success(slugResult.Value);
     }
 }

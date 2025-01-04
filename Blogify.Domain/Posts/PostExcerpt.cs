@@ -2,7 +2,7 @@
 
 namespace Blogify.Domain.Posts;
 
-public sealed record PostExcerpt
+public sealed class PostExcerpt : ValueObject
 {
     private const int MaxLength = 500;
 
@@ -20,5 +20,10 @@ public sealed record PostExcerpt
         if (excerpt.Length > MaxLength) return Result.Failure<PostExcerpt>(PostErrors.ExcerptTooLong);
 
         return Result.Success(new PostExcerpt(excerpt));
+    }
+
+    protected override IEnumerable<object> GetAtomicValues()
+    {
+        yield return Value;
     }
 }

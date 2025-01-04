@@ -2,7 +2,7 @@
 
 namespace Blogify.Domain.Posts;
 
-public sealed record PostContent
+public sealed class PostContent : ValueObject
 {
     private const int MinLength = 100;
 
@@ -20,5 +20,10 @@ public sealed record PostContent
         if (content.Length < MinLength) return Result.Failure<PostContent>(PostErrors.ContentTooShort);
 
         return Result.Success(new PostContent(content));
+    }
+    
+    protected override IEnumerable<object> GetAtomicValues()
+    {
+        yield return Value;
     }
 }

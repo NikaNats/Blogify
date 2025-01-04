@@ -9,28 +9,52 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
 {
     public void Configure(EntityTypeBuilder<Post> builder)
     {
-        // Configure the table name (optional)
+        ConfigureTableAndKeys(builder);
+        ConfigureOwnedTypes(builder);
+        ConfigureProperties(builder);
+        ConfigureRelationships(builder);
+        ConfigureIndexes(builder);
+    }
+
+    private static void ConfigureTableAndKeys(EntityTypeBuilder<Post> builder)
+    {
         builder.ToTable("Posts");
-
-        // Configure the primary key
         builder.HasKey(p => p.Id);
+    }
 
-        // Configure properties
-        builder.Property(p => p.Title)
-            .IsRequired()
-            .HasMaxLength(200); // Adjust the max length as needed
+    private static void ConfigureOwnedTypes(EntityTypeBuilder<Post> builder)
+    {
+        builder.OwnsOne(p => p.Title, title =>
+        {
+            title.Property(t => t.Value)
+                .IsRequired()
+                .HasMaxLength(200);
+        });
 
-        builder.Property(p => p.Content)
-            .IsRequired();
+        builder.OwnsOne(p => p.Content, content =>
+        {
+            content.Property(c => c.Value)
+                .IsRequired()
+                .HasMaxLength(5000);
+        });
 
-        builder.Property(p => p.Excerpt)
-            .IsRequired()
-            .HasMaxLength(500); // Adjust the max length as needed
+        builder.OwnsOne(p => p.Excerpt, excerpt =>
+        {
+            excerpt.Property(e => e.Value)
+                .IsRequired()
+                .HasMaxLength(500);
+        });
 
-        builder.Property(p => p.Slug)
-            .IsRequired()
-            .HasMaxLength(200); // Adjust the max length as needed
+        builder.OwnsOne(p => p.Slug, slug =>
+        {
+            slug.Property(s => s.Value)
+                .IsRequired()
+                .HasMaxLength(200);
+        });
+    }
 
+    private static void ConfigureProperties(EntityTypeBuilder<Post> builder)
+    {
         builder.Property(p => p.AuthorId)
             .IsRequired();
 
@@ -41,34 +65,35 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
             .IsRequired();
 
         builder.Property(p => p.UpdatedAt)
-            .IsRequired(false); // UpdatedAt is nullable
+            .IsRequired(false);
 
         builder.Property(p => p.PublishedAt)
-            .IsRequired(false); // PublishedAt is nullable
+            .IsRequired(false);
 
         builder.Property(p => p.Status)
             .IsRequired()
-            .HasConversion<string>(); // Store the enum as a string in the database
+            .HasConversion<string>();
+    }
 
-        // Configure relationships
+    private static void ConfigureRelationships(EntityTypeBuilder<Post> builder)
+    {
         builder.HasMany(p => p.Comments)
-            .WithOne() // Assuming Comment has a navigation property to Post
+            .WithOne()
             .HasForeignKey(c => c.PostId)
-            .OnDelete(DeleteBehavior.Cascade); // Adjust the delete behavior as needed
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(p => p.Tags)
             .WithMany(t => t.Posts)
-            .UsingEntity(j => j.ToTable("PostTags")); // Configure the join table
+            .UsingEntity(j => j.ToTable("PostTags"));
 
         builder.HasOne<Category>()
             .WithMany(c => c.Posts)
             .HasForeignKey(p => p.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict); // Adjust the delete behavior as needed
+            .OnDelete(DeleteBehavior.Restrict);
+    }
 
-        // Configure indexes
-        builder.HasIndex(p => p.Slug)
-            .IsUnique(); // Ensure slugs are unique
-
+    private static void ConfigureIndexes(EntityTypeBuilder<Post> builder)
+    {
         builder.HasIndex(p => p.AuthorId);
         builder.HasIndex(p => p.CategoryId);
     }

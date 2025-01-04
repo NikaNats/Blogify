@@ -42,7 +42,7 @@ if (app.Environment.IsDevelopment())
     // app.SeedData();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseRequestContextLogging();
 

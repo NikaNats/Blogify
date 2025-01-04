@@ -4,44 +4,91 @@ services:
     build:
       context: .
       dockerfile: Blogify.Api/Dockerfile
-      
+    networks:
+      - blogify-network
+    depends_on:
+      blogify-db:
+        condition: service_healthy
+#      blogify-idp:
+#        condition: service_healthy
+      blogify-redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+
   blogify-db:
     image: postgres:latest
     container_name: blogify.Db
     environment:
-      - POSTGRES_DB=blogify
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: blogify
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - ./.containers/database:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
+#      - ./.containers/database:/var/lib/postgresql/data
+      - blogify-db-data:/var/lib/postgresql/data
 
-  blogify-idp:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: Blogify.Identity
-    command: start-dev --import-realm
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-    volumes:
-      - ./.containers/identity:/opt/keycloak/data
-      - ./.files/blogify-realm-export.json:/opt/keycloak/data/import/realm.json
     ports:
-      - 18080:8080
-  
+      - "5454:5432"  # Map host port 5454 to container port 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blogify-network
+
+#  blogify-idp:
+#    image: quay.io/keycloak/keycloak:latest
+#    container_name: Blogify.Identity
+#    command: start-dev --import-realm
+#    environment:
+#      KEYCLOAK_ADMIN: admin
+#      KEYCLOAK_ADMIN_PASSWORD: admin
+#    volumes:
+#      - ./.containers/identity:/opt/keycloak/data
+#      - ./.files/blogify-realm-export.json:/opt/keycloak/data/import/realm.json
+#    ports:
+#      - "18080:8080"  # Map host port 18080 to container port 8080
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - blogify-network
+
   blogify-seq:
     image: datalust/seq:latest
     container_name: Blogify.Seq
     environment:
-      - ACCEPT_EULA=Y
+      ACCEPT_EULA: Y
     ports:
-      - 5341:5341
-      - 8081:80
+      - "5341:5341"  # Map host port 5341 to container port 5341
+      - "8081:80"    # Map host port 8081 to container port 80
+    networks:
+      - blogify-network
 
   blogify-redis:
     image: redis:latest
     container_name: Blogify.Redis
     restart: always
     ports:
-      - '6379:6379'
+      - "6379:6379"  # Map host port 6379 to container port 6379
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blogify-network
+
+volumes:
+  blogify-db-data:
+
+networks:
+  blogify-network:
+    driver: bridge
