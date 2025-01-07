@@ -15,7 +15,6 @@ namespace Blogify.Api.Controllers.Categories;
 [Route("api/v{version:apiVersion}/categories")]
 public class CategoriesController(ISender sender) : ControllerBase
 {
-    // Create a category
     [HttpPost]
     public async Task<IActionResult> CreateCategory(
         CreateCategoryRequest request,
@@ -30,6 +29,7 @@ public class CategoriesController(ISender sender) : ControllerBase
         return CreatedAtAction(nameof(GetCategoryById), new { id = result.Value }, result.Value);
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetAllCategories(CancellationToken cancellationToken)
     {
         var query = new GetAllCategoriesQuery();
@@ -48,6 +48,7 @@ public class CategoriesController(ISender sender) : ControllerBase
         return Ok(mappedResponse);
     }
 
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetCategoryById(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetCategoryByIdQuery(id);
@@ -65,8 +66,7 @@ public class CategoriesController(ISender sender) : ControllerBase
 
         return Ok(mappedResponse);
     }
-
-    // Update a category
+    
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCategory(
         Guid id,

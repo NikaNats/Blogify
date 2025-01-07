@@ -10,7 +10,6 @@ namespace Blogify.Api.Controllers.Comments;
 [Route("api/comments")]
 public sealed class CommentsController(ISender sender) : ControllerBase
 {
-    // Create a Comment
     [HttpPost]
     public async Task<IActionResult> CreateComment([FromBody] CreateCommentCommand command,
         CancellationToken cancellationToken)
@@ -22,7 +21,6 @@ public sealed class CommentsController(ISender sender) : ControllerBase
         return CreatedAtAction(nameof(GetCommentById), new { id = result.Value }, result.Value);
     }
 
-    // Get a Comment by ID
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetCommentById(Guid id, CancellationToken cancellationToken)
     {
@@ -34,8 +32,7 @@ public sealed class CommentsController(ISender sender) : ControllerBase
 
         return Ok(result.Value);
     }
-
-    // Get Comments by Post ID
+    
     [HttpGet("by-post/{postId:guid}")]
     public async Task<IActionResult> GetCommentsByPostId(Guid postId, CancellationToken cancellationToken)
     {

@@ -18,21 +18,14 @@ namespace Blogify.Api.Controllers.Posts;
 [ApiController]
 [ApiVersion(ApiVersions.V1)]
 [Route("api/v{version:apiVersion}/posts")]
-public class PostsController : ControllerBase
+public class PostsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
-
-    public PostsController(ISender sender)
-    {
-        _sender = sender;
-    }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPost(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetPostByIdQuery(id);
 
-        var result = await _sender.Send(query, cancellationToken);
+        var result = await sender.Send(query, cancellationToken);
 
         return result.IsSuccess ? Ok(result.Value) : NotFound();
     }
@@ -49,7 +42,7 @@ public class PostsController : ControllerBase
             request.AuthorId,
             request.CategoryId);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         if (result.IsFailure) return BadRequest(result.Error);
 
@@ -64,7 +57,7 @@ public class PostsController : ControllerBase
     {
         var command = new AddCommentToPostCommand(id, request.Content, request.AuthorId);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -77,7 +70,7 @@ public class PostsController : ControllerBase
     {
         var command = new AddTagToPostCommand(id, request.TagId);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -90,7 +83,7 @@ public class PostsController : ControllerBase
     {
         var command = new RemoveTagFromPostCommand(postId, tagId);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -100,7 +93,7 @@ public class PostsController : ControllerBase
     {
         var command = new ArchivePostCommand(id);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -110,7 +103,7 @@ public class PostsController : ControllerBase
     {
         var command = new PublishPostCommand(id);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -128,7 +121,7 @@ public class PostsController : ControllerBase
             request.Excerpt,
             request.CategoryId);
 
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
@@ -138,7 +131,7 @@ public class PostsController : ControllerBase
     {
         var query = new GetAllPostsQuery();
 
-        var result = await _sender.Send(query, cancellationToken);
+        var result = await sender.Send(query, cancellationToken);
 
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }

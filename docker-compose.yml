@@ -30,7 +30,6 @@ services:
     volumes:
 #      - ./.containers/database:/var/lib/postgresql/data
       - blogify-db-data:/var/lib/postgresql/data
-
     ports:
       - "5454:5432"  # Map host port 5454 to container port 5432
     healthcheck:
@@ -41,25 +40,25 @@ services:
     networks:
       - blogify-network
 
-#  blogify-idp:
-#    image: quay.io/keycloak/keycloak:latest
-#    container_name: Blogify.Identity
-#    command: start-dev --import-realm
-#    environment:
-#      KEYCLOAK_ADMIN: admin
-#      KEYCLOAK_ADMIN_PASSWORD: admin
-#    volumes:
-#      - ./.containers/identity:/opt/keycloak/data
+  blogify-idp:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: Blogify.Identity
+    command: start-dev --import-realm
+    environment: 
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./.containers/identity:/opt/keycloak/data
 #      - ./.files/blogify-realm-export.json:/opt/keycloak/data/import/realm.json
-#    ports:
-#      - "18080:8080"  # Map host port 18080 to container port 8080
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#    networks:
-#      - blogify-network
+    ports:
+      - "18080:8080"  # Map host port 18080 to container port 8080
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blogify-network
 
   blogify-seq:
     image: datalust/seq:latest

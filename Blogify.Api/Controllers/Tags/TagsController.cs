@@ -10,7 +10,6 @@ namespace Blogify.Api.Controllers.Tags;
 [Route("api/tags")]
 public sealed class TagsController(ISender sender) : ControllerBase
 {
-    // Create a Tag
     [HttpPost]
     public async Task<IActionResult> CreateTag([FromBody] CreateTagCommand command, CancellationToken cancellationToken)
     {
@@ -21,7 +20,6 @@ public sealed class TagsController(ISender sender) : ControllerBase
         return CreatedAtAction(nameof(GetTagById), new { id = result.Value }, result.Value);
     }
 
-    // Get All Tags
     [HttpGet]
     public async Task<IActionResult> GetAllTags(CancellationToken cancellationToken)
     {
@@ -34,7 +32,6 @@ public sealed class TagsController(ISender sender) : ControllerBase
         return Ok(result.Value);
     }
 
-    // Get a Tag by ID
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetTagById(Guid id, CancellationToken cancellationToken)
     {
