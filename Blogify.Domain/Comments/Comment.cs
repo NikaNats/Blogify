@@ -1,40 +1,73 @@
 ﻿using Blogify.Domain.Abstractions;
+using Blogify.Domain.Comments.Events;
 
 namespace Blogify.Domain.Comments;
 
 public sealed class Comment : Entity
 {
-    private Comment(Guid id, string content, Guid authorId, Guid postId)
+    private Comment(Guid id, CommentContent content, Guid authorId, Guid postId)
         : base(id)
     {
         Content = content;
         AuthorId = authorId;
         PostId = postId;
-        CreatedAt = DateTime.UtcNow;
+
+        RaiseDomainEvent(new CommentAddedDomainEvent(id));
     }
 
     private Comment()
     {
     }
 
-    public string Content { get; private set; }
+    public CommentContent Content { get; private set; }
     public Guid AuthorId { get; private set; }
     public Guid PostId { get; private set; }
-    public DateTime CreatedAt { get; private set; }
 
     public static Result<Comment> Create(string content, Guid authorId, Guid postId)
     {
-        if (string.IsNullOrEmpty(content))
-            return Result.Failure<Comment>(Error.Validation("Comment.InvalidContent",
-                "Comment content cannot be empty."));
+        var validationResult = Validate(authorId, postId);
+        if (validationResult.IsFailure)
+            return Result.Failure<Comment>(validationResult.Error);
 
-        if (authorId == default)
-            return Result.Failure<Comment>(Error.Validation("Comment.AuthorId", "AuthorId cannot be default."));
+        var contentResult = CommentContent.Create(content);
+        if (contentResult.IsFailure)
+            return Result.Failure<Comment>(contentResult.Error);
 
-        if (postId == default)
-            return Result.Failure<Comment>(Error.Validation("Comment.PostId", "PostId cannot be default."));
+        var comment = new Comment(Guid.NewGuid(), contentResult.Value, authorId, postId);
 
-        var comment = new Comment(Guid.NewGuid(), content, authorId, postId);
         return Result.Success(comment);
+    }
+
+    public Result Update(string content)
+    {
+        var contentResult = CommentContent.Create(content);
+        if (contentResult.IsFailure)
+            return Result.Failure(contentResult.Error);
+
+        Content = contentResult.Value;
+        UpdateModificationTimestamp();
+
+        return Result.Success();
+    }
+    
+    public Result Remove(Guid userId)
+    {
+        if (AuthorId != userId)
+            return Result.Failure(CommentError.UnauthorizedDeletion);
+
+        RaiseDomainEvent(new CommentRemovedDomainEvent(Id));
+
+        return Result.Success();
+    }
+
+    private static Result Validate(Guid authorId, Guid postId)
+    {
+        if (authorId == Guid.Empty)
+            return Result.Failure(CommentError.EmptyAuthorId);
+
+        if (postId == Guid.Empty)
+            return Result.Failure(CommentError.EmptyPostId);
+
+        return Result.Success();
     }
 }

@@ -21,7 +21,7 @@ public sealed class PostContent : ValueObject
 
         return Result.Success(new PostContent(content));
     }
-    
+
     protected override IEnumerable<object> GetAtomicValues()
     {
         yield return Value;

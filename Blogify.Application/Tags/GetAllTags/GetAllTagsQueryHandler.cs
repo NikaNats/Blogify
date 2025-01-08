@@ -16,7 +16,7 @@ public sealed class GetAllTagsQueryHandler : IRequestHandler<GetAllTagsQuery, Re
     public async Task<Result<List<AllTagResponse>>> Handle(GetAllTagsQuery request, CancellationToken cancellationToken)
     {
         var tags = await _tagRepository.GetAllAsync(cancellationToken);
-        var response = tags.Select(tag => new AllTagResponse(tag.Id, tag.Name, tag.CreatedAt)).ToList();
+        var response = tags.Select(tag => new AllTagResponse(tag.Id, tag.Name.Value, tag.CreatedAt)).ToList();
         return Result.Success(response);
     }
 }

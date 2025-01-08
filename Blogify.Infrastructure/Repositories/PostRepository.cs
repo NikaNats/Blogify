@@ -3,13 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blogify.Infrastructure.Repositories;
 
-internal sealed class PostRepository : Repository<Post>, IPostRepository
+internal sealed class PostRepository(ApplicationDbContext dbContext) : Repository<Post>(dbContext), IPostRepository
 {
-    public PostRepository(ApplicationDbContext dbContext)
-        : base(dbContext)
-    {
-    }
-
     public async Task<Post?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         return await DbContext
@@ -17,7 +12,8 @@ internal sealed class PostRepository : Repository<Post>, IPostRepository
             .FirstOrDefaultAsync(post => post.Slug.Value == slug, cancellationToken);
     }
 
-    public async Task<List<Post>> GetByAuthorIdAsync(Guid authorId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Post>> GetByAuthorIdAsync(Guid authorId,
+        CancellationToken cancellationToken = default)
     {
         return await DbContext
             .Set<Post>()
@@ -25,7 +21,8 @@ internal sealed class PostRepository : Repository<Post>, IPostRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<Post>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Post>> GetByCategoryIdAsync(Guid categoryId,
+        CancellationToken cancellationToken = default)
     {
         return await DbContext
             .Set<Post>()
@@ -33,7 +30,7 @@ internal sealed class PostRepository : Repository<Post>, IPostRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<Post>> GetByTagIdAsync(Guid tagId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Post>> GetByTagIdAsync(Guid tagId, CancellationToken cancellationToken = default)
     {
         return await DbContext
             .Set<Post>()
@@ -47,7 +44,7 @@ internal sealed class PostRepository : Repository<Post>, IPostRepository
         await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<List<Post>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Post>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await DbContext
             .Set<Post>()
@@ -58,10 +55,5 @@ internal sealed class PostRepository : Repository<Post>, IPostRepository
     {
         DbContext.Set<Post>().Update(post);
         await DbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    public void Update(Post post)
-    {
-        DbContext.Set<Post>().Update(post);
     }
 }

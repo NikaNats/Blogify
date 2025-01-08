@@ -7,50 +7,96 @@ namespace Blogify.Domain.Categories;
 public sealed class Category : Entity
 {
     private readonly List<Post> _posts = new();
+    private CategoryDescription _description;
+    private CategoryName _name;
 
-    private Category(Guid id, string name, string description)
+    private Category(Guid id, CategoryName name, CategoryDescription description)
         : base(id)
     {
-        Name = name;
-        Description = description;
-        CreatedAt = DateTime.UtcNow;
+        _name = name;
+        _description = description;
     }
 
     private Category()
     {
     }
 
-    public string Name { get; private set; }
-    public string Description { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public CategoryName Name
+    {
+        get => _name;
+        private set => SetProperty(ref _name, value);
+    }
+
+    public CategoryDescription Description
+    {
+        get => _description;
+        private set => SetProperty(ref _description, value);
+    }
+
     public IReadOnlyCollection<Post> Posts => _posts.AsReadOnly();
 
     public static Result<Category> Create(string name, string description)
     {
-        if (string.IsNullOrEmpty(name))
-            return Result.Failure<Category>(Error.Validation("Category.Name", "Name cannot be empty."));
+        var categoryNameResult = CategoryName.Create(name);
+        var categoryDescriptionResult = CategoryDescription.Create(description);
 
-        if (string.IsNullOrEmpty(description))
-            return Result.Failure<Category>(Error.Validation("Category.Description", "Description cannot be empty."));
+        if (categoryNameResult.IsFailure)
+            return Result.Failure<Category>(CategoryError.NameNullOrEmpty);
 
-        var category = new Category(Guid.NewGuid(), name, description);
+        if (categoryDescriptionResult.IsFailure)
+            return Result.Failure<Category>(CategoryError.DescriptionNullOrEmpty);
+
+        var category = new Category(Guid.NewGuid(), categoryNameResult.Value, categoryDescriptionResult.Value);
         category.RaiseDomainEvent(new CategoryCreatedDomainEvent(category.Id));
+
         return Result.Success(category);
     }
 
     public Result Update(string name, string description)
     {
-        if (string.IsNullOrEmpty(name))
-            return Result.Failure(Error.Validation("Category.Name", "Name cannot be empty."));
+        var categoryNameResult = CategoryName.Create(name);
+        if (categoryNameResult.IsFailure)
+            return Result.Failure(categoryNameResult.Error);
+        
+        var categoryDescriptionResult = CategoryDescription.Create(description);
+        if (categoryDescriptionResult.IsFailure)
+            return Result.Failure(categoryDescriptionResult.Error);
 
-        if (string.IsNullOrEmpty(description))
-            return Result.Failure(Error.Validation("Category.Description", "Description cannot be empty."));
+        Name = categoryNameResult.Value;
+        Description = categoryDescriptionResult.Value;
 
-        Name = name;
-        Description = description;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateModificationTimestamp();
+
         RaiseDomainEvent(new CategoryUpdatedDomainEvent(Id));
+
+        return Result.Success();
+    }
+
+    public Result AddPost(Post post)
+    {
+        if (post == null)
+            return Result.Failure(CategoryError.PostNull);
+
+        if (_posts.Contains(post))
+            return Result.Failure(CategoryError.PostAlreadyExists);
+
+        _posts.Add(post);
+
+        UpdateModificationTimestamp();
+
+        return Result.Success();
+    }
+
+    public Result RemovePost(Post post)
+    {
+        if (post == null)
+            return Result.Failure(CategoryError.PostNull);
+
+        if (!_posts.Remove(post))
+            return Result.Failure(CategoryError.PostNotFound);
+        
+        UpdateModificationTimestamp();
+
         return Result.Success();
     }
 }

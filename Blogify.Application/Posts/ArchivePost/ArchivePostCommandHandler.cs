@@ -13,9 +13,13 @@ public sealed class ArchivePostCommandHandler(IPostRepository postRepository)
         if (post is null)
             return Result.Failure(Error.NotFound("Post.NotFound", "Post not found."));
 
-        var postWasArchived = post.Archive();
-        if (postWasArchived)
-            await postRepository.UpdateAsync(post, cancellationToken); // Only update if the post was archived
+        // Archive the post
+        var archiveResult = post.Archive();
+        if (archiveResult.IsFailure)
+            return archiveResult;
+
+        await postRepository.UpdateAsync(post, cancellationToken);
+        
         return Result.Success();
     }
 }

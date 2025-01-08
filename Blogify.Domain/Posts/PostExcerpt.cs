@@ -13,7 +13,7 @@ public sealed class PostExcerpt : ValueObject
 
     public string Value { get; }
 
-    public static Result<PostExcerpt> Create(string? excerpt)
+    public static Result<PostExcerpt> Create(string excerpt)
     {
         if (string.IsNullOrWhiteSpace(excerpt)) return Result.Failure<PostExcerpt>(PostErrors.ExcerptEmpty);
 

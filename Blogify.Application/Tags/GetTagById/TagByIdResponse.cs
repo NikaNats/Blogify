@@ -1,3 +1,3 @@
 ﻿namespace Blogify.Application.Tags.GetTagById;
 
-public sealed record TagByIdResponse(Guid Id, string Name, DateTime CreatedAt);
+public sealed record TagByIdResponse(Guid Id, string Name, DateTimeOffset CreatedAt);

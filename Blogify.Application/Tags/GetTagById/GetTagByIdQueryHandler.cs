@@ -19,7 +19,7 @@ public sealed class GetTagByIdQueryHandler : IRequestHandler<GetTagByIdQuery, Re
         if (tag is null)
             return Result.Failure<TagByIdResponse>(Error.NotFound("Tag.NotFound", "Tag not found."));
 
-        var response = new TagByIdResponse(tag.Id, tag.Name, tag.CreatedAt);
+        var response = new TagByIdResponse(tag.Id, tag.Name.Value, tag.CreatedAt);
         return Result.Success(response);
     }
 }

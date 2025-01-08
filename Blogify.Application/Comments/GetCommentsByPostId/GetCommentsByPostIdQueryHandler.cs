@@ -15,7 +15,7 @@ public sealed class
 
         var comments = await commentRepository.GetByPostIdAsync(request.PostId, cancellationToken);
         var response = comments.Select(comment =>
-                new CommentByPostIdResponse(comment.Id, comment.Content, comment.AuthorId, comment.PostId, comment.CreatedAt))
+                new CommentByPostIdResponse(comment.Id, comment.Content.Value, comment.AuthorId, comment.PostId, comment.CreatedAt))
             .ToList();
         return Result.Success(response);
     }

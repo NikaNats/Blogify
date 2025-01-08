@@ -20,7 +20,7 @@ public sealed class GetCommentByIdQueryHandler(ICommentRepository commentReposit
         if (comment is null)
             return Result.Failure<CommentByIdResponse>(Error.NotFound("Comment.NotFound", "Comment not found."));
 
-        var response = new CommentByIdResponse(comment.Id, comment.Content, comment.AuthorId, comment.PostId,
+        var response = new CommentByIdResponse(comment.Id, comment.Content.Value, comment.AuthorId, comment.PostId,
             comment.CreatedAt);
         return Result.Success(response);
     }

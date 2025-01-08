@@ -26,7 +26,7 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.CreatedAt)
             .IsRequired();
 
-        builder.Property(c => c.UpdatedAt)
+        builder.Property(c => c.LastModifiedAt)
             .IsRequired(false); // UpdatedAt is nullable
 
         // Configure relationships (if any)

@@ -7,22 +7,15 @@ using Newtonsoft.Json;
 
 namespace Blogify.Infrastructure;
 
-public sealed class ApplicationDbContext : DbContext, IUnitOfWork
+public sealed class ApplicationDbContext(
+    DbContextOptions options,
+    IDateTimeProvider dateTimeProvider)
+    : DbContext(options), IUnitOfWork
 {
     private static readonly JsonSerializerSettings JsonSerializerSettings = new()
     {
         TypeNameHandling = TypeNameHandling.All
     };
-
-    private readonly IDateTimeProvider _dateTimeProvider;
-
-    public ApplicationDbContext(
-        DbContextOptions options,
-        IDateTimeProvider dateTimeProvider)
-        : base(options)
-    {
-        _dateTimeProvider = dateTimeProvider;
-    }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -54,7 +47,7 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
             .Select(entry => entry.Entity)
             .SelectMany(entity =>
             {
-                var domainEvents = entity.GetDomainEvents();
+                var domainEvents = entity.DomainEvents;
 
                 entity.ClearDomainEvents();
 
@@ -62,7 +55,7 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
             })
             .Select(domainEvent => new OutboxMessage(
                 Guid.NewGuid(),
-                _dateTimeProvider.UtcNow,
+                dateTimeProvider.UtcNow,
                 domainEvent.GetType().Name,
                 JsonConvert.SerializeObject(domainEvent, JsonSerializerSettings)))
             .ToList();

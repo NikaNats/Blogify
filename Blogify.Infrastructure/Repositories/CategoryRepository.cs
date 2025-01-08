@@ -17,7 +17,7 @@ internal sealed class CategoryRepository : Repository<Category>, ICategoryReposi
             .FirstOrDefaultAsync(category => category.Id == id, cancellationToken);
     }
 
-    public async Task<List<Category>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Category?>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbContext
             .Set<Category>()
@@ -34,10 +34,5 @@ internal sealed class CategoryRepository : Repository<Category>, ICategoryReposi
     {
         DbContext.Set<Category>().Update(category);
         await DbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    public void Update(Category category)
-    {
-        DbContext.Set<Category>().Update(category);
     }
 }

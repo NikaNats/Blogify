@@ -2,13 +2,8 @@
 
 namespace Blogify.Infrastructure.Repositories;
 
-internal sealed class UserRepository : Repository<User>, IUserRepository
+internal sealed class UserRepository(ApplicationDbContext dbContext) : Repository<User>(dbContext), IUserRepository
 {
-    public UserRepository(ApplicationDbContext dbContext)
-        : base(dbContext)
-    {
-    }
-
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
         foreach (var role in user.Roles) DbContext.Attach(role);

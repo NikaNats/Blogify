@@ -18,8 +18,13 @@ public sealed class AddTagToPostCommandHandler(IPostRepository postRepository, I
         if (tag is null)
             return Result.Failure(Error.NotFound("Tag.NotFound", "Tag not found."));
 
-        var tagWasAdded = post.AddTag(tag);
-        if (tagWasAdded) await postRepository.UpdateAsync(post, cancellationToken); // Only update if the tag was added
+        // Add the tag to the post
+        var addTagResult = post.AddTag(tag);
+        if (addTagResult.IsFailure)
+            return addTagResult;
+
+        await postRepository.UpdateAsync(post, cancellationToken);
+        
         return Result.Success();
     }
 }

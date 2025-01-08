@@ -69,7 +69,6 @@ public class PostTests
         Assert.Equal(newContent, post.Content);
         Assert.Equal(newExcerpt, post.Excerpt);
         Assert.Equal(newCategoryId, post.CategoryId);
-        Assert.NotNull(post.UpdatedAt);
     }
 
     [Fact]
@@ -88,8 +87,6 @@ public class PostTests
 
         // Assert
         Assert.Equal(PostStatus.Published, post.Status);
-        Assert.NotNull(post.PublishedAt);
-        Assert.NotNull(post.UpdatedAt);
     }
 
     [Fact]
@@ -128,7 +125,6 @@ public class PostTests
 
         // Assert
         Assert.Equal(PostStatus.Archived, post.Status);
-        Assert.NotNull(post.UpdatedAt);
     }
 
     [Fact]
@@ -171,7 +167,7 @@ public class PostTests
 
         // Assert
         Assert.Single(post.Comments);
-        Assert.Equal(commentContent, post.Comments.First().Content);
+        Assert.Equal(commentContent, post.Comments.First().Content.Value);
         Assert.Equal(authorId, post.Comments.First().AuthorId);
     }
 

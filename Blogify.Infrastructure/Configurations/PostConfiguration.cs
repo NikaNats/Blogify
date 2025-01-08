@@ -64,7 +64,7 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 
-        builder.Property(p => p.UpdatedAt)
+        builder.Property(p => p.LastModifiedAt)
             .IsRequired(false);
 
         builder.Property(p => p.PublishedAt)

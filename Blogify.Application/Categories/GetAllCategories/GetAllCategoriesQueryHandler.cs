@@ -16,10 +16,10 @@ public sealed class
             var categories = await categoryRepository.GetAllAsync(cancellationToken);
             var response = categories.Select(category => new AllCategoryResponse(
                 category.Id,
-                category.Name,
-                category.Description,
+                category.Name.Value,
+                category.Description.Value,
                 category.CreatedAt,
-                category.UpdatedAt)).ToList();
+                category.LastModifiedAt)).ToList();
             return Result.Success(response);
         }
         catch (Exception ex)

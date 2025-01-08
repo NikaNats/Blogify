@@ -2,7 +2,7 @@
 
 namespace Blogify.Domain.Posts;
 
-public sealed class PostSlug: ValueObject
+public sealed class PostSlug : ValueObject
 {
     private const int MaxLength = 200;
 
@@ -28,6 +28,7 @@ public sealed class PostSlug: ValueObject
 
         return Result.Success(new PostSlug(slug));
     }
+
     protected override IEnumerable<object> GetAtomicValues()
     {
         yield return Value;

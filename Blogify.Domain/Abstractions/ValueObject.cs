@@ -1,23 +1,37 @@
 ﻿namespace Blogify.Domain.Abstractions;
 
+/// <summary>
+///     Base class for Value Objects in the domain model.
+///     Implements value semantics and equality comparison.
+/// </summary>
 public abstract class ValueObject : IEquatable<ValueObject>
 {
-    private int? _cachedHashCode;
+    // Using readonly for thread safety
+    private readonly Lazy<int> _cachedHashCode;
 
-    public bool Equals(ValueObject? other)
+    protected ValueObject()
     {
-        if (other is null)
-            return false;
-
-        if (ReferenceEquals(this, other))
-            return true;
-
-        if (GetType() != other.GetType())
-            return false;
-
-        return GetAtomicValues().SequenceEqual(other.GetAtomicValues());
+        _cachedHashCode = new Lazy<int>(ComputeHashCode);
     }
 
+    /// <summary>
+    ///     Implements equality comparison between two ValueObjects
+    /// </summary>
+    /// <param name="other">The ValueObject to compare with</param>
+    /// <returns>True if the objects are equal, false otherwise</returns>
+    public bool Equals(ValueObject? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return GetType() == other.GetType() &&
+               GetAtomicValues().SequenceEqual(other.GetAtomicValues());
+    }
+
+    /// <summary>
+    ///     Gets the atomic values that define the value object's identity
+    /// </summary>
+    /// <returns>Collection of object values that comprise this value object's identity</returns>
     protected abstract IEnumerable<object> GetAtomicValues();
 
     public override bool Equals(object? obj)
@@ -27,16 +41,18 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
     public override int GetHashCode()
     {
-        if (!_cachedHashCode.HasValue)
-            _cachedHashCode = GetAtomicValues()
-                .Aggregate(default(int), HashCode.Combine);
-
         return _cachedHashCode.Value;
+    }
+
+    private int ComputeHashCode()
+    {
+        return GetAtomicValues()
+            .Aggregate(0, HashCode.Combine);
     }
 
     public static bool operator ==(ValueObject? left, ValueObject? right)
     {
-        return Equals(left, right);
+        return EqualOperator(left, right);
     }
 
     public static bool operator !=(ValueObject? left, ValueObject? right)
@@ -44,11 +60,13 @@ public abstract class ValueObject : IEquatable<ValueObject>
         return !(left == right);
     }
 
-    protected static bool EqualOperator(ValueObject? left, ValueObject? right)
+    /// <summary>
+    ///     Handles equality comparison taking into account null values
+    /// </summary>
+    private static bool EqualOperator(ValueObject? left, ValueObject? right)
     {
-        if (left is null ^ right is null)
-            return false;
-
-        return left?.Equals(right) ?? true;
+        if (ReferenceEquals(left, right)) return true;
+        if (left is null || right is null) return false;
+        return left.Equals(right);
     }
 }

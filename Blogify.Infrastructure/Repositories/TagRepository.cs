@@ -3,13 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blogify.Infrastructure.Repositories;
 
-internal sealed class TagRepository : Repository<Tag>, ITagRepository
+internal sealed class TagRepository(ApplicationDbContext dbContext) : Repository<Tag>(dbContext), ITagRepository
 {
-    public TagRepository(ApplicationDbContext dbContext)
-        : base(dbContext)
-    {
-    }
-
     public async Task<List<Tag>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbContext
@@ -20,11 +15,20 @@ internal sealed class TagRepository : Repository<Tag>, ITagRepository
     public async Task AddAsync(Tag tag, CancellationToken cancellationToken = default)
     {
         await DbContext.Set<Tag>().AddAsync(tag, cancellationToken);
-        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public override void Add(Tag entity)
+    public Task UpdateAsync(Tag tag, CancellationToken cancellationToken = default)
     {
-        base.Add(entity);
+        DbContext.Set<Tag>().Update(tag);
+        return Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var tag = await DbContext
+            .Set<Tag>()
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+        if (tag != null) DbContext.Set<Tag>().Remove(tag);
     }
 }

@@ -27,11 +27,11 @@ public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, 
             post.AuthorId,
             post.CategoryId,
             post.CreatedAt,
-            post.UpdatedAt,
+            post.LastModifiedAt,
             post.PublishedAt,
             post.Status,
-            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
-            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name, t.CreatedAt)).ToList())).ToList();
+            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content.Value, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
+            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt)).ToList())).ToList();
 
         return Result.Success(response);
     }

@@ -12,9 +12,9 @@ public sealed record AllPostResponse(
     string Slug,
     Guid AuthorId,
     Guid CategoryId,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt,
-    DateTime? PublishedAt,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt,
+    DateTimeOffset? PublishedAt,
     PostStatus Status,
     List<CommentByIdResponse> Comments,
     List<AllTagResponse> Tags);

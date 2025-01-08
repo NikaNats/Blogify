@@ -37,7 +37,7 @@ public class UserTests
             var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail);
 
             // Assert
-            var events = result.Value.GetDomainEvents();
+            var events = result.Value.DomainEvents;
             events.Should().HaveCount(2);
 
             events.Should().ContainSingle(e => e is UserCreatedDomainEvent)
@@ -112,7 +112,7 @@ public class UserTests
 
             // Assert
             user.Roles.Should().Contain(newRole);
-            var events = user.GetDomainEvents();
+            var events = user.DomainEvents;
             events.Should().ContainSingle()
                 .Which.Should().BeOfType<RoleAssignedDomainEvent>()
                 .Which.Should().Match<RoleAssignedDomainEvent>(e =>
@@ -133,7 +133,7 @@ public class UserTests
 
             // Assert
             user.Roles.Count(r => r == existingRole).Should().Be(1);
-            user.GetDomainEvents().Should().BeEmpty();
+            user.DomainEvents.Should().BeEmpty();
         }
 
         [Fact]
@@ -171,7 +171,7 @@ public class UserTests
             // Assert
             result.IsSuccess.Should().BeTrue();
             user.Email.Address.Should().Be(newEmail.Address);
-            var events = user.GetDomainEvents();
+            var events = user.DomainEvents;
             events.Should().ContainSingle()
                 .Which.Should().BeOfType<EmailChangedDomainEvent>()
                 .Which.Should().Match<EmailChangedDomainEvent>(e =>
@@ -192,7 +192,7 @@ public class UserTests
             // Assert
             result.IsSuccess.Should().BeTrue();
             user.Email.Address.Should().Be(UserData.DefaultEmail.Address);
-            user.GetDomainEvents().Should().BeEmpty();
+            user.DomainEvents.Should().BeEmpty();
         }
 
         [Theory]
@@ -219,7 +219,7 @@ public class UserTests
                 result.IsFailure.Should().BeTrue();
                 result.Error.Should().Be(UserErrors.InvalidEmail);
                 user.Email.Should().Be(originalEmail);
-                user.GetDomainEvents().Should().BeEmpty();
+                user.DomainEvents.Should().BeEmpty();
             }
             else
             {

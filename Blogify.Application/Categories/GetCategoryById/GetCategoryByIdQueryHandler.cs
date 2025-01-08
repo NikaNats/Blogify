@@ -18,10 +18,10 @@ public sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRepo
 
             var response = new CategoryByIdResponse(
                 category.Id,
-                category.Name,
-                category.Description,
+                category.Name.Value,
+                category.Description.Value,
                 category.CreatedAt,
-                category.UpdatedAt);
+                category.LastModifiedAt);
 
             return Result.Success(response);
         }

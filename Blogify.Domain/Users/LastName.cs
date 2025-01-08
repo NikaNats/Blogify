@@ -13,14 +13,13 @@ public sealed class LastName : ValueObject
 
     public static Result<LastName> Create(string value)
     {
-        if (value is null)
+        if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<LastName>(UserErrors.InvalidLastName);
 
         var trimmedValue = value.Trim();
-        if (string.IsNullOrEmpty(trimmedValue))
-            return Result.Failure<LastName>(UserErrors.InvalidLastName);
+        var lastName = new LastName(trimmedValue);
 
-        return new LastName(value.Trim());
+        return Result.Success(lastName);
     }
 
     protected override IEnumerable<object> GetAtomicValues()

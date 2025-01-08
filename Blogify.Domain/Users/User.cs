@@ -27,14 +27,14 @@ public sealed class User : Entity
 
     public string IdentityId { get; private set; } = string.Empty;
 
-    public IReadOnlyCollection<Role> Roles => _roles.ToList();
+    public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
 
     public static Result<User> Create(FirstName firstName, LastName lastName, Email email)
     {
-        if (string.IsNullOrEmpty(firstName.Value))
+        if (string.IsNullOrWhiteSpace(firstName.Value))
             return Result.Failure<User>(UserErrors.InvalidFirstName);
 
-        if (string.IsNullOrEmpty(lastName.Value))
+        if (string.IsNullOrWhiteSpace(lastName.Value))
             return Result.Failure<User>(UserErrors.InvalidLastName);
 
         var emailResult = Email.Create(email.Address);
