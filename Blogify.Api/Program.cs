@@ -39,7 +39,7 @@ if (app.Environment.IsDevelopment())
     app.ApplyMigrations();
 
     // REMARK: Uncomment if you want to seed initial data.
-    // await app.SeedDataAsync();
+    await app.SeedDataAsync();
 }
 
 // app.UseHttpsRedirection();

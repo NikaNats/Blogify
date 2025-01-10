@@ -11,46 +11,52 @@ internal abstract class Repository<TEntity>(ApplicationDbContext dbContext)
     private readonly DbSet<TEntity> _dbSet = dbContext.Set<TEntity>();
     protected readonly ApplicationDbContext DbContext = dbContext;
 
-    public async Task<TEntity?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+        return await _dbSet.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);
     }
 
     public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        return await _dbSet
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     public virtual async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         await _dbSet.AddAsync(entity, cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
     public virtual async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         _dbSet.Update(entity);
+        await DbContext.SaveChangesAsync(cancellationToken); 
     }
 
-    public virtual async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public virtual async Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
-        if (entity != null)
-        {
-            _dbSet.Remove(entity);
-        }
+        ArgumentNullException.ThrowIfNull(entity);
+
+        _dbSet.Remove(entity);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(predicate);
+
         return await _dbSet.AnyAsync(predicate, cancellationToken);
     }
-
-    public virtual void Add(TEntity entity)
+    
+    protected virtual IQueryable<TEntity> GetQueryable()
     {
-        DbContext.Add(entity);
+        return _dbSet.AsQueryable();
     }
 }

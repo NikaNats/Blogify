@@ -1,12 +1,10 @@
-﻿using Blogify.Application.Comments.GetCommentById;
-using Blogify.Application.Tags.GetAllTags;
+﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.GetPostById;
 
-public sealed class GetPostByIdQueryHandler : IRequestHandler<GetPostByIdQuery, Result<PostResponse>>
+public sealed class GetPostByIdQueryHandler : IQueryHandler<GetPostByIdQuery, PostResponse>
 {
     private readonly IPostRepository _postRepository;
 
@@ -19,7 +17,7 @@ public sealed class GetPostByIdQueryHandler : IRequestHandler<GetPostByIdQuery, 
     {
         var post = await _postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null)
-            return Result.Failure<PostResponse>(Error.NotFound("Post.NotFound", "Post not found."));
+            return Result.Failure<PostResponse>(PostErrors.NotFound);
 
         var response = new PostResponse(
             post.Id,
@@ -28,13 +26,12 @@ public sealed class GetPostByIdQueryHandler : IRequestHandler<GetPostByIdQuery, 
             post.Excerpt.Value,
             post.Slug.Value,
             post.AuthorId,
-            post.CategoryId,
             post.CreatedAt,
             post.LastModifiedAt,
             post.PublishedAt,
             post.Status,
-            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content.Value, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
-            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt)).ToList());
+            post.Comments.MapToCommentResponses(),
+            post.Tags.MapToAllTagResponses());
 
         return Result.Success(response);
     }

@@ -33,8 +33,7 @@ public class CreatePostCommandHandlerTests
             command.Title,
             command.Content,
             command.Excerpt,
-            command.AuthorId,
-            command.CategoryId);
+            command.AuthorId);
 
         // Ensure the post creation was successful
         postResult.IsSuccess.Should().BeTrue("Post creation should succeed with valid input.");

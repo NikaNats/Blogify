@@ -29,8 +29,8 @@ public class GetAllCategoriesQueryHandlerTests
         result.Value.ShouldNotBeEmpty();
         result.Value.Count.ShouldBe(2);
         result.Value[0].Id.ShouldBe(categories[0].Id);
-        result.Value[0].Name.ShouldBe(categories[0].Name);
-        result.Value[0].Description.ShouldBe(categories[0].Description);
+        result.Value[0].Name.ShouldBe(categories[0].Name.Value);
+        result.Value[0].Description.ShouldBe(categories[0].Description.Value);
     }
 
     [Fact]

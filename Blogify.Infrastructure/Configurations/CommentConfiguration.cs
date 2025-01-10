@@ -9,33 +9,39 @@ internal sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
 {
     public void Configure(EntityTypeBuilder<Comment> builder)
     {
-        // Configure the table name (optional)
-        builder.ToTable("Comments");
+        builder.ToTable("comments");
 
-        // Configure the primary key
         builder.HasKey(c => c.Id);
 
-        // Configure properties
-        builder.Property(c => c.Content)
-            .IsRequired()
-            .HasMaxLength(1000); // Adjust the max length as needed
+        builder.OwnsOne(c => c.Content, contentBuilder =>
+        {
+            contentBuilder.Property(c => c.Value)
+                .IsRequired()
+                .HasMaxLength(1000)
+                .HasComment("The content of the comment.");
+        });
 
         builder.Property(c => c.AuthorId)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("The ID of the author who created the comment.");
 
         builder.Property(c => c.PostId)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("The ID of the post to which the comment belongs.");
 
         builder.Property(c => c.CreatedAt)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("The timestamp when the comment was created.");
 
-        // Configure relationships (if any)
+        builder.Property(c => c.LastModifiedAt)
+            .IsRequired(false)
+            .HasComment("The timestamp when the comment was last modified.");
+
         builder.HasOne<Post>()
             .WithMany(p => p.Comments)
             .HasForeignKey(c => c.PostId)
-            .OnDelete(DeleteBehavior.Cascade); // Adjust the delete behavior as needed
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure indexes (if any)
         builder.HasIndex(c => c.PostId);
         builder.HasIndex(c => c.AuthorId);
     }

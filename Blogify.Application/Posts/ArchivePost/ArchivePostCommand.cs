@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.ArchivePost;
 
-public sealed record ArchivePostCommand(Guid Id) : IRequest<Result>;
+public sealed record ArchivePostCommand(Guid Id) : ICommand;

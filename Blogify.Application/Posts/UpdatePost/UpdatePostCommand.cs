@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.UpdatePost;
 
@@ -9,4 +8,4 @@ public sealed record UpdatePostCommand(
     PostTitle Title,
     PostContent Content,
     PostExcerpt Excerpt,
-    Guid CategoryId) : IRequest<Result>;
+    Guid CategoryId) : ICommand;

@@ -53,7 +53,6 @@ public class AddCommentToPostCommandHandlerTests
             postTitleResult.Value,
             postContentResult.Value,
             postExcerptResult.Value,
-            Guid.NewGuid(),
             Guid.NewGuid()
         );
 
@@ -90,7 +89,6 @@ public class AddCommentToPostCommandHandlerTests
             postTitleResult.Value,
             postContentResult.Value,
             postExcerptResult.Value,
-            Guid.NewGuid(),
             Guid.NewGuid()
         );
 
@@ -107,7 +105,7 @@ public class AddCommentToPostCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        post.Comments.Should().Contain(c => c.Content == command.Content && c.AuthorId == command.AuthorId);
+        post.Comments.Should().Contain(c => c.Content.Value == command.Content && c.AuthorId == command.AuthorId);
         await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
     }
 
@@ -128,7 +126,6 @@ public class AddCommentToPostCommandHandlerTests
             postTitleResult.Value,
             postContentResult.Value,
             postExcerptResult.Value,
-            Guid.NewGuid(),
             Guid.NewGuid()
         );
 

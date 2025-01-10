@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
-public sealed record AddCommentToPostCommand(Guid PostId, string Content, Guid AuthorId) : IRequest<Result>;
+public sealed record AddCommentToPostCommand(Guid PostId, string Content, Guid AuthorId) : ICommand;

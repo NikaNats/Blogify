@@ -1,11 +1,12 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using MediatR;
 
 namespace Blogify.Application.Categories.UpdateCategory;
 
 public sealed class UpdateCategoryCommandHandler(ICategoryRepository categoryRepository)
-    : IRequestHandler<UpdateCategoryCommand, Result>
+    : ICommandHandler<UpdateCategoryCommand>
 {
     public async Task<Result> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
     {

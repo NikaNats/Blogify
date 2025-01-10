@@ -1,20 +1,43 @@
 ﻿using Blogify.Domain.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace Blogify.Infrastructure.Repositories;
 
 internal sealed class UserRepository(ApplicationDbContext dbContext) : Repository<User>(dbContext), IUserRepository
 {
-    public async Task AddAsync(User user, CancellationToken cancellationToken = default)
+    public override async Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
-        foreach (var role in user.Roles) DbContext.Attach(role);
+        ArgumentNullException.ThrowIfNull(user);
+
+        foreach (var role in user.Roles)
+        {
+            DbContext.Attach(role);
+        }
 
         await DbContext.AddAsync(user, cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public override void Add(User user)
+    public  void Add(User user)
     {
-        foreach (var role in user.Roles) DbContext.Attach(role);
+        ArgumentNullException.ThrowIfNull(user);
+
+        foreach (var role in user.Roles)
+        {
+            DbContext.Attach(role);
+        }
 
         DbContext.Add(user);
+    }
+    
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+
+        return await DbContext
+            .Set<User>()
+            .AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Email.Address == email, cancellationToken);
     }
 }

@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.PublishPost;
 
-public sealed record PublishPostCommand(Guid Id) : IRequest<Result>;
+public sealed record PublishPostCommand(Guid Id) : ICommand;

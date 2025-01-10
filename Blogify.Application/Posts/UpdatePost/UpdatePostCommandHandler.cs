@@ -1,10 +1,10 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.UpdatePost;
 
-public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand, Result>
+public sealed class UpdatePostCommandHandler : ICommandHandler<UpdatePostCommand>
 {
     private readonly IPostRepository _postRepository;
 
@@ -17,13 +17,13 @@ public sealed class UpdatePostCommandHandler : IRequestHandler<UpdatePostCommand
     {
         var post = await _postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null)
-            return Result.Failure(Error.NotFound("Post.NotFound", "Post not found."));
+            return Result.Failure(PostErrors.NotFound);
 
         post.Update(
             request.Title,
             request.Content,
-            request.Excerpt,
-            request.CategoryId);
+            request.Excerpt
+            );
 
         await _postRepository.UpdateAsync(post, cancellationToken);
         return Result.Success();

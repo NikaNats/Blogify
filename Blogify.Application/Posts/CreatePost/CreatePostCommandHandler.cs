@@ -1,12 +1,12 @@
-﻿using Blogify.Application.Exceptions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Application.Exceptions;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.CreatePost;
 
 public sealed class CreatePostCommandHandler(IPostRepository postRepository)
-    : IRequestHandler<CreatePostCommand, Result<Guid>>
+    : ICommandHandler<CreatePostCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreatePostCommand request, CancellationToken cancellationToken)
     {
@@ -16,8 +16,7 @@ public sealed class CreatePostCommandHandler(IPostRepository postRepository)
                 request.Title,
                 request.Content,
                 request.Excerpt,
-                request.AuthorId,
-                request.CategoryId);
+                request.AuthorId);
 
             if (post.IsFailure) return Result.Failure<Guid>(post.Error);
 

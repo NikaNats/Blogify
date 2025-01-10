@@ -1,4 +1,4 @@
-﻿using Blogify.Application.Comments.GetCommentById;
+﻿using Blogify.Application.Comments;
 using Blogify.Application.Tags.GetAllTags;
 using Blogify.Domain.Posts;
 
@@ -11,10 +11,9 @@ public sealed record PostResponse(
     string Excerpt,
     string Slug,
     Guid AuthorId,
-    Guid CategoryId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? PublishedAt,
     PostStatus Status,
-    List<CommentByIdResponse> Comments,
+    List<CommentResponse> Comments,
     List<AllTagResponse> Tags);

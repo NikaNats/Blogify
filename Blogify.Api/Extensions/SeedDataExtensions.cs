@@ -48,8 +48,11 @@ internal static class SeedDataExtensions
             var categoryIds = await SeedCategoriesAsync(connection, transaction, faker);
             var tagIds = await SeedTagsAsync(connection, transaction, faker);
             var userIds = await SeedUsersAsync(connection, transaction, faker);
-            var postIds = await SeedPostsAsync(connection, transaction, faker, categoryIds, userIds);
+            var postIds = await SeedPostsAsync(connection, transaction, faker, userIds);
             await SeedCommentsAsync(connection, transaction, faker, postIds, userIds);
+
+            await SeedPostCategoriesAsync(connection, transaction, postIds, categoryIds, faker);
+            await SeedPostTagsAsync(connection, transaction, postIds, tagIds, faker);
 
             transaction.Commit();
         }
@@ -68,17 +71,17 @@ internal static class SeedDataExtensions
         ).Value);
 
         const string sql = @"
-        INSERT INTO ""Categories"" (id, name, description, created_at, updated_at)
-        VALUES (@Id, @Name, @Description, @CreatedAt, @UpdatedAt)
-        ON CONFLICT (id) DO NOTHING;";
+    INSERT INTO categories (id, name, description, created_at, last_modified_at)
+    VALUES (@Id, @Name, @Description, @CreatedAt, @LastModifiedAt)
+    ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, categories.Select(c => new
         {
             c.Id,
-            c.Name,
-            c.Description,
+            Name = c.Name.Value,
+            Description = c.Description.Value,
             CreatedAt = c.CreatedAt,
-            UpdatedAt = (DateTime?)null
+            LastModifiedAt = (DateTime?)null
         }), transaction);
 
         return categories.Select(c => c.Id).ToList();
@@ -91,11 +94,17 @@ internal static class SeedDataExtensions
         ).Value);
 
         const string sql = @"
-        INSERT INTO ""Tags"" (id, name, created_at)
-        VALUES (@Id, @Name, @CreatedAt)
-        ON CONFLICT (id) DO NOTHING;";
+    INSERT INTO tags (id, name, created_at, last_modified_at)
+    VALUES (@Id, @Name, @CreatedAt, @LastModifiedAt)
+    ON CONFLICT (id) DO NOTHING;";
 
-        await connection.ExecuteAsync(sql, tags, transaction);
+        await connection.ExecuteAsync(sql, tags.Select(t => new
+        {
+            t.Id,
+            Name = t.Name.Value,
+            CreatedAt = t.CreatedAt,
+            LastModifiedAt = (DateTime?)null
+        }), transaction);
 
         return tags.Select(t => t.Id).ToList();
     }
@@ -109,8 +118,8 @@ internal static class SeedDataExtensions
         ).Value);
 
         const string sql = @"
-        INSERT INTO users (id, first_name, last_name, email, identity_id)
-        VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId)
+        INSERT INTO users (id, first_name, last_name, email, identity_id, last_modified_at)
+        VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId, @LastModifiedAt)
         ON CONFLICT (identity_id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, users.Select(u => new
@@ -119,38 +128,37 @@ internal static class SeedDataExtensions
             FirstName = u.FirstName.Value,
             LastName = u.LastName.Value,
             Email = u.Email.Address,
-            IdentityId = u.IdentityId
+            IdentityId = u.IdentityId,
+            LastModifiedAt = (DateTime?)null
         }), transaction);
 
         return users.Select(u => u.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> categoryIds, List<Guid> userIds)
+    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> userIds)
     {
         var posts = GenerateEntities(faker, DefaultNumberOfPosts, () => Post.Create(
             PostTitle.Create(faker.Lorem.Sentence(5)).Value,
             PostContent.Create(faker.Lorem.Paragraphs(3)).Value,
             PostExcerpt.Create(faker.Lorem.Sentence(10)).Value,
-            faker.PickRandom(userIds),
-            faker.PickRandom(categoryIds)
+            faker.PickRandom(userIds)
         ).Value);
 
         const string sql = @"
-        INSERT INTO ""Posts"" (id, title_value, content_value, excerpt_value, slug_value, author_id, category_id, created_at, updated_at, published_at, status)
-        VALUES (@Id, @TitleValue, @ContentValue, @ExcerptValue, @SlugValue, @AuthorId, @CategoryId, @CreatedAt, @UpdatedAt, @PublishedAt, @Status)
+        INSERT INTO posts (id, title, content, excerpt, slug, author_id, created_at, last_modified_at, published_at, status)
+        VALUES (@Id, @Title, @Content, @Excerpt, @Slug, @AuthorId, @CreatedAt, @LastModifiedAt, @PublishedAt, @Status)
         ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, posts.Select(p => new
         {
             p.Id,
-            TitleValue = p.Title.Value,
-            ContentValue = p.Content.Value,
-            ExcerptValue = p.Excerpt.Value,
-            SlugValue = p.Title.Value,
+            Title = p.Title.Value,
+            Content = p.Content.Value,
+            Excerpt = p.Excerpt.Value,
+            Slug = p.Title.Value,
             AuthorId = p.AuthorId,
-            CategoryId = p.CategoryId,
             CreatedAt = p.CreatedAt,
-            UpdatedAt = (DateTime?)null,
+            LastModifiedAt = (DateTime?)null,
             PublishedAt = faker.Date.Between(DateTime.UtcNow.AddMonths(-6), DateTime.UtcNow),
             Status = "Published"
         }), transaction);
@@ -167,18 +175,61 @@ internal static class SeedDataExtensions
         ).Value);
 
         const string sql = @"
-        INSERT INTO ""Comments"" (id, content, author_id, post_id, created_at)
-        VALUES (@Id, @Content, @AuthorId, @PostId, @CreatedAt)
+        INSERT INTO comments (id, content_value, author_id, post_id, created_at, last_modified_at)
+        VALUES (@Id, @Content, @AuthorId, @PostId, @CreatedAt, @LastModifiedAt)
         ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, comments.Select(c => new
         {
             c.Id,
-            c.Content,
-            c.AuthorId,
-            c.PostId,
-            c.CreatedAt
+            Content = c.Content.Value, // Ensure this is a simple type (e.g., string)
+            AuthorId = c.AuthorId,
+            PostId = c.PostId,
+            CreatedAt = c.CreatedAt,
+            LastModifiedAt = (DateTime?)null
         }), transaction);
+    }
+
+    private static async Task SeedPostCategoriesAsync(IDbConnection connection, IDbTransaction transaction, List<Guid> postIds, List<Guid> categoryIds, Faker faker)
+    {
+        var postCategories = postIds
+            .SelectMany(postId => categoryIds
+                .OrderBy(_ => Guid.NewGuid())
+                .Take(faker.Random.Int(1, 3))
+                .Select(categoryId => new 
+                { 
+                    post_id = postId, 
+                    category_id = categoryId 
+                }))
+            .ToList();
+
+        const string sql = @"
+    INSERT INTO blog.postcategories (post_id, category_id)
+    VALUES (@post_id, @category_id)
+    ON CONFLICT (post_id, category_id) DO NOTHING;";
+
+        await connection.ExecuteAsync(sql, postCategories, transaction);
+    }
+
+    private static async Task SeedPostTagsAsync(IDbConnection connection, IDbTransaction transaction, List<Guid> postIds, List<Guid> tagIds, Faker faker)
+    {
+        var postTags = postIds
+            .SelectMany(postId => tagIds
+                .OrderBy(_ => Guid.NewGuid()) // Randomize tag selection
+                .Take(faker.Random.Int(1, 3)) // Assign 1-3 tags per post
+                .Select(tagId => new 
+                { 
+                    post_id = postId, 
+                    tag_id = tagId,
+                }))
+            .ToList();
+
+        const string sql = @"
+    INSERT INTO blog.posttags (post_id, tag_id)
+    VALUES (@post_id, @tag_id)
+    ON CONFLICT (post_id, tag_id) DO NOTHING;";
+
+        await connection.ExecuteAsync(sql, postTags, transaction);
     }
 
     private static List<T> GenerateEntities<T>(Faker faker, int count, Func<T> entityGenerator)

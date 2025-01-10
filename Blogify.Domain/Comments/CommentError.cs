@@ -41,4 +41,17 @@ public static class CommentError
     public static readonly Error DeletionFailed = Error.Failure(
         $"{Prefix}.DeletionFailed",
         "Failed to delete the comment.");
+    
+    public static readonly Error NoCommentsFound = Error.NotFound(
+        $"{Prefix}.NoCommentsFound",
+        "No comments found.");
+    
+    public static readonly Error EmptyCommentId = Error.Validation(
+        $"{Prefix}.EmptyCommentId",
+        "Comment ID cannot be empty.");
+    
+    public static readonly Error EmptyContent = Error.Validation(
+        $"{Prefix}.EmptyContent",
+        "Content cannot be empty.");
+    
 }

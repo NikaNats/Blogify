@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using Blogify.Application.Categories.CreateCategory;
+using Blogify.Application.Categories.DeleteCategory;
 using Blogify.Application.Categories.GetAllCategories;
 using Blogify.Application.Categories.GetCategoryById;
 using Blogify.Application.Categories.UpdateCategory;
@@ -78,5 +79,15 @@ public class CategoriesController(ISender sender) : ControllerBase
         var result = await sender.Send(command, cancellationToken);
 
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
+    }
+    
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteCategoryCommand(id);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        return result.IsSuccess ? NoContent() : BadRequest(result.Error);
     }
 }

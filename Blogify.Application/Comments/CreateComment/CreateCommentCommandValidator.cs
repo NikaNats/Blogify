@@ -1,3 +1,4 @@
+using Blogify.Domain.Comments;
 using FluentValidation;
 
 namespace Blogify.Application.Comments.CreateComment;
@@ -7,13 +8,13 @@ public sealed class CreateCommentCommandValidator : AbstractValidator<CreateComm
     public CreateCommentCommandValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Comment content cannot be empty.")
-            .MaximumLength(500).WithMessage("Comment content cannot exceed 500 characters.");
+            .NotEmpty().WithMessage(CommentError.InvalidContent.Description)
+            .MaximumLength(500).WithMessage(CommentError.ContentTooLong.Description);
 
         RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage("AuthorId cannot be empty.");
+            .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
 
         RuleFor(x => x.PostId)
-            .NotEmpty().WithMessage("PostId cannot be empty.");
+            .NotEmpty().WithMessage(CommentError.EmptyPostId.Description);
     }
 }

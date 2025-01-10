@@ -1,11 +1,11 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
-using MediatR;
 
 namespace Blogify.Application.Posts.RemoveTagFromPost;
 
-public sealed class RemoveTagFromPostCommandHandler : IRequestHandler<RemoveTagFromPostCommand, Result>
+public sealed class RemoveTagFromPostCommandHandler : ICommandHandler<RemoveTagFromPostCommand>
 {
     private readonly IPostRepository _postRepository;
     private readonly ITagRepository _tagRepository;
@@ -20,11 +20,11 @@ public sealed class RemoveTagFromPostCommandHandler : IRequestHandler<RemoveTagF
     {
         var post = await _postRepository.GetByIdAsync(request.PostId, cancellationToken);
         if (post is null)
-            return Result.Failure(Error.NotFound("Post.NotFound", "Post not found."));
+            return Result.Failure(PostErrors.NotFound);
 
         var tag = await _tagRepository.GetByIdAsync(request.TagId, cancellationToken);
         if (tag is null)
-            return Result.Failure(Error.NotFound("Tag.NotFound", "Tag not found."));
+            return Result.Failure(TagErrors.NotFound);
 
         post.RemoveTag(tag);
         await _postRepository.UpdateAsync(post, cancellationToken);

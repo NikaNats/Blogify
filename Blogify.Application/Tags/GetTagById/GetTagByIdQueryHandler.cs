@@ -1,23 +1,17 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Tags;
-using MediatR;
 
 namespace Blogify.Application.Tags.GetTagById;
 
-public sealed class GetTagByIdQueryHandler : IRequestHandler<GetTagByIdQuery, Result<TagByIdResponse>>
+public sealed class GetTagByIdQueryHandler(ITagRepository tagRepository)
+    : IQueryHandler<GetTagByIdQuery, TagByIdResponse>
 {
-    private readonly ITagRepository _tagRepository;
-
-    public GetTagByIdQueryHandler(ITagRepository tagRepository)
-    {
-        _tagRepository = tagRepository;
-    }
-
     public async Task<Result<TagByIdResponse>> Handle(GetTagByIdQuery request, CancellationToken cancellationToken)
     {
-        var tag = await _tagRepository.GetByIdAsync(request.Id, cancellationToken);
+        var tag = await tagRepository.GetByIdAsync(request.Id, cancellationToken);
         if (tag is null)
-            return Result.Failure<TagByIdResponse>(Error.NotFound("Tag.NotFound", "Tag not found."));
+            return Result.Failure<TagByIdResponse>(TagErrors.NotFound);
 
         var response = new TagByIdResponse(tag.Id, tag.Name.Value, tag.CreatedAt);
         return Result.Success(response);

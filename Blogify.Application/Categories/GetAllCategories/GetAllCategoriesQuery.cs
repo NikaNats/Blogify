@@ -1,6 +1,6 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
+
 
 namespace Blogify.Application.Categories.GetAllCategories;
 
-public sealed record GetAllCategoriesQuery : IRequest<Result<List<AllCategoryResponse>>>;
+public sealed record GetAllCategoriesQuery : IQuery<List<AllCategoryResponse>>;

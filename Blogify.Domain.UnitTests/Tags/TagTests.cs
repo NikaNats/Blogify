@@ -207,7 +207,6 @@ public class TagTests
             titleResult.Value,
             contentResult.Value,
             excerptResult.Value,
-            Guid.NewGuid(),
             Guid.NewGuid());
 
         Assert.True(postResult.IsSuccess, $"Failed to create post: {postResult.Error?.Description}");

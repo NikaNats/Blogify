@@ -35,8 +35,7 @@ public class CategoryTests
             postTitleResult.Value,
             postContentResult.Value,
             postExcerptResult.Value,
-            Guid.NewGuid(),
-            categoryId);
+            Guid.NewGuid());
 
         Assert.True(postResult.IsSuccess, $"Failed to create post: {postResult.Error.Description}");
         return postResult.Value;

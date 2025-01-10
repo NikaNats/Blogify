@@ -1,10 +1,8 @@
-﻿namespace Blogify.Domain.Comments;
+﻿using Blogify.Domain.Abstractions;
 
-public interface ICommentRepository
-{
-    Task AddAsync(Comment comment, CancellationToken cancellationToken);
-    Task<Comment?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+namespace Blogify.Domain.Comments;
+
+public interface ICommentRepository: IRepository<Comment>
+{ 
     Task<List<Comment>> GetByPostIdAsync(Guid postId, CancellationToken cancellationToken);
-    Task UpdateAsync(Comment comment, CancellationToken cancellationToken);
-    Task DeleteAsync(Comment comment, CancellationToken cancellationToken);
 }

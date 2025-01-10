@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.AddTagToPost;
 
-public sealed record AddTagToPostCommand(Guid PostId, Guid TagId) : IRequest<Result>;
+public sealed record AddTagToPostCommand(Guid PostId, Guid TagId) : ICommand;

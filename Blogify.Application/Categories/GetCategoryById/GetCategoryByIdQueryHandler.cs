@@ -1,11 +1,12 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using MediatR;
 
 namespace Blogify.Application.Categories.GetCategoryById;
 
 public sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRepository)
-    : IRequestHandler<GetCategoryByIdQuery, Result<CategoryByIdResponse>>
+    : IQueryHandler<GetCategoryByIdQuery, CategoryByIdResponse>
 {
     public async Task<Result<CategoryByIdResponse>> Handle(GetCategoryByIdQuery request,
         CancellationToken cancellationToken)

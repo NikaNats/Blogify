@@ -1,10 +1,10 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Tags;
-using MediatR;
 
 namespace Blogify.Application.Tags.GetAllTags;
 
-public sealed class GetAllTagsQueryHandler : IRequestHandler<GetAllTagsQuery, Result<List<AllTagResponse>>>
+public sealed class GetAllTagsQueryHandler : IQueryHandler<GetAllTagsQuery, List<AllTagResponse>>
 {
     private readonly ITagRepository _tagRepository;
 

@@ -1,12 +1,10 @@
-﻿using Blogify.Application.Comments.GetCommentById;
-using Blogify.Application.Tags.GetAllTags;
+﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, Result<List<AllPostResponse>>>
+public sealed class GetAllPostsQueryHandler : IQueryHandler<GetAllPostsQuery, List<AllPostResponse>>
 {
     private readonly IPostRepository _postRepository;
 
@@ -15,24 +13,28 @@ public sealed class GetAllPostsQueryHandler : IRequestHandler<GetAllPostsQuery, 
         _postRepository = postRepository;
     }
 
-    public async Task<Result<List<AllPostResponse>>> Handle(GetAllPostsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<AllPostResponse>>> Handle(GetAllPostsQuery request,
+        CancellationToken cancellationToken)
     {
         var posts = await _postRepository.GetAllAsync(cancellationToken);
-        var response = posts.Select(post => new AllPostResponse(
+        var response = posts.Select(MapPostToResponse).ToList();
+        return Result.Success(response);
+    }
+
+    private static AllPostResponse MapPostToResponse(Post post)
+    {
+        return new AllPostResponse(
             post.Id,
             post.Title.Value,
             post.Content.Value,
             post.Excerpt.Value,
             post.Slug.Value,
             post.AuthorId,
-            post.CategoryId,
             post.CreatedAt,
             post.LastModifiedAt,
             post.PublishedAt,
             post.Status,
-            post.Comments.Select(c => new CommentByIdResponse(c.Id, c.Content.Value, c.AuthorId, c.PostId, c.CreatedAt)).ToList(),
-            post.Tags.Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt)).ToList())).ToList();
-
-        return Result.Success(response);
+            post.Comments.MapToCommentResponses(),
+            post.Tags.MapToAllTagResponses());
     }
 }

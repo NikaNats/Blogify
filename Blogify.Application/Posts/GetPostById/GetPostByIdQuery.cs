@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.GetPostById;
 
-public sealed record GetPostByIdQuery(Guid Id) : IRequest<Result<PostResponse>>;
+public sealed record GetPostByIdQuery(Guid Id) : IQuery<PostResponse>;

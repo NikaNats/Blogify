@@ -85,7 +85,6 @@ public class ArchivePostCommandHandlerTests
             titleResult.Value,
             contentResult.Value,
             excerptResult.Value,
-            Guid.NewGuid(),
             Guid.NewGuid());
 
         Assert.True(postResult.IsSuccess, "Post creation failed.");

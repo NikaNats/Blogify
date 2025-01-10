@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Tags.GetTagById;
 
-public sealed record GetTagByIdQuery(Guid Id) : IRequest<Result<TagByIdResponse>>;
+public sealed record GetTagByIdQuery(Guid Id) : IQuery<TagByIdResponse>;

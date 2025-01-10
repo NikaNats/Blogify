@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Blogify.Domain.Posts;
+using FluentValidation;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
@@ -7,10 +8,10 @@ public sealed class AddCommentToPostCommandValidator : AbstractValidator<AddComm
     public AddCommentToPostCommandValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Comment content cannot be empty.")
-            .MaximumLength(500).WithMessage("Comment content cannot exceed 500 characters.");
+            .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
+            .MaximumLength(500).WithMessage(PostErrors.ContentTooLong.Description);
 
         RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage("AuthorId cannot be empty.");
+            .NotEmpty().WithMessage(PostErrors.AuthorIdEmpty.Description);
     }
 }

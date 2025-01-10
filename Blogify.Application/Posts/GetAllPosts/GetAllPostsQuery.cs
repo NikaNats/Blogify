@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
-using MediatR;
+﻿using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed record GetAllPostsQuery : IRequest<Result<List<AllPostResponse>>>;
+public sealed record GetAllPostsQuery : IQuery<List<AllPostResponse>>;

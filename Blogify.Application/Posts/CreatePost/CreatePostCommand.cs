@@ -1,6 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Posts;
-using MediatR;
 
 namespace Blogify.Application.Posts.CreatePost;
 
@@ -9,4 +8,4 @@ public sealed record CreatePostCommand(
     PostContent Content,
     PostExcerpt Excerpt,
     Guid AuthorId,
-    Guid CategoryId) : IRequest<Result<Guid>>;
+    Guid CategoryId) : ICommand<Guid>;

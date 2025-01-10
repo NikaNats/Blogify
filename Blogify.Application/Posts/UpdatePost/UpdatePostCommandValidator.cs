@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Blogify.Domain.Posts;
+using FluentValidation;
 
 namespace Blogify.Application.Posts.UpdatePost;
 
@@ -6,16 +7,32 @@ public sealed class UpdatePostCommandValidator : AbstractValidator<UpdatePostCom
 {
     public UpdatePostCommandValidator()
     {
+        // Validate Title
         RuleFor(x => x.Title)
-            .NotNull().WithMessage("Post title cannot be null.");
+            .NotNull().WithMessage(PostErrors.TitleEmpty.Description);
 
+        RuleFor(x => x.Title.Value)
+            .NotEmpty().WithMessage(PostErrors.TitleEmpty.Description)
+            .MaximumLength(200).WithMessage(PostErrors.TitleTooLong.Description);
+
+        // Validate Content
         RuleFor(x => x.Content)
-            .NotNull().WithMessage("Post content cannot be null.");
+            .NotNull().WithMessage(PostErrors.ContentEmpty.Description);
 
+        RuleFor(x => x.Content.Value)
+            .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
+            .MinimumLength(100).WithMessage(PostErrors.ContentTooShort.Description);
+
+        // Validate Excerpt
         RuleFor(x => x.Excerpt)
-            .NotNull().WithMessage("Post excerpt cannot be null.");
+            .NotNull().WithMessage(PostErrors.ExcerptEmpty.Description);
 
+        RuleFor(x => x.Excerpt.Value)
+            .NotEmpty().WithMessage(PostErrors.ExcerptEmpty.Description)
+            .MaximumLength(500).WithMessage(PostErrors.ExcerptTooLong.Description);
+
+        // Validate CategoryId
         RuleFor(x => x.CategoryId)
-            .NotEmpty().WithMessage("CategoryId cannot be empty.");
+            .NotEmpty().WithMessage(PostErrors.CategoryIdEmpty.Description);
     }
 }

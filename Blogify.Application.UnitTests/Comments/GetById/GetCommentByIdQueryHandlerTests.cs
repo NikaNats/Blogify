@@ -32,7 +32,7 @@ public class GetCommentByIdQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.Id.Should().Be(comment.Id);
-        result.Value.Content.Should().Be(comment.Content);
+        result.Value.Content.Should().Be(comment.Content.Value);
         result.Value.AuthorId.Should().Be(comment.AuthorId);
         result.Value.PostId.Should().Be(comment.PostId);
         result.Value.CreatedAt.Should().Be(comment.CreatedAt);

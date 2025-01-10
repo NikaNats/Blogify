@@ -33,8 +33,8 @@ public class UpdateCategoryCommandHandlerTests
         await categoryRepository.Received(1).UpdateAsync(
             Arg.Is<Category>(c =>
                 c.Id == categoryId &&
-                c.Name == "NewName" &&
-                c.Description == "NewDescription"),
+                c.Name.Value == "NewName" &&
+                c.Description.Value == "NewDescription"),
             CancellationToken.None);
     }
 

@@ -1,3 +1,4 @@
+using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
 using MediatR;
@@ -5,7 +6,7 @@ using MediatR;
 namespace Blogify.Application.Comments.CreateComment;
 
 public sealed class CreateCommentCommandHandler(ICommentRepository commentRepository)
-    : IRequestHandler<CreateCommentCommand, Result<Guid>>
+    : ICommandHandler<CreateCommentCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
     {
@@ -15,9 +16,7 @@ public sealed class CreateCommentCommandHandler(ICommentRepository commentReposi
         if (commentResult.IsFailure)
             return Result.Failure<Guid>(commentResult.Error);
 
-        var comment = commentResult.Value;
-        await commentRepository.AddAsync(comment, cancellationToken);
-
-        return Result.Success(comment.Id);
+        await commentRepository.AddAsync(commentResult.Value, cancellationToken);
+        return Result.Success(commentResult.Value.Id);
     }
 }

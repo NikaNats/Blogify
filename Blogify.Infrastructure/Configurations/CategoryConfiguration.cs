@@ -1,4 +1,5 @@
 ﻿using Blogify.Domain.Categories;
+using Blogify.Domain.Posts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,35 +9,34 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 {
     public void Configure(EntityTypeBuilder<Category> builder)
     {
-        // Configure the table name (optional)
-        builder.ToTable("Categories");
+        builder.ToTable("categories");
 
-        // Configure the primary key
         builder.HasKey(c => c.Id);
 
-        // Configure properties
-        builder.Property(c => c.Name)
-            .IsRequired()
-            .HasMaxLength(200); // Adjust the max length as needed
+        builder.OwnsOne(c => c.Name, nameBuilder =>
+        {
+            nameBuilder.Property(n => n.Value)
+                .HasColumnName("name")
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasComment("The name of the category. Must be unique.");
+        });
 
-        builder.Property(c => c.Description)
-            .IsRequired()
-            .HasMaxLength(1000); // Adjust the max length as needed
+        builder.OwnsOne(c => c.Description, descriptionBuilder =>
+        {
+            descriptionBuilder.Property(d => d.Value)
+                .HasColumnName("description")
+                .IsRequired()
+                .HasMaxLength(1000)
+                .HasComment("A detailed description of the category.");
+        });
 
         builder.Property(c => c.CreatedAt)
-            .IsRequired();
+            .IsRequired()
+            .HasComment("The timestamp when the category was created.");
 
         builder.Property(c => c.LastModifiedAt)
-            .IsRequired(false); // UpdatedAt is nullable
-
-        // Configure relationships (if any)
-        builder.HasMany(c => c.Posts)
-            .WithOne() // Assuming Post has a navigation property to Category
-            .HasForeignKey(p => p.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict); // Adjust the delete behavior as needed
-
-        // Configure indexes (if any)
-        builder.HasIndex(c => c.Name)
-            .IsUnique(); // Ensure category names are unique
+            .IsRequired(false)
+            .HasComment("The timestamp when the category was last modified.");
     }
 }

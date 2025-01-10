@@ -25,7 +25,7 @@ public abstract class Entity : IEquatable<Entity>
 
     public DateTimeOffset CreatedAt { get; }
 
-    public DateTimeOffset LastModifiedAt { get; private set; }
+    public DateTimeOffset? LastModifiedAt { get; private set; }
 
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 

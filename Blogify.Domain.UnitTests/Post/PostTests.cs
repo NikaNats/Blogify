@@ -16,7 +16,7 @@ public class PostTests
         var categoryId = Guid.NewGuid();
 
         // Act
-        var result = Posts.Post.Create(title, content, excerpt, authorId, categoryId);
+        var result = Posts.Post.Create(title, content, excerpt, authorId);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -24,8 +24,7 @@ public class PostTests
         Assert.Equal(title, result.Value.Title);
         Assert.Equal(content, result.Value.Content);
         Assert.Equal(excerpt, result.Value.Excerpt);
-        Assert.Equal(authorId, result.Value.AuthorId);
-        Assert.Equal(categoryId, result.Value.CategoryId);
+        Assert.Equal(authorId, result.Value.AuthorId); 
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public class PostTests
         var categoryId = Guid.NewGuid();
 
         // Act
-        var result = Posts.Post.Create(null, content, excerpt, authorId, categoryId);
+        var result = Posts.Post.Create(null, content, excerpt, authorId);
 
         // Assert
         Assert.True(result.IsFailure);
@@ -53,7 +52,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         var newTitle = PostTitle.Create("Updated Title").Value;
@@ -62,13 +60,12 @@ public class PostTests
         var newCategoryId = Guid.NewGuid();
 
         // Act
-        post.Update(newTitle, newContent, newExcerpt, newCategoryId);
+        post.Update(newTitle, newContent, newExcerpt);
 
         // Assert
         Assert.Equal(newTitle, post.Title);
         Assert.Equal(newContent, post.Content);
         Assert.Equal(newExcerpt, post.Excerpt);
-        Assert.Equal(newCategoryId, post.CategoryId);
     }
 
     [Fact]
@@ -79,7 +76,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         // Act
@@ -97,7 +93,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         post.Publish();
@@ -117,7 +112,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         // Act
@@ -135,7 +129,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         post.Archive();
@@ -155,7 +148,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         post.Publish();
@@ -179,7 +171,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         var commentContent = "Test Comment";
@@ -200,7 +191,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         var tag = Tag.Create("Test Tag").Value;
@@ -221,7 +211,6 @@ public class PostTests
             PostTitle.Create("Test Title").Value,
             PostContent.Create(new string('a', 100)).Value,
             PostExcerpt.Create("Test Excerpt").Value,
-            Guid.NewGuid(),
             Guid.NewGuid()).Value;
 
         var tag = Tag.Create("Test Tag").Value;
