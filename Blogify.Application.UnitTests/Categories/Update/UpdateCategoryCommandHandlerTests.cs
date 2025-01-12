@@ -93,4 +93,62 @@ public class UpdateCategoryCommandHandlerTests
             handler.Handle(new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"), CancellationToken.None));
         await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
     }
+    
+    [Fact]
+    public async Task Handle_ShouldReturnSuccess_WhenNoChangesAreMade()
+    {
+        // Arrange
+        var categoryRepository = Substitute.For<ICategoryRepository>();
+        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        var categoryId = Guid.NewGuid();
+        var category = Category.Create("TestCategory", "Test Description").Value;
+        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+
+        // Act
+        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "TestCategory", "Test Description"), CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        await categoryRepository.DidNotReceive().UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
+    }
+    
+    [Fact]
+    public async Task Handle_ShouldCallUpdateAsync_WhenNameIsUpdated()
+    {
+        // Arrange
+        var categoryRepository = Substitute.For<ICategoryRepository>();
+        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        var categoryId = Guid.NewGuid();
+        var category = Category.Create("OldName", "Test Description").Value;
+        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateCategoryCommand(categoryId, "NewName", "Test Description"), 
+            CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
+    }
+    
+    [Fact]
+    public async Task Handle_ShouldCallUpdateAsync_WhenDescriptionIsUpdated()
+    {
+        // Arrange
+        var categoryRepository = Substitute.For<ICategoryRepository>();
+        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        var categoryId = Guid.NewGuid();
+        var category = Category.Create("TestCategory", "OldDescription").Value;
+        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateCategoryCommand(categoryId, "TestCategory", "NewDescription"), 
+            CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
+    }
 }

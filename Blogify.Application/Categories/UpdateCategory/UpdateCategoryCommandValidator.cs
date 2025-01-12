@@ -2,7 +2,7 @@
 
 namespace Blogify.Application.Categories.UpdateCategory;
 
-public sealed class UpdateCategoryCommandValidator : AbstractValidator<UpdateCategoryCommand>
+internal sealed class UpdateCategoryCommandValidator : AbstractValidator<UpdateCategoryCommand>
 {
     public UpdateCategoryCommandValidator()
     {

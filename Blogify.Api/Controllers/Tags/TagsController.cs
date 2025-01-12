@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Tags.CreateTag;
+﻿using Asp.Versioning;
+using Blogify.Application.Tags.CreateTag;
 using Blogify.Application.Tags.GetAllTags;
 using Blogify.Application.Tags.GetTagById;
 using MediatR;
@@ -7,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Blogify.Api.Controllers.Tags;
 
 [ApiController]
-[Route("api/tags")]
+[ApiVersion(ApiVersions.V1)]
+[Route("api/v{version:apiVersion}/tags")]
 public sealed class TagsController(ISender sender) : ControllerBase
 {
     [HttpPost]

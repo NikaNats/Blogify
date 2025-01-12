@@ -2,7 +2,7 @@
 
 namespace Blogify.Application.Tags.DeleteTag;
 
-public sealed class DeleteTagCommandValidator : AbstractValidator<DeleteTagCommand>
+internal  sealed class DeleteTagCommandValidator : AbstractValidator<DeleteTagCommand>
 {
     public DeleteTagCommandValidator()
     {

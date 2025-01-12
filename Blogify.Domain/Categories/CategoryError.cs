@@ -31,8 +31,14 @@ public static class CategoryError
         $"{Prefix}.PostNotFound",
         "Post does not exist in the category.");
 
-    // Other errors
     public static readonly Error UnexpectedError = Error.Unexpected(
         $"{Prefix}.UnexpectedError",
         "An unexpected error occurred.");
+    
+    public static readonly Error NotFound = Error.NotFound(
+        $"{Prefix}.NotFound",
+        "The category with the specified ID was not found.");
+
+    public static readonly Error NameAlreadyExists =
+        Error.Conflict($"{Prefix}.NameAlreadyExists", "A category with the same name already exists.");
 }

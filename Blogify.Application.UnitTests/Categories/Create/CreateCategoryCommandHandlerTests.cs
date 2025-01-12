@@ -1,59 +1,106 @@
 ﻿using Blogify.Application.Categories.CreateCategory;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
+using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using Shouldly;
 
 namespace Blogify.Application.UnitTests.Categories.Create;
 
 public class CreateCategoryCommandHandlerTests
 {
-    [Fact]
-    public async Task Handle_ShouldCreateCategoryAndReturnCategoryId()
+    private readonly CreateCategoryCommandHandler _handler;
+    private readonly ICategoryRepository _categoryRepositoryMock;
+
+    public CreateCategoryCommandHandlerTests()
     {
-        // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new CreateCategoryCommandHandler(categoryRepository);
-        var command = new CreateCategoryCommand("TestCategory", "Test Description");
-
-        // Act
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldNotBe(Guid.Empty);
-        await categoryRepository.Received(1).AddAsync(Arg.Any<Category>(), CancellationToken.None);
+        _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+        _handler = new CreateCategoryCommandHandler(_categoryRepositoryMock);
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnFailure_WhenCategoryCreationFails()
+    public async Task Handle_Should_ReturnSuccess_WhenCategoryIsCreated()
     {
         // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new CreateCategoryCommandHandler(categoryRepository);
-        var command = new CreateCategoryCommand("", "Test Description"); // Invalid name
+        var command = new CreateCategoryCommand("Category1", "Description1");
+
+        _categoryRepositoryMock
+            .AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        Result<Guid> result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldNotBeNull();
-        await categoryRepository.DidNotReceive().AddAsync(Arg.Any<Category>(), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeEmpty();
+        await _categoryRepositoryMock.Received(1).AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ShouldPropagateException_WhenRepositoryFails()
+    public async Task Handle_Should_ReturnFailure_WhenNameIsInvalid()
     {
         // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new CreateCategoryCommandHandler(categoryRepository);
-        var command = new CreateCategoryCommand("TestCategory", "Test Description");
-        categoryRepository.AddAsync(Arg.Any<Category>(), CancellationToken.None)
-            .Throws(new Exception("Repository failed"));
+        var command = new CreateCategoryCommand("", "Description1"); // Empty name is invalid
 
-        // Act & Assert
-        await Should.ThrowAsync<Exception>(() => handler.Handle(command, CancellationToken.None));
-        await categoryRepository.Received(1).AddAsync(Arg.Any<Category>(), CancellationToken.None);
+        // Act
+        Result<Guid> result = await _handler.Handle(command, default);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Category.NameNullOrEmpty");
+        result.Error.Description.Should().Be("Category name cannot be null or empty.");
+        await _categoryRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_Should_ReturnFailure_WhenDescriptionIsInvalid()
+    {
+        // Arrange
+        var command = new CreateCategoryCommand("Category1", ""); // Empty description is invalid
+
+        // Act
+        Result<Guid> result = await _handler.Handle(command, default);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Category.DescriptionNullOrEmpty");
+        result.Error.Description.Should().Be("Category description cannot be null or empty.");
+        await _categoryRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_Should_ReturnFailure_WhenRepositoryThrowsException()
+    {
+        // Arrange
+        var command = new CreateCategoryCommand("Category1", "Description1");
+
+        _categoryRepositoryMock
+            .AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        Result<Guid> result = await _handler.Handle(command, default);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(CategoryError.UnexpectedError);
+    }
+
+    [Fact]
+    public async Task Handle_Should_CallRepositoryAdd_WhenCategoryIsValid()
+    {
+        // Arrange
+        var command = new CreateCategoryCommand("Category1", "Description1");
+
+        _categoryRepositoryMock
+            .AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _handler.Handle(command, default);
+
+        // Assert
+        await _categoryRepositoryMock.Received(1).AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 }

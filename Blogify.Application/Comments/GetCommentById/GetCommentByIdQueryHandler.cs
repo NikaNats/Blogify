@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Blogify.Application.Comments.GetCommentById;
 
-public sealed class GetCommentByIdQueryHandler(ICommentRepository commentRepository)
+internal sealed class GetCommentByIdQueryHandler(ICommentRepository commentRepository)
     : IQueryHandler<GetCommentByIdQuery, CommentResponse>
 {
     public async Task<Result<CommentResponse>> Handle(GetCommentByIdQuery request, CancellationToken cancellationToken)

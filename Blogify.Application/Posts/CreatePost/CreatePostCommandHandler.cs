@@ -5,7 +5,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.CreatePost;
 
-public sealed class CreatePostCommandHandler(IPostRepository postRepository)
+internal sealed class CreatePostCommandHandler(IPostRepository postRepository)
     : ICommandHandler<CreatePostCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreatePostCommand request, CancellationToken cancellationToken)

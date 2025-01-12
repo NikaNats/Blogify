@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Comments.GetCommentById;
 
-public sealed class GetCommentByIdQueryValidator : AbstractValidator<GetCommentByIdQuery>
+internal sealed class GetCommentByIdQueryValidator : AbstractValidator<GetCommentByIdQuery>
 {
     public GetCommentByIdQueryValidator()
     {

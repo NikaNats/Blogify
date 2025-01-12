@@ -4,18 +4,11 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.UpdatePost;
 
-public sealed class UpdatePostCommandHandler : ICommandHandler<UpdatePostCommand>
+internal sealed class UpdatePostCommandHandler(IPostRepository postRepository) : ICommandHandler<UpdatePostCommand>
 {
-    private readonly IPostRepository _postRepository;
-
-    public UpdatePostCommandHandler(IPostRepository postRepository)
-    {
-        _postRepository = postRepository;
-    }
-
     public async Task<Result> Handle(UpdatePostCommand request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.Id, cancellationToken);
+        var post = await postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null)
             return Result.Failure(PostErrors.NotFound);
 
@@ -25,7 +18,7 @@ public sealed class UpdatePostCommandHandler : ICommandHandler<UpdatePostCommand
             request.Excerpt
             );
 
-        await _postRepository.UpdateAsync(post, cancellationToken);
+        await postRepository.UpdateAsync(post, cancellationToken);
         return Result.Success();
     }
 }

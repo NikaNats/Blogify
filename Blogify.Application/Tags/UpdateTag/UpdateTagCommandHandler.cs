@@ -4,19 +4,12 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.UpdateTag;
 
-public sealed class UpdateTagCommandHandler : ICommandHandler<UpdateTagCommand>
+internal sealed class UpdateTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<UpdateTagCommand>
 {
-    private readonly ITagRepository _tagRepository;
-
-    public UpdateTagCommandHandler(ITagRepository tagRepository)
-    {
-        _tagRepository = tagRepository;
-    }
-
     public async Task<Result> Handle(UpdateTagCommand request, CancellationToken cancellationToken)
     {
         // Retrieve the tag by ID
-        var tag = await _tagRepository.GetByIdAsync(request.Id, cancellationToken);
+        var tag = await tagRepository.GetByIdAsync(request.Id, cancellationToken);
         if (tag is null)
             return Result.Failure(TagErrors.NotFound);
 
@@ -28,7 +21,7 @@ public sealed class UpdateTagCommandHandler : ICommandHandler<UpdateTagCommand>
         tag.UpdateName(nameResult.Value.Value);
 
         // Save the changes
-        await _tagRepository.UpdateAsync(tag, cancellationToken);
+        await tagRepository.UpdateAsync(tag, cancellationToken);
 
         return Result.Success();
     }

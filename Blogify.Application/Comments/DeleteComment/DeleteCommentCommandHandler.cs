@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Blogify.Application.Comments.DeleteComment;
 
-public sealed class DeleteCommentCommandHandler(ICommentRepository commentRepository)
+internal sealed class DeleteCommentCommandHandler(ICommentRepository commentRepository)
     : ICommandHandler<DeleteCommentCommand, Unit>
 {
     public async Task<Result<Unit>> Handle(DeleteCommentCommand request, CancellationToken cancellationToken)

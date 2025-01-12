@@ -5,7 +5,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetPostsByCategoryId;
 
-public sealed class GetPostsByCategoryIdQueryHandler : IQueryHandler<GetPostsByCategoryIdQuery, List<PostResponse>>
+internal sealed class GetPostsByCategoryIdQueryHandler : IQueryHandler<GetPostsByCategoryIdQuery, List<PostResponse>>
 {
     private readonly IPostRepository _postRepository;
 

@@ -2,7 +2,7 @@
 
 namespace Blogify.Application.Categories.CreateCategory;
 
-public sealed class CreateCategoryCommandValidator : AbstractValidator<CreateCategoryCommand>
+internal sealed class CreateCategoryCommandValidator : AbstractValidator<CreateCategoryCommand>
 {
     public CreateCategoryCommandValidator()
     {

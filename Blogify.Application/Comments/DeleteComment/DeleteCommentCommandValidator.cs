@@ -3,7 +3,7 @@ using Blogify.Domain.Comments;
 
 namespace Blogify.Application.Comments.DeleteComment;
 
-public sealed class DeleteCommentCommandValidator : AbstractValidator<DeleteCommentCommand>
+internal sealed class DeleteCommentCommandValidator : AbstractValidator<DeleteCommentCommand>
 {
     public DeleteCommentCommandValidator()
     {

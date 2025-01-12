@@ -45,4 +45,33 @@ public class CreateCategoryCommandValidatorTests
         // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_ShouldHaveError_WhenNameIsNullOrEmpty(string name)
+    {
+        // Arrange
+        var command = new CreateCategoryCommand(name, "Test Description");
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Name);
+    }
+
+    [Fact]
+    public void Validate_ShouldHaveError_WhenNameExceedsMaxLength()
+    {
+        // Arrange
+        var command = new CreateCategoryCommand(new string('a', CategoryConstraints.NameMaxLength + 1), "Test Description");
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Name);
+    }
 }

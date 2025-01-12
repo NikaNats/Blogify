@@ -14,7 +14,13 @@ internal sealed class CategoryRepository(ApplicationDbContext dbContext)
             .Include(c => c.Posts)
             .ToListAsync(cancellationToken);
     }
-    
+
+    public async Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken)
+    {
+        return await DbContext.Set<Category>()
+            .FirstOrDefaultAsync(c => c.Name.Value == name, cancellationToken);
+    }
+
     // public async Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     // {
     //     return await DbContext

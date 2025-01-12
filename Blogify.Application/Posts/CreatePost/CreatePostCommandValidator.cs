@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Posts.CreatePost;
 
-public sealed class CreatePostCommandValidator : AbstractValidator<CreatePostCommand>
+internal  sealed class CreatePostCommandValidator : AbstractValidator<CreatePostCommand>
 {
     public CreatePostCommandValidator()
     {

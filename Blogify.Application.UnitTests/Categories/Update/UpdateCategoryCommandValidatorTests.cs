@@ -76,4 +76,33 @@ public class UpdateCategoryCommandValidatorTests
         // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_ShouldHaveError_WhenNameIsNullOrEmpty(string name)
+    {
+        // Arrange
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), name, "Test Description");
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Name);
+    }
+
+    [Fact]
+    public void Validate_ShouldHaveError_WhenDescriptionExceedsMaxLength()
+    {
+        // Arrange
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), "TestCategory", new string('a', CategoryConstraints.DescriptionMaxLength + 1));
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Description);
+    }
 }

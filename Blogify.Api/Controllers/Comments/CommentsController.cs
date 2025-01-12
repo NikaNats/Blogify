@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Comments.CreateComment;
+﻿using Asp.Versioning;
+using Blogify.Application.Comments.CreateComment;
 using Blogify.Application.Comments.GetCommentById;
 using Blogify.Application.Comments.GetCommentsByPostId;
 using MediatR;
@@ -7,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Blogify.Api.Controllers.Comments;
 
 [ApiController]
-[Route("api/comments")]
+[ApiVersion(ApiVersions.V1)]
+[Route("api/v{version:apiVersion}/comments")]
 public sealed class CommentsController(ISender sender) : ControllerBase
 {
     [HttpPost]

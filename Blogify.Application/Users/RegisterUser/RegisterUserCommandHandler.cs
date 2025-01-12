@@ -5,22 +5,12 @@ using Blogify.Domain.Users;
 
 namespace Blogify.Application.Users.RegisterUser;
 
-internal sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, Guid>
+internal sealed class RegisterUserCommandHandler(
+    IAuthenticationService authenticationService,
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<RegisterUserCommand, Guid>
 {
-    private readonly IAuthenticationService _authenticationService;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IUserRepository _userRepository;
-
-    public RegisterUserCommandHandler(
-        IAuthenticationService authenticationService,
-        IUserRepository userRepository,
-        IUnitOfWork unitOfWork)
-    {
-        _authenticationService = authenticationService;
-        _userRepository = userRepository;
-        _unitOfWork = unitOfWork;
-    }
-
     public async Task<Result<Guid>> Handle(
         RegisterUserCommand request,
         CancellationToken cancellationToken)
@@ -52,7 +42,7 @@ internal sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserC
         var user = userResult.Value;
 
         // Step 4: Register the user in the authentication system
-        var identityId = await _authenticationService.RegisterAsync(
+        var identityId = await authenticationService.RegisterAsync(
             user,
             request.Password,
             cancellationToken);
@@ -60,10 +50,10 @@ internal sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserC
         user.SetIdentityId(identityId);
 
         // Step 5: Add the user to the repository
-        await _userRepository.AddAsync(user, cancellationToken);
+        await userRepository.AddAsync(user, cancellationToken);
 
         // Step 6: Save changes to the database
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Step 7: Return the user ID
         return Result.Success(user.Id);

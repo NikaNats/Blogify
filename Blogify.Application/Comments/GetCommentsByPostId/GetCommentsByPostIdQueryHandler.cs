@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Blogify.Application.Comments.GetCommentsByPostId;
 
-public sealed class
+internal sealed class
     GetCommentsByPostIdQueryHandler(ICommentRepository commentRepository)
     : IQueryHandler<GetCommentsByPostIdQuery, List<CommentResponse>>
 {

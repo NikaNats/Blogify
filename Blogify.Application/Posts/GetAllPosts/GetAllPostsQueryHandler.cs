@@ -4,7 +4,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetAllPosts;
 
-public sealed class GetAllPostsQueryHandler : IQueryHandler<GetAllPostsQuery, List<AllPostResponse>>
+internal sealed class GetAllPostsQueryHandler : IQueryHandler<GetAllPostsQuery, List<AllPostResponse>>
 {
     private readonly IPostRepository _postRepository;
 

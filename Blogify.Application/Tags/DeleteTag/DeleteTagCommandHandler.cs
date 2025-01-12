@@ -4,7 +4,7 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.DeleteTag;
 
-public sealed class DeleteTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<DeleteTagCommand>
+internal sealed class DeleteTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<DeleteTagCommand>
 {
     public async Task<Result> Handle(DeleteTagCommand request, CancellationToken cancellationToken)
     {

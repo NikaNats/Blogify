@@ -19,4 +19,9 @@
         <ProjectReference Include="..\Blogify.Domain\Blogify.Domain.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Blogify.ArchitectureTests" />
+        <InternalsVisibleTo Include="Blogify.Application.UnitTests" />
+    </ItemGroup>
+    
 </Project>

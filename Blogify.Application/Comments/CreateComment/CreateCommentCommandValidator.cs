@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Comments.CreateComment;
 
-public sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
+internal sealed class CreateCommentCommandValidator : AbstractValidator<CreateCommentCommand>
 {
     public CreateCommentCommandValidator()
     {

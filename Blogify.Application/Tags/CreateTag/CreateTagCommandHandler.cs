@@ -4,15 +4,8 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.CreateTag;
 
-public sealed class CreateTagCommandHandler : ICommandHandler<CreateTagCommand, Guid>
+internal sealed class CreateTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<CreateTagCommand, Guid>
 {
-    private readonly ITagRepository _tagRepository;
-
-    public CreateTagCommandHandler(ITagRepository tagRepository)
-    {
-        _tagRepository = tagRepository;
-    }
-
     public async Task<Result<Guid>> Handle(CreateTagCommand request, CancellationToken cancellationToken)
     {
         var tagResult = Tag.Create(request.Name);
@@ -23,11 +16,11 @@ public sealed class CreateTagCommandHandler : ICommandHandler<CreateTagCommand, 
         var tag = tagResult.Value;
 
         // Check for duplicate tag names
-        var existingTag = await _tagRepository.GetByNameAsync(tag.Name.Value, cancellationToken);
+        var existingTag = await tagRepository.GetByNameAsync(tag.Name.Value, cancellationToken);
         if (existingTag != null)
             return Result.Failure<Guid>(TagErrors.DuplicateName);
 
-        await _tagRepository.AddAsync(tag, cancellationToken);
+        await tagRepository.AddAsync(tag, cancellationToken);
 
         return Result.Success(tag.Id);
     }

@@ -5,6 +5,8 @@ namespace Blogify.Domain.Categories;
 public interface ICategoryRepository : IRepository<Category>
 {
     Task<IReadOnlyList<Category>> GetAllWithPostsCountAsync(CancellationToken cancellationToken = default);
+    Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken);
+
     // Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     // Task<IReadOnlyCollection<Category?>> GetAllAsync(CancellationToken cancellationToken = default);
     // Task AddAsync(Category category, CancellationToken cancellationToken = default);

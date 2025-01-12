@@ -118,8 +118,8 @@ internal static class SeedDataExtensions
         ).Value);
 
         const string sql = @"
-        INSERT INTO users (id, first_name, last_name, email, identity_id, last_modified_at)
-        VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId, @LastModifiedAt)
+        INSERT INTO users (id, first_name, last_name, email, identity_id)
+        VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId)
         ON CONFLICT (identity_id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, users.Select(u => new
@@ -128,8 +128,7 @@ internal static class SeedDataExtensions
             FirstName = u.FirstName.Value,
             LastName = u.LastName.Value,
             Email = u.Email.Address,
-            IdentityId = u.IdentityId,
-            LastModifiedAt = (DateTime?)null
+            u.IdentityId,
         }), transaction);
 
         return users.Select(u => u.Id).ToList();

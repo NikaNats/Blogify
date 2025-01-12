@@ -3,7 +3,7 @@ using Blogify.Domain.Comments;
 
 namespace Blogify.Application.Comments.UpdateComment;
 
-public sealed class UpdateCommentCommandValidator : AbstractValidator<UpdateCommentCommand>
+internal sealed class UpdateCommentCommandValidator : AbstractValidator<UpdateCommentCommand>
 {
     public UpdateCommentCommandValidator()
     {

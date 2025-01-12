@@ -20,7 +20,7 @@ namespace Blogify.Api.Controllers.Posts;
 [Route("api/v{version:apiVersion}/posts")]
 public class PostsController(ISender sender) : ControllerBase
 {
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetPost(Guid id, CancellationToken cancellationToken)
     {
         var query = new GetPostByIdQuery(id);

@@ -4,7 +4,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
-public sealed class AddCommentToPostCommandHandler(IPostRepository postRepository)
+internal sealed class AddCommentToPostCommandHandler(IPostRepository postRepository)
     : ICommandHandler<AddCommentToPostCommand>
 {
     public async Task<Result> Handle(AddCommentToPostCommand request, CancellationToken cancellationToken)

@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Blogify.Application.Comments.UpdateComment;
 
-public sealed class UpdateCommentCommandHandler(ICommentRepository commentRepository)
+internal sealed class UpdateCommentCommandHandler(ICommentRepository commentRepository)
     : ICommandHandler<UpdateCommentCommand, Unit>
 {
     public async Task<Result<Unit>> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)

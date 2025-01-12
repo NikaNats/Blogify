@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Tags.CreateTag;
 
-public sealed class CreateTagCommandValidator : AbstractValidator<CreateTagCommand>
+internal  sealed class CreateTagCommandValidator : AbstractValidator<CreateTagCommand>
 {
     public CreateTagCommandValidator()
     {

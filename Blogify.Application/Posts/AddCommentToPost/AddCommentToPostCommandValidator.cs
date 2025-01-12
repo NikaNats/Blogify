@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
-public sealed class AddCommentToPostCommandValidator : AbstractValidator<AddCommentToPostCommand>
+internal sealed class AddCommentToPostCommandValidator : AbstractValidator<AddCommentToPostCommand>
 {
     public AddCommentToPostCommandValidator()
     {

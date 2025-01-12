@@ -5,7 +5,7 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Posts.AddTagToPost;
 
-public sealed class AddTagToPostCommandHandler(IPostRepository postRepository, ITagRepository tagRepository)
+internal sealed class AddTagToPostCommandHandler(IPostRepository postRepository, ITagRepository tagRepository)
     : ICommandHandler<AddTagToPostCommand>
 {
     public async Task<Result> Handle(AddTagToPostCommand request, CancellationToken cancellationToken)

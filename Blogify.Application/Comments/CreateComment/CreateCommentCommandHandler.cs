@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Blogify.Application.Comments.CreateComment;
 
-public sealed class CreateCommentCommandHandler(ICommentRepository commentRepository)
+internal sealed class CreateCommentCommandHandler(ICommentRepository commentRepository)
     : ICommandHandler<CreateCommentCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)

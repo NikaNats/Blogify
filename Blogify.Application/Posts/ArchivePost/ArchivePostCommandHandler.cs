@@ -4,7 +4,7 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.ArchivePost;
 
-public sealed class ArchivePostCommandHandler(IPostRepository postRepository)
+internal sealed class ArchivePostCommandHandler(IPostRepository postRepository)
     : ICommandHandler<ArchivePostCommand>
 {
     public async Task<Result> Handle(ArchivePostCommand request, CancellationToken cancellationToken)
