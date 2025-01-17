@@ -5,4 +5,4 @@ public sealed record CategoryResponse(
     string Name,
     string Description,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? lastmodifiedAt);
+    DateTimeOffset? UpdatedAt);
