@@ -1,4 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using System.Text.Json.Serialization;
+using Blogify.Domain.Abstractions;
 
 namespace Blogify.Domain.Posts;
 
@@ -6,6 +7,7 @@ public sealed class PostContent : ValueObject
 {
     private const int MinLength = 100;
 
+    [JsonConstructor]
     private PostContent(string value)
     {
         Value = value;

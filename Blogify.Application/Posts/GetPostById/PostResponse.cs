@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Comments;
+﻿using Blogify.Application.Categories.GetAllCategories;
+using Blogify.Application.Comments;
 using Blogify.Application.Tags.GetAllTags;
 using Blogify.Domain.Posts;
 
@@ -16,4 +17,5 @@ public sealed record PostResponse(
     DateTimeOffset? PublishedAt,
     PostStatus Status,
     List<CommentResponse> Comments,
-    List<AllTagResponse> Tags);
+    List<AllTagResponse> Tags,
+    List<AllCategoryResponse> Categories);

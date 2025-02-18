@@ -46,7 +46,8 @@ public class GetCommentsByPostIdQueryHandlerTests
     {
         // Arrange
         var postId = Guid.NewGuid();
-        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<CancellationToken>()).Returns(new List<Comment>());
+        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<CancellationToken>())
+            .Returns(new List<Comment>());
 
         var query = new GetCommentsByPostIdQuery(postId);
 
@@ -60,19 +61,18 @@ public class GetCommentsByPostIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PostIdIsEmpty_ReturnsEmptyList()
+    public async Task Handle_PostIdIsEmpty_ReturnsValidationError()
     {
         // Arrange
         var query = new GetCommentsByPostIdQuery(Guid.Empty);
-        _commentRepositoryMock.GetByPostIdAsync(Guid.Empty, Arg.Any<CancellationToken>()).Returns(new List<Comment>());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
-        await _commentRepositoryMock.Received(1).GetByPostIdAsync(Guid.Empty, Arg.Any<CancellationToken>());
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(CommentError.InvalidPostId);
+        await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

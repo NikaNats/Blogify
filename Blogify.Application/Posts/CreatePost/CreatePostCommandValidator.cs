@@ -3,26 +3,47 @@ using FluentValidation;
 
 namespace Blogify.Application.Posts.CreatePost;
 
-internal  sealed class CreatePostCommandValidator : AbstractValidator<CreatePostCommand>
+internal sealed class CreatePostCommandValidator : AbstractValidator<CreatePostCommand>
 {
     public CreatePostCommandValidator()
     {
-        RuleFor(x => x.Title.Value)
-            .NotEmpty().WithMessage(PostErrors.TitleEmpty.Description)
-            .MaximumLength(200).WithMessage(PostErrors.TitleTooLong.Description);
+        // Title validation with null check
+        RuleFor(x => x.Title)
+            .NotNull().WithMessage("Post title cannot be null.")
+            .DependentRules(() => 
+            {
+                RuleFor(x => x.Title.Value)
+                    .NotEmpty().WithMessage(PostErrors.TitleEmpty.Description)
+                    .MaximumLength(200).WithMessage(PostErrors.TitleTooLong.Description);
+            });
 
-        RuleFor(x => x.Content.Value)
-            .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
-            .MinimumLength(100).WithMessage(PostErrors.ContentTooShort.Description);
+        // Content validation with null check
+        RuleFor(x => x.Content)
+            .NotNull().WithMessage("Post content cannot be null.")
+            .DependentRules(() =>
+            {
+                RuleFor(x => x.Content.Value)
+                    .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
+                    .MinimumLength(100).WithMessage(PostErrors.ContentTooShort.Description)
+                    .MaximumLength(5000).WithMessage(PostErrors.ContentTooLong.Description);
+            });
 
-        RuleFor(x => x.Excerpt.Value)
-            .NotEmpty().WithMessage(PostErrors.ExcerptEmpty.Description)
-            .MaximumLength(500).WithMessage(PostErrors.ExcerptTooLong.Description);
+        // Excerpt validation with null check
+        RuleFor(x => x.Excerpt)
+            .NotNull().WithMessage("Post excerpt cannot be null.")
+            .DependentRules(() =>
+            {
+                RuleFor(x => x.Excerpt.Value)
+                    .NotEmpty().WithMessage(PostErrors.ExcerptEmpty.Description)
+                    .MaximumLength(500).WithMessage(PostErrors.ExcerptTooLong.Description);
+            });
 
+        // Author ID validation
         RuleFor(x => x.AuthorId)
             .NotEmpty().WithMessage(PostErrors.AuthorIdEmpty.Description);
 
-        RuleFor(x => x.CategoryId)
-            .NotEmpty().WithMessage(PostErrors.CategoryIdEmpty.Description);
+        // Category ID validation (if needed)
+        // RuleFor(x => x.CategoryId)
+        //     .NotEmpty().WithMessage(PostErrors.CategoryIdEmpty.Description);
     }
 }

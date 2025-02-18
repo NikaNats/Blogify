@@ -1,11 +1,13 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using System.Text.Json.Serialization;
+using Blogify.Domain.Abstractions;
 
 namespace Blogify.Domain.Posts;
 
 public sealed class PostTitle : ValueObject
 {
     private const int MaxLength = 200;
-
+    
+    [JsonConstructor]
     private PostTitle(string value)
     {
         Value = value;

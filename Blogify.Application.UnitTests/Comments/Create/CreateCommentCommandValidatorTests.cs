@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Comments.CreateComment;
+using Blogify.Domain.Comments;
 using FluentValidation.TestHelper;
 
 namespace Blogify.Application.UnitTests.Comments.Create;
@@ -13,11 +14,8 @@ public class CreateCommentCommandValidatorTests
         // Arrange
         var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.NewGuid());
 
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldNotHaveAnyValidationErrors();
+        // Act & Assert
+        _validator.TestValidate(command).ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]
@@ -26,27 +24,23 @@ public class CreateCommentCommandValidatorTests
         // Arrange
         var command = new CreateCommentCommand("", Guid.NewGuid(), Guid.NewGuid());
 
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage("Comment content cannot be empty.");
+        // Act & Assert
+        _validator.TestValidate(command)
+            .ShouldHaveValidationErrorFor(x => x.Content)
+            .WithErrorMessage(CommentError.InvalidContent.Description);
     }
 
     [Fact]
     public void Validate_ContentExceedsMaxLength_ShouldHaveValidationError()
     {
         // Arrange
-        var longContent = new string('a', 501); // 501 characters exceeds the 500-character limit
+        var longContent = new string('a', 501);
         var command = new CreateCommentCommand(longContent, Guid.NewGuid(), Guid.NewGuid());
 
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage("Comment content cannot exceed 500 characters.");
+        // Act & Assert
+        _validator.TestValidate(command)
+            .ShouldHaveValidationErrorFor(x => x.Content)
+            .WithErrorMessage(CommentError.ContentTooLong.Description);
     }
 
     [Fact]
@@ -55,12 +49,10 @@ public class CreateCommentCommandValidatorTests
         // Arrange
         var command = new CreateCommentCommand("Valid content", Guid.Empty, Guid.NewGuid());
 
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage("AuthorId cannot be empty.");
+        // Act & Assert
+        _validator.TestValidate(command)
+            .ShouldHaveValidationErrorFor(x => x.AuthorId)
+            .WithErrorMessage(CommentError.EmptyAuthorId.Description);
     }
 
     [Fact]
@@ -69,11 +61,9 @@ public class CreateCommentCommandValidatorTests
         // Arrange
         var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.Empty);
 
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.PostId)
-            .WithErrorMessage("PostId cannot be empty.");
+        // Act & Assert
+        _validator.TestValidate(command)
+            .ShouldHaveValidationErrorFor(x => x.PostId)
+            .WithErrorMessage(CommentError.EmptyPostId.Description);
     }
 }

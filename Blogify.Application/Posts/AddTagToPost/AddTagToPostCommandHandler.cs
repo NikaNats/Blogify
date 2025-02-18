@@ -18,11 +18,19 @@ internal sealed class AddTagToPostCommandHandler(IPostRepository postRepository,
         if (tag is null)
             return Result.Failure(TagErrors.NotFound);
 
+        // Check if tag already exists before attempting to add
+        var tagExists = post.Tags.Any(t => t.Id == tag.Id);
+        if (tagExists) return Result.Success();
+        
         // Add the tag to the post
         var addTagResult = post.AddTag(tag);
         if (addTagResult.IsFailure)
             return addTagResult;
 
+        var addPostResult = tag.AddPost(post);
+        if (addPostResult.IsFailure)
+            return addPostResult;
+        
         await postRepository.UpdateAsync(post, cancellationToken);
 
         return Result.Success();

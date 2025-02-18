@@ -1,6 +1,7 @@
 ﻿using Blogify.Application.Posts.AddTagToPost;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
+using FluentAssertions;
 using NSubstitute;
 
 namespace Blogify.Application.UnitTests.Posts.AddTag;
@@ -90,7 +91,7 @@ public class AddTagToPostCommandHandlerTests
         var post = CreateValidPost();
         var tag = CreateValidTag();
 
-        post.AddTag(tag);
+        post.AddTag(tag); // First addition
 
         _postRepository.GetByIdAsync(postId, CancellationToken.None).Returns(post);
         _tagRepository.GetByIdAsync(tagId, CancellationToken.None).Returns(tag);
@@ -99,8 +100,8 @@ public class AddTagToPostCommandHandlerTests
         var result = await _handler.Handle(new AddTagToPostCommand(postId, tagId), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess, "Handler should return success when the tag is already added.");
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
     // Helper Methods

@@ -1,5 +1,7 @@
-﻿using Blogify.Application.Comments;
+﻿using Blogify.Application.Categories.GetAllCategories;
+using Blogify.Application.Comments;
 using Blogify.Application.Tags.GetAllTags;
+using Blogify.Domain.Categories;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Tags;
 
@@ -20,7 +22,7 @@ public static class MappingExtensions
         if (tags == null)
             throw new ArgumentNullException(nameof(tags));
 
-        return tags.Select(t => t.MapToAllTagResponse()).ToList();
+        return tags.Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt)).ToList();
     }
 
     public static CommentResponse MapToCommentResponse(this Comment comment)
@@ -45,5 +47,26 @@ public static class MappingExtensions
             tag.Id,
             tag.Name.Value,
             tag.CreatedAt);
+    }
+    
+    public static List<AllCategoryResponse> MapToCategoryResponses(this IEnumerable<Category> categories)
+    {
+        if (categories == null)
+            throw new ArgumentNullException(nameof(categories));
+
+        return categories.Select(c => c.MapToCategoryResponse()).ToList();
+    }
+
+    public static AllCategoryResponse MapToCategoryResponse(this Category category)
+    {
+        if (category == null)
+            throw new ArgumentNullException(nameof(category));
+
+        return new AllCategoryResponse(
+            category.Id,
+            category.Name.Value,
+            category.Description.Value,
+            category.CreatedAt,
+            category.LastModifiedAt);
     }
 }

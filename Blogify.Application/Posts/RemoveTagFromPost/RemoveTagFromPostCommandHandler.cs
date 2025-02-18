@@ -18,7 +18,13 @@ internal sealed class RemoveTagFromPostCommandHandler(IPostRepository postReposi
         if (tag is null)
             return Result.Failure(TagErrors.NotFound);
 
-        post.RemoveTag(tag);
+        // Remove the tag from the post
+        var removeTagResult = post.RemoveTag(tag);
+        if (removeTagResult.IsFailure)
+        {
+            return removeTagResult;
+        }
+        
         await postRepository.UpdateAsync(post, cancellationToken);
         return Result.Success();
     }

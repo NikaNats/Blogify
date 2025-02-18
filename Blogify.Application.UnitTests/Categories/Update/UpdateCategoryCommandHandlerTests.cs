@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Categories.UpdateCategory;
+﻿using System.Reflection;
+using Blogify.Application.Categories.UpdateCategory;
 using Blogify.Domain.Categories;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -14,28 +15,44 @@ public class UpdateCategoryCommandHandlerTests
         // Arrange
         var categoryRepository = Substitute.For<ICategoryRepository>();
         var handler = new UpdateCategoryCommandHandler(categoryRepository);
+    
         var categoryId = Guid.NewGuid();
+        var originalName = "OldName";
+        var originalDescription = "OldDescription";
 
-        // Create a category with the same Id as the one being queried
-        var category = Category.Create("OldName", "OldDescription").Value;
-        category.GetType().GetProperty("Id").SetValue(category, categoryId); // Explicitly set the Id
+        // Create category with known ID using production code
+        var category = Category.Create(originalName, originalDescription).Value;
+    
+        // Get the private constructor
+        var constructor = typeof(Category).GetConstructors(
+            BindingFlags.NonPublic | BindingFlags.Instance
+        )[0];
+    
+        // Reconstruct category with desired ID
+        var categoryWithId = (Category)constructor.Invoke(new object[] {
+            categoryId,
+            category.Name,
+            category.Description
+        });
 
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None)
+            .Returns(categoryWithId);
 
         // Act
-        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"),
-            CancellationToken.None);
+        var result = await handler.Handle(
+            new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"),
+            CancellationToken.None
+        );
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-
-        // Verify that UpdateAsync was called with the correct updated category
         await categoryRepository.Received(1).UpdateAsync(
-            Arg.Is<Category>(c =>
+            Arg.Is<Category>(c => 
                 c.Id == categoryId &&
                 c.Name.Value == "NewName" &&
                 c.Description.Value == "NewDescription"),
-            CancellationToken.None);
+            Arg.Any<CancellationToken>()
+        );
     }
 
     [Fact]
@@ -73,7 +90,7 @@ public class UpdateCategoryCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldNotBeNull();
-        result.Error.Description.ShouldBe("Name cannot be empty.");
+        result.Error.Description.ShouldBe(CategoryError.NameNullOrEmpty.Description); // Updated
         await categoryRepository.DidNotReceive().UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
     }
 

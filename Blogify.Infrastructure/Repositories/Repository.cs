@@ -11,9 +11,9 @@ internal abstract class Repository<TEntity>(ApplicationDbContext dbContext)
     private readonly DbSet<TEntity> _dbSet = dbContext.Set<TEntity>();
     protected readonly ApplicationDbContext DbContext = dbContext;
 
-    public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);
+        return await _dbSet.FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);
     }
 
     public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)

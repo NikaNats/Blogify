@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.AddCommentToPost;
+using Blogify.Domain.Comments;
 using FluentValidation.TestHelper;
 
 namespace Blogify.Application.UnitTests.Posts.AddComment;
@@ -10,43 +11,31 @@ public class AddCommentToPostCommandValidatorTests
     [Fact]
     public void Validate_ContentEmpty_ReturnsValidationError()
     {
-        // Arrange
         var command = new AddCommentToPostCommand(Guid.NewGuid(), string.Empty, Guid.NewGuid());
-
-        // Act
         var result = _validator.TestValidate(command);
-
-        // Assert
+        
         result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage("Comment content cannot be empty.");
+            .WithErrorMessage(CommentError.EmptyContent.Description); // "Content cannot be empty"
     }
 
     [Fact]
     public void Validate_ContentExceedsMaxLength_ReturnsValidationError()
     {
-        // Arrange
         var command = new AddCommentToPostCommand(Guid.NewGuid(), new string('a', 501), Guid.NewGuid());
-
-        // Act
         var result = _validator.TestValidate(command);
-
-        // Assert
+        
         result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage("Comment content cannot exceed 500 characters.");
+            .WithErrorMessage(CommentError.ContentTooLong.Description); // "Content exceeds maximum allowed length"
     }
 
     [Fact]
     public void Validate_AuthorIdEmpty_ReturnsValidationError()
     {
-        // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Test comment", Guid.Empty);
-
-        // Act
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.Empty);
         var result = _validator.TestValidate(command);
-
-        // Assert
+        
         result.ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage("AuthorId cannot be empty.");
+            .WithErrorMessage(CommentError.EmptyAuthorId.Description); // "Author ID cannot be empty"
     }
 
     [Fact]

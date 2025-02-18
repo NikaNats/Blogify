@@ -12,6 +12,9 @@ internal sealed class GetCommentByIdQueryHandler(ICommentRepository commentRepos
     {
         cancellationToken.ThrowIfCancellationRequested();
         
+        if (request.Id == Guid.Empty)
+            return Result.Failure<CommentResponse>(CommentError.InvalidId);
+        
         var comment = await commentRepository.GetByIdAsync(request.Id, cancellationToken);
         if (comment is null)
             return Result.Failure<CommentResponse>(CommentError.CommentNotFound);

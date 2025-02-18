@@ -53,8 +53,7 @@ public class GetCommentByIdQueryHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Comment.NotFound");
-        result.Error.Description.Should().Be("Comment not found.");
+        result.Error.Should().Be(CommentError.CommentNotFound); // Use domain error directly
         await _commentRepositoryMock.Received(1).GetByIdAsync(commentId, Arg.Any<CancellationToken>());
     }
 
@@ -69,8 +68,7 @@ public class GetCommentByIdQueryHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Comment.InvalidId");
-        result.Error.Description.Should().Be("The provided comment ID is invalid.");
+        result.Error.Should().Be(CommentError.InvalidId); // Use domain error directly
         await _commentRepositoryMock.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 

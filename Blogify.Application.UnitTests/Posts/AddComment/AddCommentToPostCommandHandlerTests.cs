@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.AddCommentToPost;
+using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 using FluentAssertions;
 using NSubstitute;
@@ -9,11 +10,13 @@ public class AddCommentToPostCommandHandlerTests
 {
     private readonly AddCommentToPostCommandHandler _handler;
     private readonly IPostRepository _postRepository;
+    private readonly ICommentRepository _commentRepository; 
 
     public AddCommentToPostCommandHandlerTests()
     {
         _postRepository = Substitute.For<IPostRepository>();
-        _handler = new AddCommentToPostCommandHandler(_postRepository);
+        _commentRepository = Substitute.For<ICommentRepository>();
+        _handler = new AddCommentToPostCommandHandler(_postRepository, _commentRepository);
     }
 
     [Fact]
@@ -68,7 +71,7 @@ public class AddCommentToPostCommandHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Post.Status"); // Verify the specific error code
+        result.Error.Code.Should().Be(PostErrors.CommentToUnpublishedPost.Code);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -91,12 +94,10 @@ public class AddCommentToPostCommandHandlerTests
             postExcerptResult.Value,
             Guid.NewGuid()
         );
-
-        // Ensure the post creation was successful
-        postResult.IsSuccess.Should().BeTrue();
+        
         var post = postResult.Value;
-
-        post.Publish(); // Ensure the post is published
+        post.Publish();
+        
         var command = new AddCommentToPostCommand(post.Id, "Test comment", Guid.NewGuid());
         _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
 
@@ -114,7 +115,7 @@ public class AddCommentToPostCommandHandlerTests
     {
         // Arrange
         var postTitleResult = PostTitle.Create("Test Post");
-        var postContentResult = PostContent.Create(new string('a', 100)); // Valid input: 100 characters
+        var postContentResult = PostContent.Create(new string('a', 100));
         var postExcerptResult = PostExcerpt.Create("Test Excerpt");
 
         // Ensure all creations were successful

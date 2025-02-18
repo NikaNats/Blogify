@@ -13,7 +13,10 @@ internal sealed class ArchivePostCommandHandler(IPostRepository postRepository)
         if (post is null)
             return Result.Failure(PostErrors.NotFound);
 
-        // Archive the post
+        // Check current status before archiving
+        if (post.Status == PostStatus.Archived)
+            return Result.Success();
+
         var archiveResult = post.Archive();
         if (archiveResult.IsFailure)
             return archiveResult;

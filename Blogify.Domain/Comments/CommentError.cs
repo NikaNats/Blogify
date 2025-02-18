@@ -17,6 +17,14 @@ public static class CommentError
     public static readonly Error InvalidContent = Error.Validation(
         $"{Prefix}.InvalidContent",
         "Content cannot be null or empty.");
+    
+    public static readonly Error InvalidId = Error.Validation(
+        "Comment.InvalidId",
+        "The provided comment ID is invalid.");
+    
+    public static readonly Error InvalidPostId = Error.Validation(
+        "Comment.InvalidPostId",
+        "Post ID cannot be empty.");
 
     public static readonly Error ContentTooLong = Error.Validation(
         $"{Prefix}.ContentTooLong",

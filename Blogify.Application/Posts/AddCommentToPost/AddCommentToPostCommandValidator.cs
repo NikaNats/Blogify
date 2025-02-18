@@ -1,4 +1,4 @@
-﻿using Blogify.Domain.Posts;
+﻿using Blogify.Domain.Comments;
 using FluentValidation;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
@@ -8,10 +8,10 @@ internal sealed class AddCommentToPostCommandValidator : AbstractValidator<AddCo
     public AddCommentToPostCommandValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
-            .MaximumLength(500).WithMessage(PostErrors.ContentTooLong.Description);
+            .NotEmpty().WithMessage(CommentError.EmptyContent.Description)
+            .MaximumLength(500).WithMessage(CommentError.ContentTooLong.Description);
 
         RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage(PostErrors.AuthorIdEmpty.Description);
+            .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
     }
 }

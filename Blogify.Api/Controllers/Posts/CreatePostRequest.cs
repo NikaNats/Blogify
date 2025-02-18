@@ -6,5 +6,4 @@ public sealed record CreatePostRequest(
     PostTitle Title,
     PostContent Content,
     PostExcerpt Excerpt,
-    Guid AuthorId,
-    Guid CategoryId);
+    Guid AuthorId);

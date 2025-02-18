@@ -4,18 +4,12 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetPostById;
 
-internal sealed class GetPostByIdQueryHandler : IQueryHandler<GetPostByIdQuery, PostResponse>
+internal sealed class GetPostByIdQueryHandler(IPostRepository postRepository)
+    : IQueryHandler<GetPostByIdQuery, PostResponse>
 {
-    private readonly IPostRepository _postRepository;
-
-    public GetPostByIdQueryHandler(IPostRepository postRepository)
-    {
-        _postRepository = postRepository;
-    }
-
     public async Task<Result<PostResponse>> Handle(GetPostByIdQuery request, CancellationToken cancellationToken)
     {
-        var post = await _postRepository.GetByIdAsync(request.Id, cancellationToken);
+        var post = await postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null)
             return Result.Failure<PostResponse>(PostErrors.NotFound);
 
@@ -31,7 +25,8 @@ internal sealed class GetPostByIdQueryHandler : IQueryHandler<GetPostByIdQuery, 
             post.PublishedAt,
             post.Status,
             post.Comments.MapToCommentResponses(),
-            post.Tags.MapToAllTagResponses());
+            post.Tags.MapToAllTagResponses(),
+            post.Categories.MapToCategoryResponses());
 
         return Result.Success(response);
     }

@@ -1,10 +1,11 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
+using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
-internal sealed class AddCommentToPostCommandHandler(IPostRepository postRepository)
+internal sealed class AddCommentToPostCommandHandler(IPostRepository postRepository,ICommentRepository commentRepository)
     : ICommandHandler<AddCommentToPostCommand>
 {
     public async Task<Result> Handle(AddCommentToPostCommand request, CancellationToken cancellationToken)
@@ -13,11 +14,14 @@ internal sealed class AddCommentToPostCommandHandler(IPostRepository postReposit
         if (post is null)
             return Result.Failure(PostErrors.NotFound);
 
-        var result = post.AddComment(request.Content, request.AuthorId);
-        if (result.IsFailure)
-            return result;
+        var commentResult = post.AddComment(request.Content, request.AuthorId);
+        if (commentResult.IsFailure)
+            return Result.Failure(commentResult.Error);
 
+        await commentRepository.AddAsync(commentResult.Value, cancellationToken);
+        
         await postRepository.UpdateAsync(post, cancellationToken);
+        
         return Result.Success();
     }
 }

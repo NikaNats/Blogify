@@ -7,5 +7,4 @@ public sealed record UpdatePostCommand(
     Guid Id,
     PostTitle Title,
     PostContent Content,
-    PostExcerpt Excerpt,
-    Guid CategoryId) : ICommand;
+    PostExcerpt Excerpt) : ICommand;

@@ -57,6 +57,12 @@ public static class PostErrors
     public static Error CategoryIdEmpty => Error.Validation(
         "Post.CategoryId.Empty",
         "CategoryId cannot be empty.");
+    
+    // In PostErrors class
+    public static readonly Error CommentToUnpublishedPost = Error.Validation(
+        "Post.AddComment", 
+        "Cannot add comments to unpublished posts."
+    );
 
     // Not Found Errors
     public static Error AuthorNotFound => Error.NotFound(

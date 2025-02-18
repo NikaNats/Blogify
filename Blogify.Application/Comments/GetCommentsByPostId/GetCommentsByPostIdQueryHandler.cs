@@ -13,19 +13,21 @@ internal sealed class
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        
+        if (request.PostId == Guid.Empty)
+            return Result.Failure<List<CommentResponse>>(CommentError.InvalidPostId);
 
         var comments = await commentRepository.GetByPostIdAsync(request.PostId, cancellationToken);
-        if (comments.Count == 0)
-            return Result.Failure<List<CommentResponse>>(CommentError.NoCommentsFound);
-        
-        var response = comments.
-            Select(comment => new CommentResponse(
+    
+        var response = comments
+            .Select(comment => new CommentResponse(
                 comment.Id,
                 comment.Content.Value,
                 comment.AuthorId,
                 comment.PostId,
                 comment.CreatedAt))
             .ToList();
+
         return Result.Success(response);
     }
 }

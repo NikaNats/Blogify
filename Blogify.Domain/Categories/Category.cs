@@ -7,31 +7,32 @@ namespace Blogify.Domain.Categories;
 public sealed class Category : Entity
 {
     private readonly List<Post> _posts = new();
-    private CategoryDescription _description;
-    private CategoryName _name;
 
     private Category(Guid id, CategoryName name, CategoryDescription description)
         : base(id)
     {
-        _name = name;
-        _description = description;
+        Name = name;
+        Description = description;
     }
 
     private Category()
     {
     }
 
-    public CategoryName Name
-    {
-        get => _name;
-        private set => SetProperty(ref _name, value);
-    }
+    // public CategoryName Name
+    // {
+    //     get => _name;
+    //     private set => SetProperty(ref _name, value);
+    // }
+    //
+    // public CategoryDescription Description
+    // {
+    //     get => _description;
+    //     private set => SetProperty(ref _description, value);
+    // }
+    public CategoryName Name { get; set; }
 
-    public CategoryDescription Description
-    {
-        get => _description;
-        private set => SetProperty(ref _description, value);
-    }
+    public CategoryDescription Description { get; set; }
 
     public IReadOnlyCollection<Post> Posts => _posts.AsReadOnly();
 

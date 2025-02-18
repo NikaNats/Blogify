@@ -5,6 +5,15 @@ namespace Blogify.Infrastructure.Repositories;
 
 internal sealed class PostRepository(ApplicationDbContext dbContext) : Repository<Post>(dbContext), IPostRepository
 {
+    public override async Task<Post?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await DbContext.Set<Post>()
+            .AsNoTracking()
+            .Include(p => p.Categories)
+            .Include(p => p.Tags)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+    
     public async Task<IReadOnlyList<Post>> GetByAuthorIdAsync(Guid authorId,
         CancellationToken cancellationToken = default)
     {

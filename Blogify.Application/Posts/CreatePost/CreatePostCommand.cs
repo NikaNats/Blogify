@@ -7,5 +7,4 @@ public sealed record CreatePostCommand(
     PostTitle Title,
     PostContent Content,
     PostExcerpt Excerpt,
-    Guid AuthorId,
-    Guid CategoryId) : ICommand<Guid>;
+    Guid AuthorId) : ICommand<Guid>;

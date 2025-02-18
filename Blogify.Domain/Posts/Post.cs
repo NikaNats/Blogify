@@ -33,13 +33,12 @@ public sealed class Post : Entity
         _tags = new List<Tag>();
         _categories = new List<Category>();
         
-        // Initialize all properties using SetProperty for consistent change tracking
-        SetProperty(ref _title, title);
-        SetProperty(ref _content, content);
-        SetProperty(ref _excerpt, excerpt);
-        AuthorId = authorId; // Immutable property
-        SetProperty(ref _status, PostStatus.Draft);
-        SetProperty(ref _slug, slug);
+        _title = title;
+        _content = content;
+        _excerpt = excerpt;
+        AuthorId = authorId;
+        _status = PostStatus.Draft;
+        _slug = slug;
     }
 
     // Required by EF Core
@@ -103,11 +102,10 @@ public sealed class Post : Entity
         if (slugResult.IsFailure)
             return Result.Failure(slugResult.Error);
 
-        // Update all properties using SetProperty for change tracking
-        SetProperty(ref _title, title);
-        SetProperty(ref _content, content);
-        SetProperty(ref _excerpt, excerpt);
-        SetProperty(ref _slug, slugResult.Value);
+        _title = title;
+        _content = content;
+        _excerpt = excerpt;
+        _slug = slugResult.Value;
 
         RaiseDomainEvent(new PostUpdatedDomainEvent(Id));
         return Result.Success();
@@ -122,9 +120,8 @@ public sealed class Post : Entity
         if (_status == PostStatus.Archived)
             return Result.Failure(Error.Validation("Post.Publish", "Cannot publish archived post."));
 
-        // Update state using SetProperty
-        SetProperty(ref _status, PostStatus.Published);
-        SetProperty(ref _publishedAt, DateTimeOffset.UtcNow);
+        _status = PostStatus.Published;
+        _publishedAt = DateTimeOffset.UtcNow;
 
         RaiseDomainEvent(new PostPublishedDomainEvent(Id));
         return Result.Success();
@@ -136,27 +133,23 @@ public sealed class Post : Entity
         if (_status == PostStatus.Archived)
             return Result.Success();
 
-        SetProperty(ref _status, PostStatus.Archived);
+        _status = PostStatus.Archived;
+        UpdateModificationTimestamp();
         RaiseDomainEvent(new PostArchivedDomainEvent(Id));
         return Result.Success();
     }
-
-    public Result AddComment(string content, Guid authorId)
+    public Result<Comment> AddComment(string content, Guid authorId)
     {
-        // Business rule validation
         if (_status != PostStatus.Published)
-            return Result.Failure(Error.Validation(
-                "Post.AddComment",
-                "Cannot add comments to unpublished posts."));
+            return Result.Failure<Comment>(PostErrors.CommentToUnpublishedPost);
 
-        // Create comment with validation
         var commentResult = Comment.Create(content, authorId, Id);
         if (commentResult.IsFailure)
-            return Result.Failure(commentResult.Error);
+            return Result.Failure<Comment>(commentResult.Error);
 
         _comments.Add(commentResult.Value);
         RaiseDomainEvent(new CommentAddedDomainEvent(commentResult.Value.Id));
-        return Result.Success();
+        return Result.Success(commentResult.Value);
     }
 
     public Result AddTag(Tag? tag)
@@ -169,6 +162,7 @@ public sealed class Post : Entity
 
         _tags.Add(tag);
         RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id));
+        UpdateModificationTimestamp();
         return Result.Success();
     }
 

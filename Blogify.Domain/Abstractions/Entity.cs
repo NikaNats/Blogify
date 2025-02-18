@@ -5,7 +5,7 @@ namespace Blogify.Domain.Abstractions;
 public abstract class Entity : IEquatable<Entity>
 {
     private readonly List<IDomainEvent> _domainEvents = [];
-    private readonly HashSet<string> _modifiedProperties = new();
+    // private readonly HashSet<string> _modifiedProperties = new();
 
     protected Entity(Guid id)
     {
@@ -29,7 +29,7 @@ public abstract class Entity : IEquatable<Entity>
 
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    public IReadOnlyCollection<string> ModifiedProperties => _modifiedProperties.ToList().AsReadOnly();
+    // public IReadOnlyCollection<string> ModifiedProperties => _modifiedProperties.ToList().AsReadOnly();
 
     public bool Equals(Entity? other)
     {
@@ -49,27 +49,27 @@ public abstract class Entity : IEquatable<Entity>
         _domainEvents.Clear();
     }
 
-    protected void SetProperty<T>(
-        ref T field,
-        T value,
-        [CallerMemberName] string? propertyName = null)
-    {
-        if (string.IsNullOrWhiteSpace(propertyName))
-            throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+    // protected void SetProperty<T>(
+    //     ref T field,
+    //     T value,
+    //     [CallerMemberName] string? propertyName = null)
+    // {
+    //     if (string.IsNullOrWhiteSpace(propertyName))
+    //         throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+    //
+    //     if (EqualityComparer<T>.Default.Equals(field, value)) return;
+    //
+    //     field = value;
+    //     _modifiedProperties.Add(propertyName);
+    //     LastModifiedAt = DateTimeOffset.UtcNow;
+    // }
 
-        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+    // public void ResetChangeTracking()
+    // {
+    //     _modifiedProperties.Clear();
+    // }
 
-        field = value;
-        _modifiedProperties.Add(propertyName);
-        LastModifiedAt = DateTimeOffset.UtcNow;
-    }
-
-    public void ResetChangeTracking()
-    {
-        _modifiedProperties.Clear();
-    }
-
-    public void UpdateModificationTimestamp()
+    internal void UpdateModificationTimestamp()
     {
         LastModifiedAt = DateTimeOffset.UtcNow;
     }

@@ -31,8 +31,8 @@ internal  sealed class UpdatePostCommandValidator : AbstractValidator<UpdatePost
             .NotEmpty().WithMessage(PostErrors.ExcerptEmpty.Description)
             .MaximumLength(500).WithMessage(PostErrors.ExcerptTooLong.Description);
 
-        // Validate CategoryId
-        RuleFor(x => x.CategoryId)
-            .NotEmpty().WithMessage(PostErrors.CategoryIdEmpty.Description);
+        // // Validate CategoryId
+        // RuleFor(x => x.CategoryId)
+        //     .NotEmpty().WithMessage(PostErrors.CategoryIdEmpty.Description);
     }
 }

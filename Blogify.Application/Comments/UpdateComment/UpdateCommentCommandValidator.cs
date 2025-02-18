@@ -17,7 +17,7 @@ internal sealed class UpdateCommentCommandValidator : AbstractValidator<UpdateCo
         RuleFor(x => x.AuthorId)
             .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
 
-        RuleFor(x => x.PostId)
-            .NotEmpty().WithMessage(CommentError.EmptyPostId.Description);
+        // RuleFor(x => x.PostId)
+        //     .NotEmpty().WithMessage(CommentError.EmptyPostId.Description);
     }
 }

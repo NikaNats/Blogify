@@ -1,4 +1,5 @@
-﻿using Blogify.Domain.Abstractions;
+﻿using System.Text.Json.Serialization;
+using Blogify.Domain.Abstractions;
 
 namespace Blogify.Domain.Posts;
 
@@ -6,11 +7,11 @@ public sealed class PostExcerpt : ValueObject
 {
     private const int MaxLength = 500;
 
+    [JsonConstructor]
     private PostExcerpt(string value)
     {
         Value = value;
     }
-
     public string Value { get; }
 
     public static Result<PostExcerpt> Create(string excerpt)

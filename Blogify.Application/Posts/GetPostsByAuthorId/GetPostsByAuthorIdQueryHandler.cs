@@ -36,6 +36,7 @@ internal sealed class GetPostsByAuthorIdQueryHandler : IQueryHandler<GetPostsByA
             post.PublishedAt,
             post.Status,
             post.Comments.MapToCommentResponses(),
-            post.Tags.MapToAllTagResponses());
+            post.Tags.MapToAllTagResponses(),
+            post.Categories.MapToCategoryResponses());
     }
 }
