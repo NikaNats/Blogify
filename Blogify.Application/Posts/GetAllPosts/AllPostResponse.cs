@@ -14,6 +14,6 @@ public sealed record AllPostResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? PublishedAt,
-    PostStatus Status,
+    PublicationStatus Status,
     List<CommentResponse> Comments,
     List<AllTagResponse> Tags);

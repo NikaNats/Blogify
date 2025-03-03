@@ -5,23 +5,30 @@ namespace Blogify.Domain.Comments;
 
 public sealed class Comment : Entity
 {
+    private CommentContent _content;
+
     private Comment(Guid id, CommentContent content, Guid authorId, Guid postId)
         : base(id)
     {
-        Content = content;
+        _content = content;
         AuthorId = authorId;
         PostId = postId;
 
-        RaiseDomainEvent(new CommentAddedDomainEvent(id));
+        RaiseDomainEvent(new CommentAddedDomainEvent(id, postId, authorId));
     }
 
     private Comment()
     {
     }
 
-    public CommentContent Content { get; private set; }
-    public Guid AuthorId { get; private set; }
-    public Guid PostId { get; private set; }
+    public CommentContent Content
+    {
+        get => _content;
+        private set => SetProperty(ref _content, value);
+    }
+
+    public Guid AuthorId { get; }
+    public Guid PostId { get; }
 
     public static Result<Comment> Create(string content, Guid authorId, Guid postId)
     {
@@ -45,18 +52,16 @@ public sealed class Comment : Entity
             return Result.Failure(contentResult.Error);
 
         Content = contentResult.Value;
-        UpdateModificationTimestamp();
 
         return Result.Success();
     }
-    
+
     public Result Remove(Guid userId)
     {
         if (AuthorId != userId)
             return Result.Failure(CommentError.UnauthorizedDeletion);
 
-        RaiseDomainEvent(new CommentRemovedDomainEvent(Id));
-
+        RaiseDomainEvent(new CommentDeletedDomainEvent(Id, PostId));
         return Result.Success();
     }
 

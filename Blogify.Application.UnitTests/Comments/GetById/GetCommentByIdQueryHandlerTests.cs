@@ -53,7 +53,7 @@ public class GetCommentByIdQueryHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.CommentNotFound); // Use domain error directly
+        result.Error.Should().Be(CommentError.NotFound);
         await _commentRepositoryMock.Received(1).GetByIdAsync(commentId, Arg.Any<CancellationToken>());
     }
 
@@ -62,27 +62,14 @@ public class GetCommentByIdQueryHandlerTests
     {
         // Arrange
         var query = new GetCommentByIdQuery(Guid.Empty);
+        _commentRepositoryMock.GetByIdAsync(Guid.Empty, Arg.Any<CancellationToken>()).Returns((Comment)null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.InvalidId); // Use domain error directly
-        await _commentRepositoryMock.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_CancellationRequested_ThrowsOperationCanceledException()
-    {
-        // Arrange
-        var commentId = Guid.NewGuid();
-        var cancellationToken = new CancellationToken(true);
-
-        var query = new GetCommentByIdQuery(commentId);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _handler.Handle(query, cancellationToken));
-        await _commentRepositoryMock.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        result.Error.Should().Be(CommentError.NotFound);
+        await _commentRepositoryMock.Received().GetByIdAsync(Guid.Empty, Arg.Any<CancellationToken>());
     }
 }

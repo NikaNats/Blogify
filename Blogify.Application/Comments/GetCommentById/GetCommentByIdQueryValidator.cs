@@ -8,6 +8,8 @@ internal sealed class GetCommentByIdQueryValidator : AbstractValidator<GetCommen
     public GetCommentByIdQueryValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage(CommentError.InvalidContent.Description);
+            .NotEmpty()
+            .WithErrorCode(CommentError.EmptyCommentId.Code)
+            .WithMessage(CommentError.EmptyCommentId.Description);
     }
 }

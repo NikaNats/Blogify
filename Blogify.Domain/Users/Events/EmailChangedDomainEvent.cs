@@ -2,4 +2,7 @@
 
 namespace Blogify.Domain.Users.Events;
 
-public sealed record EmailChangedDomainEvent(Guid UserId, string NewEmail) : IDomainEvent;
+public sealed record EmailChangedDomainEvent(
+    Guid UserId,
+    string OldEmail,
+    string NewEmail) : DomainEvent;

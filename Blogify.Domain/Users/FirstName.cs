@@ -4,6 +4,8 @@ namespace Blogify.Domain.Users;
 
 public sealed class FirstName : ValueObject
 {
+    private const int MaxLength = 50;
+
     private FirstName(string value)
     {
         Value = value;
@@ -16,11 +18,18 @@ public sealed class FirstName : ValueObject
         if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<FirstName>(UserErrors.InvalidFirstName);
 
-        var trimmedValue = value.Trim();
+        if (value.Length > MaxLength)
+            return Result.Failure<FirstName>(UserErrors.FirstNameTooLong);
 
+        var trimmedValue = value.Trim();
         var firstName = new FirstName(trimmedValue);
 
         return Result.Success(firstName);
+    }
+
+    public static implicit operator string(FirstName firstName)
+    {
+        return firstName.Value;
     }
 
     protected override IEnumerable<object> GetAtomicValues()

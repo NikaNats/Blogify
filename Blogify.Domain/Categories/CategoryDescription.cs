@@ -2,8 +2,10 @@
 
 namespace Blogify.Domain.Categories;
 
-public class CategoryDescription : ValueObject
+public sealed class CategoryDescription : ValueObject
 {
+    internal const int MaxLength = 500;
+
     private CategoryDescription(string value)
     {
         Value = value;
@@ -16,7 +18,15 @@ public class CategoryDescription : ValueObject
         if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<CategoryDescription>(CategoryError.DescriptionNullOrEmpty);
 
+        if (value.Length > MaxLength)
+            return Result.Failure<CategoryDescription>(CategoryError.DescriptionTooLong);
+
         return Result.Success(new CategoryDescription(value));
+    }
+
+    public override string ToString()
+    {
+        return Value;
     }
 
     protected override IEnumerable<object> GetAtomicValues()

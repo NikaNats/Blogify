@@ -14,9 +14,17 @@ public static class CategoryError
         $"{Prefix}.NameNullOrEmpty",
         "Category name cannot be null or empty.");
 
+    public static readonly Error NameTooLong = Error.Validation(
+        $"{Prefix}.NameTooLong",
+        $"Category name cannot exceed {CategoryName.MaxLength} characters.");
+
     public static readonly Error DescriptionNullOrEmpty = Error.Validation(
         $"{Prefix}.DescriptionNullOrEmpty",
         "Category description cannot be null or empty.");
+
+    public static readonly Error DescriptionTooLong = Error.Validation(
+        $"{Prefix}.DescriptionTooLong",
+        $"Category description cannot exceed {CategoryDescription.MaxLength} characters.");
 
     // Post-related errors
     public static readonly Error PostNull = Error.Validation(
@@ -25,7 +33,7 @@ public static class CategoryError
 
     public static readonly Error PostAlreadyExists = Error.Conflict(
         $"{Prefix}.PostAlreadyExists",
-        "Post already exists in the category.");
+        "Post already exists in this category.");
 
     public static readonly Error PostNotFound = Error.NotFound(
         $"{Prefix}.PostNotFound",
@@ -34,11 +42,12 @@ public static class CategoryError
     public static readonly Error UnexpectedError = Error.Unexpected(
         $"{Prefix}.UnexpectedError",
         "An unexpected error occurred.");
-    
+
     public static readonly Error NotFound = Error.NotFound(
         $"{Prefix}.NotFound",
         "The category with the specified ID was not found.");
 
     public static readonly Error NameAlreadyExists =
-        Error.Conflict($"{Prefix}.NameAlreadyExists", "A category with the same name already exists.");
+        Error.Conflict($"{Prefix}.NameAlreadyExists",
+            "A category with the same name already exists.");
 }

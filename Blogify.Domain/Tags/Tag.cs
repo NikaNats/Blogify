@@ -7,18 +7,24 @@ namespace Blogify.Domain.Tags;
 public sealed class Tag : Entity
 {
     private readonly List<Post> _posts = new();
+    private TagName _name;
 
     private Tag(Guid id, TagName name)
         : base(id)
     {
-        Name = name;
+        _name = name;
     }
 
     private Tag()
     {
     }
 
-    public TagName Name { get; private set; }
+    public TagName Name
+    {
+        get => _name;
+        private set => SetProperty(ref _name, value);
+    }
+
     public IReadOnlyCollection<Post> Posts => _posts.AsReadOnly();
 
     public static Result<Tag> Create(string name)
@@ -39,7 +45,6 @@ public sealed class Tag : Entity
             return Result.Failure(nameResult.Error);
 
         Name = nameResult.Value;
-        UpdateModificationTimestamp();
         return Result.Success();
     }
 

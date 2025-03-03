@@ -4,7 +4,7 @@ using FluentAssertions;
 
 namespace Blogify.Domain.UnitTests.Users;
 
-public class UserTests
+public static class UserTests
 {
     public class CreateMethod
     {
@@ -79,7 +79,6 @@ public class UserTests
             var invalidEmailResult = UserData.InvalidEmails[index];
 
             // Act
-            // Ensure that the email is valid before passing it to User.Create
             if (invalidEmailResult.IsSuccess)
             {
                 var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, invalidEmailResult.Value);
@@ -90,10 +89,69 @@ public class UserTests
             }
             else
             {
-                // If the email is invalid, the test should pass because the email creation failed
+                // Assert
                 invalidEmailResult.IsFailure.Should().BeTrue();
                 invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
             }
+        }
+
+        [Theory]
+        [InlineData(0)] // ""
+        [InlineData(1)] // null
+        [InlineData(2)] // "   "
+        public void Create_WithInvalidFirstName_ShouldReturnInvalidFirstNameError(int index)
+        {
+            // Arrange
+            var invalidFirstNameInput = UserData.InvalidNames[index];
+
+            // Act
+            var firstNameResult = FirstName.Create(invalidFirstNameInput);
+
+            // Assert
+            firstNameResult.IsFailure.Should().BeTrue();
+            firstNameResult.Error.Should().Be(UserErrors.InvalidFirstName);
+        }
+
+        [Fact]
+        public void Create_WithLongFirstName_ShouldReturnFirstNameTooLongError()
+        {
+            // Arrange
+            var longFirstName = new string('a', 51);
+
+            // Act
+            var firstNameResult = FirstName.Create(longFirstName);
+
+            // Assert
+            firstNameResult.IsFailure.Should().BeTrue();
+            firstNameResult.Error.Should().Be(UserErrors.FirstNameTooLong);
+        }
+
+        [Fact]
+        public void Create_WithLongLastName_ShouldReturnLastNameTooLongError()
+        {
+            // Arrange
+            var longLastName = new string('a', 51);
+
+            // Act
+            var lastNameResult = LastName.Create(longLastName);
+
+            // Assert
+            lastNameResult.IsFailure.Should().BeTrue();
+            lastNameResult.Error.Should().Be(UserErrors.LastNameTooLong);
+        }
+
+        [Fact]
+        public void Create_WithLongEmail_ShouldReturnEmailTooLongError()
+        {
+            // Arrange
+            var longEmail = new string('a', 245) + "@example.com"; // 257 characters
+
+            // Act
+            var emailResult = Email.Create(longEmail);
+
+            // Assert
+            emailResult.IsFailure.Should().BeTrue();
+            emailResult.Error.Should().Be(UserErrors.EmailTooLong);
         }
     }
 
@@ -207,7 +265,6 @@ public class UserTests
             var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
             var originalEmail = user.Email;
             user.ClearDomainEvents();
-
             var invalidEmailResult = UserData.InvalidEmails[index];
 
             // Act
@@ -223,7 +280,7 @@ public class UserTests
             }
             else
             {
-                // If the email is invalid, the test should pass because the email creation failed
+                // Assert
                 invalidEmailResult.IsFailure.Should().BeTrue();
                 invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
             }
@@ -263,9 +320,9 @@ public class UserTests
         }
 
         [Theory]
-        [InlineData(0)] // Index for ""
-        [InlineData(1)] // Index for "   "
-        [InlineData(2)] // Index for null
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
         public void SetIdentityId_WithNullOrEmptyId_ShouldStillSetValue(int index)
         {
             // Arrange
@@ -278,230 +335,179 @@ public class UserTests
             user.IdentityId.Should().Be(UserData.InvalidNames[index]);
         }
     }
-}
 
-// using FluentAssertions;
-// using Xunit;
-// using Blogify.Domain.Users;
-// using Blogify.Domain.Users.Events;
-// using Blogify.Domain.Abstractions;
-// using Blogify.Domain.UnitTests.Infrastructure;
-//
-// namespace Blogify.Domain.UnitTests.Users;
-//
-// public class UserTests : BaseTest
-// {
-//     [Fact]
-//     public void Create_WithValidParameters_ShouldCreateUser()
-//     {
-//         // Arrange
-//         var firstName = new FirstName("John");
-//         var lastName = new LastName("Doe");
-//         var email = "john.doe@example.com";
-//
-//         // Act
-//         var result = User.Create(firstName, lastName, email);
-//
-//         // Assert
-//         result.IsSuccess.Should().BeTrue();
-//         var user = result.Value;
-//         user.Should().NotBeNull();
-//         user.FirstName.Should().Be(firstName);
-//         user.LastName.Should().Be(lastName);
-//         user.Email.Address.Should().Be(email);
-//
-//         // Verify domain events
-//         var domainEvents = user.GetDomainEvents();
-//         domainEvents.Should().HaveCount(2);
-//
-//         var createdEvent = domainEvents.OfType<UserCreatedDomainEvent>().FirstOrDefault();
-//         createdEvent.Should().NotBeNull();
-//         createdEvent.UserId.Should().Be(user.Id);
-//
-//         var roleAssignedEvent = domainEvents.OfType<RoleAssignedDomainEvent>().FirstOrDefault();
-//         roleAssignedEvent.Should().NotBeNull();
-//         roleAssignedEvent.RoleId.Should().Be(Role.Registered.Id);
-//     }
-//
-//     [Fact]
-//     public void Create_WithEmptyFirstName_ShouldReturnFailure()
-//     {
-//         // Arrange
-//         var firstName = new FirstName(string.Empty);
-//         var lastName = new LastName("Doe");
-//         var email = "john.doe@example.com";
-//
-//         // Act
-//         var result = User.Create(firstName, lastName, email);
-//
-//         // Assert
-//         result.IsFailure.Should().BeTrue();
-//         result.Error.Should().Be(UserErrors.InvalidFirstName);
-//     }
-//
-//     [Fact]
-//     public void Create_WithNullFirstName_ShouldReturnFailure()
-//     {
-//         // Arrange
-//         var firstName = new FirstName(null!); // Null-forgiving operator
-//         var lastName = new LastName("Doe");
-//         var email = "john.doe@example.com";
-//
-//         // Act
-//         var result = User.Create(firstName, lastName, email);
-//
-//         // Assert
-//         result.IsFailure.Should().BeTrue();
-//         result.Error.Should().Be(UserErrors.InvalidFirstName);
-//     }
-//
-//     [Fact]
-//     public void Create_WithEmptyLastName_ShouldReturnFailure()
-//     {
-//         // Arrange
-//         var firstName = new FirstName("John");
-//         var lastName = new LastName(string.Empty);
-//         var email = "john.doe@example.com";
-//
-//         // Act
-//         var result = User.Create(firstName, lastName, email);
-//
-//         // Assert
-//         result.IsFailure.Should().BeTrue();
-//         result.Error.Should().Be(UserErrors.InvalidLastName);
-//     }
-//
-//     [Fact]
-//     public void Create_WithNullLastName_ShouldReturnFailure()
-//     {
-//         // Arrange
-//         var firstName = new FirstName("John");
-//         var lastName = new LastName(null!); // Null-forgiving operator
-//         var email = "john.doe@example.com";
-//
-//         // Act
-//         var result = User.Create(firstName, lastName, email);
-//
-//         // Assert
-//         result.IsFailure.Should().BeTrue();
-//         result.Error.Should().Be(UserErrors.InvalidLastName);
-//     }
-//
-//     [Theory]
-//     [InlineData("john.doe@example.com", true)]
-//     [InlineData(null, false)]
-//     [InlineData("", false)]
-//     [InlineData("invalid-email-without-at", false)]
-//     [InlineData("invalid@", false)]
-//     [InlineData("@invalid", false)]
-//     public void Email_Create_ShouldValidateEmailFormat(string email, bool expectedIsSuccess)
-//     {
-//         // Act
-//         var result = Email.Create(email);
-//
-//         // Assert
-//         result.IsSuccess.Should().Be(expectedIsSuccess);
-//         if (!expectedIsSuccess)
-//         {
-//             result.Error.Should().BeOneOf(EmailErrors.Empty, EmailErrors.InvalidFormat);
-//         }
-//     }
-//
-//     [Fact]
-//     public void AddRole_WhenRoleNotPresent_ShouldAddRoleAndRaiseEvent()
-//     {
-//         // Arrange
-//         var user = CreateValidUser();
-//         user.ClearDomainEvents();
-//         var newRole = new Role(2, "Admin");
-//
-//         // Act
-//         user.AddRole(newRole);
-//
-//         // Assert
-//         user.Roles.Should().Contain(newRole);
-//         var domainEvents = user.GetDomainEvents();
-//         domainEvents.Should().HaveCount(1);
-//
-//         var roleAssignedEvent = domainEvents.OfType<RoleAssignedDomainEvent>().FirstOrDefault();
-//         roleAssignedEvent.Should().NotBeNull();
-//         roleAssignedEvent.RoleId.Should().Be(newRole.Id);
-//     }
-//
-//     [Fact]
-//     public void AddRole_WhenRoleAlreadyPresent_ShouldNotAddDuplicate()
-//     {
-//         // Arrange
-//         var user = CreateValidUser();
-//         var role = Role.Registered;
-//
-//         // Act
-//         user.AddRole(role);
-//
-//         // Assert
-//         user.Roles.Should().ContainSingle(r => r.Id == role.Id);
-//     }
-//
-//     [Fact]
-//     public void ChangeEmail_WithValidEmail_ShouldUpdateEmailAndRaiseEvent()
-//     {
-//         // Arrange
-//         var user = CreateValidUser();
-//         var newEmail = "new.email@example.com";
-//
-//         user.ClearDomainEvents();
-//         
-//         // Act
-//         var result = user.ChangeEmail(newEmail);
-//
-//         // Assert
-//         result.IsSuccess.Should().BeTrue();
-//         user.Email.Address.Should().Be(newEmail);
-//         var domainEvents = user.GetDomainEvents();
-//         domainEvents.Should().HaveCount(1);
-//
-//         var emailChangedEvent = domainEvents.OfType<EmailChangedDomainEvent>().FirstOrDefault();
-//         emailChangedEvent.Should().NotBeNull();
-//         emailChangedEvent.NewEmail.Should().Be(newEmail);
-//     }
-//
-//     [Fact]
-//     public void ChangeEmail_WithInvalidEmail_ShouldReturnFailure()
-//     {
-//         // Arrange
-//         var user = CreateValidUser();
-//         var invalidEmail = "invalid-email";
-//
-//         // Act
-//         var result = user.ChangeEmail(invalidEmail);
-//
-//         // Assert
-//         result.IsFailure.Should().BeTrue();
-//         result.Error.Should().Be(EmailErrors.InvalidFormat);
-//     }
-//
-//     [Fact]
-//     public void ChangeEmail_WithSameEmail_ShouldNotChangeEmailAndNotRaiseEvent()
-//     {
-//         // Arrange
-//         var user = CreateValidUser();
-//         var currentEmail = user.Email.Address;
-//         user.ClearDomainEvents();
-//
-//         // Act
-//         var result = user.ChangeEmail(currentEmail);
-//
-//         // Assert
-//         result.IsSuccess.Should().BeTrue();
-//         user.Email.Address.Should().Be(currentEmail);
-//         user.GetDomainEvents().Should().BeEmpty();
-//     }
-//
-//     private static User CreateValidUser()
-//     {
-//         var firstName = new FirstName("John");
-//         var lastName = new LastName("Doe");
-//         var email = "john.doe@example.com";
-//         return User.Create(firstName, lastName, email).Value;
-//     }
-// }
+    public class ChangeNameMethod
+    {
+        [Fact]
+        public void ChangeName_WithValidNewNames_ShouldUpdateNamesAndRaiseEvent()
+        {
+            // Arrange
+            var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
+            user.ClearDomainEvents();
+            var newFirstName = FirstName.Create("Jane").Value;
+            var newLastName = LastName.Create("Smith").Value;
+
+            // Act
+            var result = user.ChangeName(newFirstName, newLastName);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            user.FirstName.Value.Should().Be("Jane");
+            user.LastName.Value.Should().Be("Smith");
+            user.DomainEvents.Should().ContainSingle()
+                .Which.Should().BeOfType<UserNameChangedDomainEvent>()
+                .Which.Should().Match<UserNameChangedDomainEvent>(e =>
+                    e.Id == user.Id &&
+                    e.OldFirstName == "John" &&
+                    e.OldLastName == "Doe" &&
+                    e.FirstNameValue == "Jane" &&
+                    e.LastNameValue == "Smith");
+        }
+
+        [Fact]
+        public void ChangeName_WithSameNames_ShouldNotUpdateOrRaiseEvent()
+        {
+            // Arrange
+            var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
+            user.ClearDomainEvents();
+
+            // Act
+            var result = user.ChangeName(UserData.DefaultFirstName, UserData.DefaultLastName);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            user.FirstName.Should().Be(UserData.DefaultFirstName);
+            user.LastName.Should().Be(UserData.DefaultLastName);
+            user.DomainEvents.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void ChangeName_WithOnlyFirstNameChanged_ShouldUpdateAndRaiseEvent()
+        {
+            // Arrange
+            var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
+            user.ClearDomainEvents();
+            var newFirstName = FirstName.Create("Jane").Value;
+
+            // Act
+            var result = user.ChangeName(newFirstName, UserData.DefaultLastName);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            user.FirstName.Value.Should().Be("Jane");
+            user.LastName.Should().Be(UserData.DefaultLastName);
+            user.DomainEvents.Should().ContainSingle()
+                .Which.Should().BeOfType<UserNameChangedDomainEvent>()
+                .Which.Should().Match<UserNameChangedDomainEvent>(e =>
+                    e.Id == user.Id &&
+                    e.OldFirstName == "John" &&
+                    e.FirstNameValue == "Jane");
+        }
+    }
+
+    public class FirstNameTests
+    {
+        [Fact]
+        public void Create_WithValidName_ShouldSucceedAndTrim()
+        {
+            // Act
+            var result = FirstName.Create(" John ");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("John");
+        }
+
+        [Fact]
+        public void Create_WithEmptyName_ShouldFail()
+        {
+            // Act
+            var result = FirstName.Create("");
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().Be(UserErrors.InvalidFirstName);
+        }
+
+        [Fact]
+        public void Create_WithLongName_ShouldFail()
+        {
+            // Arrange
+            var longName = new string('a', 51);
+
+            // Act
+            var result = FirstName.Create(longName);
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().Be(UserErrors.FirstNameTooLong);
+        }
+
+        [Fact]
+        public void Create_WithMaxLengthName_ShouldSucceed()
+        {
+            // Arrange
+            var maxName = new string('a', 50);
+
+            // Act
+            var result = FirstName.Create(maxName);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be(maxName);
+        }
+    }
+
+    public class EmailTests
+    {
+        [Fact]
+        public void Create_WithValidEmail_ShouldSucceedAndLowercase()
+        {
+            // Act
+            var result = Email.Create("Test@Example.com");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Address.Should().Be("test@example.com");
+        }
+
+        [Fact]
+        public void Create_WithLongEmail_ShouldFail()
+        {
+            // Arrange
+            var longEmail = new string('a', 245) + "@example.com";
+
+            // Act
+            var result = Email.Create(longEmail);
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().Be(UserErrors.EmailTooLong);
+        }
+
+        [Fact]
+        public void Create_WithMaxLengthEmail_ShouldSucceed()
+        {
+            // Arrange
+            var maxEmail = new string('a', 64) + "@" + new string('b', 185) + ".com"; // Total 254
+
+            // Act
+            var result = Email.Create(maxEmail);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Address.Should().Be(maxEmail.ToLowerInvariant());
+        }
+
+        [Fact]
+        public void Emails_WithDifferentCases_ShouldBeEqual()
+        {
+            // Arrange
+            var email1 = Email.Create("Test@Example.com").Value;
+            var email2 = Email.Create("test@EXAMPLE.COM").Value;
+
+            // Assert
+            email1.Should().Be(email2);
+        }
+    }
+}

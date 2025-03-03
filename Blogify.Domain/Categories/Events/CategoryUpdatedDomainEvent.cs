@@ -2,4 +2,4 @@
 
 namespace Blogify.Domain.Categories.Events;
 
-public sealed record CategoryUpdatedDomainEvent(Guid CategoryId) : IDomainEvent;
+public sealed record CategoryUpdatedDomainEvent(Guid CategoryId) : DomainEvent;

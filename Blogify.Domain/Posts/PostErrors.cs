@@ -4,7 +4,6 @@ namespace Blogify.Domain.Posts;
 
 public static class PostErrors
 {
-    // General Errors
     public static readonly Error Overlap = Error.Failure(
         "Post.Overlap",
         "The current Post is overlapping with an existing one.");
@@ -13,7 +12,10 @@ public static class PostErrors
         "Post.NotFound",
         "The post was not found.");
 
-    // Validation Errors
+    public static readonly Error CommentToUnpublishedPost = Error.Validation(
+        "Post.AddComment",
+        "Cannot add comments to unpublished posts.");
+
     public static Error TitleEmpty => Error.Validation(
         "Post.Title.Empty",
         "The post title cannot be empty.");
@@ -57,14 +59,7 @@ public static class PostErrors
     public static Error CategoryIdEmpty => Error.Validation(
         "Post.CategoryId.Empty",
         "CategoryId cannot be empty.");
-    
-    // In PostErrors class
-    public static readonly Error CommentToUnpublishedPost = Error.Validation(
-        "Post.AddComment", 
-        "Cannot add comments to unpublished posts."
-    );
 
-    // Not Found Errors
     public static Error AuthorNotFound => Error.NotFound(
         "Post.Author.NotFound",
         "The author of the post was not found.");
@@ -77,7 +72,6 @@ public static class PostErrors
         "Post.Tag.NotFound",
         "The tag was not found.");
 
-    // Conflict Errors
     public static Error AlreadyPublished => Error.Conflict(
         "Post.AlreadyPublished",
         "The post is already published.");
@@ -85,4 +79,32 @@ public static class PostErrors
     public static Error NotPublished => Error.Validation(
         "Post.NotPublished",
         "The post is not published and cannot be archived.");
+
+    public static Error TitleNull => Error.Validation(
+        "Post.Title.Null",
+        "The post title cannot be null.");
+
+    public static Error ContentNull => Error.Validation(
+        "Post.Content.Null",
+        "The post content cannot be null.");
+
+    public static Error ExcerptNull => Error.Validation(
+        "Post.Excerpt.Null",
+        "The post excerpt cannot be null.");
+
+    public static Error CannotUpdateArchived => Error.Validation(
+        "Post.Update.Archived",
+        "Cannot update an archived post.");
+
+    public static Error CannotPublishArchived => Error.Validation(
+        "Post.Publish.Archived",
+        "Cannot publish an archived post.");
+
+    public static Error TagNull => Error.Validation(
+        "Post.Tag.Null",
+        "The tag cannot be null.");
+
+    public static Error CategoryNull => Error.Validation(
+        "Post.Category.Null",
+        "The category cannot be null.");
 }

@@ -30,7 +30,7 @@ public class ArchivePostCommandHandlerTests
         // Assert
         Assert.True(result.IsSuccess, "Handler should return success when archiving a post.");
         await _postRepository.Received(1).UpdateAsync(post, CancellationToken.None);
-        Assert.Equal(PostStatus.Archived, post.Status);
+        Assert.Equal(PublicationStatus.Archived, post.Status);
     }
 
     [Fact]

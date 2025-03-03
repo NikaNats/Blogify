@@ -71,7 +71,7 @@ public class GetCommentsByPostIdQueryHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.InvalidPostId);
+        result.Error.Should().Be(CommentError.EmptyPostId);
         await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 

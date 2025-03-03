@@ -51,12 +51,19 @@ public sealed class User : Entity
         return Result.Success(user);
     }
 
-    public void AddRole(Role role)
+    public Result AddRole(Role role)
     {
-        if (_roles.Contains(role)) return;
+        if (_roles.Any(r => r.Id == role.Id))
+            return Result.Success();
 
         _roles.Add(role);
-        RaiseDomainEvent(new RoleAssignedDomainEvent(Id, role.Id));
+
+        RaiseDomainEvent(new RoleAssignedDomainEvent(
+            Id,
+            role.Id,
+            role.Name));
+
+        return Result.Success();
     }
 
     public Result ChangeEmail(Email newEmail)
@@ -69,8 +76,42 @@ public sealed class User : Entity
         if (Email.Address == emailResult.Value.Address)
             return Result.Success();
 
+        var oldEmail = Email.Address;
         Email = emailResult.Value;
-        RaiseDomainEvent(new EmailChangedDomainEvent(Id, Email.Address));
+
+        RaiseDomainEvent(new EmailChangedDomainEvent(
+            Id,
+            oldEmail,
+            newEmail.Address));
+
+        return Result.Success();
+    }
+
+    public Result ChangeName(FirstName firstName, LastName lastName)
+    {
+        var changed = false;
+        var oldFirstName = FirstName.Value;
+        var oldLastName = LastName.Value;
+
+        if (!FirstName.Value.Equals(firstName.Value))
+        {
+            FirstName = firstName;
+            changed = true;
+        }
+
+        if (!LastName.Value.Equals(lastName.Value))
+        {
+            LastName = lastName;
+            changed = true;
+        }
+
+        if (changed)
+            RaiseDomainEvent(new UserNameChangedDomainEvent(
+                Id,
+                oldFirstName,
+                oldLastName,
+                FirstName.Value,
+                LastName.Value));
 
         return Result.Success();
     }

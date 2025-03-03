@@ -2,7 +2,7 @@
 
 namespace Blogify.Domain.Comments;
 
-public interface ICommentRepository: IRepository<Comment>
-{ 
+public interface ICommentRepository : IRepository<Comment>
+{
     Task<List<Comment>> GetByPostIdAsync(Guid postId, CancellationToken cancellationToken);
 }

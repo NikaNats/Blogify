@@ -43,7 +43,7 @@ public class CreateCommentCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_InvalidContent_ReturnsFailure()
+    public async Task Handle_EmptyContent_ReturnsFailure()
     {
         // Arrange
         var command = new CreateCommentCommand("", Guid.NewGuid(), Guid.NewGuid());
@@ -57,7 +57,7 @@ public class CreateCommentCommandHandlerTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.InvalidContent);
+        result.Error.Should().Be(CommentError.EmptyContent);
         await _commentRepository.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
     }
 

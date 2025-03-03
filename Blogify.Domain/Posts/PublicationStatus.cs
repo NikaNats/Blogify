@@ -1,6 +1,6 @@
 ﻿namespace Blogify.Domain.Posts;
 
-public enum PostStatus
+public enum PublicationStatus
 {
     Draft,
     Published,

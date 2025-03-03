@@ -15,7 +15,7 @@ internal sealed class
         cancellationToken.ThrowIfCancellationRequested();
         
         if (request.PostId == Guid.Empty)
-            return Result.Failure<List<CommentResponse>>(CommentError.InvalidPostId);
+            return Result.Failure<List<CommentResponse>>(CommentError.EmptyPostId);
 
         var comments = await commentRepository.GetByPostIdAsync(request.PostId, cancellationToken);
     

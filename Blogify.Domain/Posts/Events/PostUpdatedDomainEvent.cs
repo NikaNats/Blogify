@@ -2,4 +2,7 @@
 
 namespace Blogify.Domain.Posts.Events;
 
-public sealed record PostUpdatedDomainEvent(Guid PostId) : IDomainEvent;
+public sealed record PostUpdatedDomainEvent(
+    Guid PostId,
+    string PostTitle,
+    Guid AuthorId) : DomainEvent;

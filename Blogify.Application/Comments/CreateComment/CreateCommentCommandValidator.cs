@@ -8,8 +8,9 @@ internal sealed class CreateCommentCommandValidator : AbstractValidator<CreateCo
     public CreateCommentCommandValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage(CommentError.InvalidContent.Description)
-            .MaximumLength(500).WithMessage(CommentError.ContentTooLong.Description);
+            .NotEmpty().WithMessage(CommentError.EmptyContent.Description)
+            .MinimumLength(1).WithMessage(CommentError.ContentTooShort.Description)
+            .MaximumLength(1000).WithMessage(CommentError.ContentTooLong.Description);
 
         RuleFor(x => x.AuthorId)
             .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);

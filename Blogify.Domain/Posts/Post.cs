@@ -9,18 +9,16 @@ namespace Blogify.Domain.Posts;
 
 public sealed class Post : Entity
 {
-    // Private fields with consistent naming
+    private readonly List<Category> _categories;
     private readonly List<Comment> _comments;
     private readonly List<Tag> _tags;
-    private readonly List<Category> _categories;
     private PostContent _content;
     private PostExcerpt _excerpt;
     private DateTimeOffset? _publishedAt;
     private PostSlug _slug;
-    private PostStatus _status;
+    private PublicationStatus _status;
     private PostTitle _title;
 
-    // Private constructor for encapsulation
     private Post(
         Guid id,
         PostTitle title,
@@ -29,46 +27,71 @@ public sealed class Post : Entity
         Guid authorId,
         PostSlug slug) : base(id)
     {
-        _comments = new List<Comment>();
-        _tags = new List<Tag>();
-        _categories = new List<Category>();
-        
+        _comments = [];
+        _tags = [];
+        _categories = [];
         _title = title;
         _content = content;
         _excerpt = excerpt;
-        AuthorId = authorId;
-        _status = PostStatus.Draft;
         _slug = slug;
+        _status = PublicationStatus.Draft;
+        AuthorId = authorId;
     }
 
-    // Required by EF Core
     private Post() : base(Guid.NewGuid())
     {
         _comments = [];
         _tags = [];
         _categories = [];
+        _title = null!;
+        _content = null!;
+        _excerpt = null!;
+        _slug = null!;
     }
 
-    // Properties with consistent encapsulation
-    public PostTitle Title => _title;
-    public PostContent Content => _content;
-    public PostExcerpt Excerpt => _excerpt;
-    public PostSlug Slug => _slug;
+    public PostTitle Title
+    {
+        get => _title;
+        private set => SetProperty(ref _title, value);
+    }
+
+    public PostContent Content
+    {
+        get => _content;
+        private set => SetProperty(ref _content, value);
+    }
+
+    public PostExcerpt Excerpt
+    {
+        get => _excerpt;
+        private set => SetProperty(ref _excerpt, value);
+    }
+
+    public PostSlug Slug
+    {
+        get => _slug;
+        private set => SetProperty(ref _slug, value);
+    }
+
     public Guid AuthorId { get; }
     public DateTimeOffset? PublishedAt => _publishedAt;
-    public PostStatus Status => _status;
+
+    public PublicationStatus Status
+    {
+        get => _status;
+        private set => SetProperty(ref _status, value);
+    }
+
     public IReadOnlyCollection<Category> Categories => _categories.AsReadOnly();
     public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
     public IReadOnlyCollection<Tag> Tags => _tags.AsReadOnly();
 
-    // Factory method with proper validation
     public static Result<Post> Create(
         PostTitle title,
         PostContent content,
         PostExcerpt excerpt,
         Guid authorId)
     {
-        // Validate all inputs before object creation
         var validationResult = ValidateInvariants(title, content, excerpt, authorId);
         if (validationResult.IsFailure)
             return Result.Failure<Post>(validationResult.Error);
@@ -78,9 +101,25 @@ public sealed class Post : Entity
             return Result.Failure<Post>(slugResult.Error);
 
         var post = new Post(Guid.NewGuid(), title, content, excerpt, authorId, slugResult.Value);
-
-        post.RaiseDomainEvent(new PostCreatedDomainEvent(post.Id));
+        post.RaiseDomainEvent(new PostCreatedDomainEvent(post.Id, post.Title.Value, post.AuthorId));
         return Result.Success(post);
+    }
+
+    public static Result<Post> CreateAndPublish(
+        PostTitle title,
+        PostContent content,
+        PostExcerpt excerpt,
+        Guid authorId)
+    {
+        var postResult = Create(title, content, excerpt, authorId);
+        if (postResult.IsFailure)
+            return Result.Failure<Post>(postResult.Error);
+
+        var publishResult = postResult.Value.Publish();
+        if (publishResult.IsFailure)
+            return Result.Failure<Post>(publishResult.Error);
+
+        return postResult;
     }
 
     public Result Update(
@@ -88,59 +127,57 @@ public sealed class Post : Entity
         PostContent content,
         PostExcerpt excerpt)
     {
-        // Business rule validation
-        if (_status == PostStatus.Archived)
-            return Result.Failure(Error.Validation("Post.Update", "Cannot update archived post."));
+        if (!CanBeModified())
+            return Result.Failure(PostErrors.CannotUpdateArchived);
 
-        // Input validation
         var validationResult = ValidateInvariants(title, content, excerpt, AuthorId);
         if (validationResult.IsFailure)
             return validationResult;
 
-        // Slug generation validation
         var slugResult = GenerateSlug(title.Value);
         if (slugResult.IsFailure)
             return Result.Failure(slugResult.Error);
 
-        _title = title;
-        _content = content;
-        _excerpt = excerpt;
-        _slug = slugResult.Value;
+        Title = title;
+        Content = content;
+        Excerpt = excerpt;
+        Slug = slugResult.Value;
 
-        RaiseDomainEvent(new PostUpdatedDomainEvent(Id));
+        RaiseDomainEvent(new PostUpdatedDomainEvent(Id, Title.Value, AuthorId));
         return Result.Success();
     }
 
     public Result Publish()
     {
-        // Business rules validation
-        if (_status == PostStatus.Published)
-            return Result.Failure(Error.Validation("Post.Publish", "Post is already published."));
+        if (Status == PublicationStatus.Published)
+            return Result.Failure(PostErrors.AlreadyPublished);
+        if (Status == PublicationStatus.Archived)
+            return Result.Failure(PostErrors.CannotPublishArchived);
 
-        if (_status == PostStatus.Archived)
-            return Result.Failure(Error.Validation("Post.Publish", "Cannot publish archived post."));
-
-        _status = PostStatus.Published;
+        Status = PublicationStatus.Published;
         _publishedAt = DateTimeOffset.UtcNow;
 
-        RaiseDomainEvent(new PostPublishedDomainEvent(Id));
+        RaiseDomainEvent(new PostPublishedDomainEvent(
+            Id,
+            Title.Value,
+            _publishedAt.Value,
+            AuthorId));
         return Result.Success();
     }
 
     public Result Archive()
     {
-        // Skip if already archived
-        if (_status == PostStatus.Archived)
+        if (Status == PublicationStatus.Archived)
             return Result.Success();
 
-        _status = PostStatus.Archived;
-        UpdateModificationTimestamp();
-        RaiseDomainEvent(new PostArchivedDomainEvent(Id));
+        Status = PublicationStatus.Archived;
+        RaiseDomainEvent(new PostArchivedDomainEvent(Id, Title.Value, AuthorId));
         return Result.Success();
     }
+
     public Result<Comment> AddComment(string content, Guid authorId)
     {
-        if (_status != PostStatus.Published)
+        if (!CanReceiveComments())
             return Result.Failure<Comment>(PostErrors.CommentToUnpublishedPost);
 
         var commentResult = Comment.Create(content, authorId, Id);
@@ -148,20 +185,25 @@ public sealed class Post : Entity
             return Result.Failure<Comment>(commentResult.Error);
 
         _comments.Add(commentResult.Value);
-        RaiseDomainEvent(new CommentAddedDomainEvent(commentResult.Value.Id));
+        RaiseDomainEvent(new CommentAddedDomainEvent(
+            commentResult.Value.Id,
+            Id,
+            authorId));
+
+        UpdateModificationTimestamp();
         return Result.Success(commentResult.Value);
     }
 
     public Result AddTag(Tag? tag)
     {
         if (tag is null)
-            return Result.Failure(Error.Validation("Post.AddTag", "Tag cannot be null."));
+            return Result.Failure(PostErrors.TagNull);
 
         if (_tags.Any(t => t.Id == tag.Id))
             return Result.Success();
 
         _tags.Add(tag);
-        RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id));
+        RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id, tag.Name.Value));
         UpdateModificationTimestamp();
         return Result.Success();
     }
@@ -169,10 +211,11 @@ public sealed class Post : Entity
     public Result RemoveTag(Tag? tag)
     {
         if (tag is null)
-            return Result.Failure(Error.Validation("Post.RemoveTag", "Tag cannot be null."));
+            return Result.Failure(PostErrors.TagNull);
 
         var removed = _tags.RemoveAll(t => t.Id == tag.Id) > 0;
-        if (removed) RaiseDomainEvent(new PostUntaggedDomainEvent(Id, tag.Id));
+        if (removed)
+            RaiseDomainEvent(new PostUntaggedDomainEvent(Id, tag.Id, tag.Name.Value));
 
         return Result.Success();
     }
@@ -180,29 +223,28 @@ public sealed class Post : Entity
     public Result AddCategory(Category category)
     {
         if (category == null)
-            return Result.Failure(Error.Validation("Post.AddCategory", "Category cannot be null."));
+            return Result.Failure(PostErrors.CategoryNull);
 
         if (_categories.Any(c => c.Id == category.Id))
             return Result.Success();
 
         _categories.Add(category);
-        RaiseDomainEvent(new PostCategoryAddedDomainEvent(Id, category.Id));
+        RaiseDomainEvent(new PostCategoryAddedDomainEvent(Id, category.Id, category.Name.Value));
         return Result.Success();
     }
-    
+
     public Result RemoveCategory(Category category)
     {
         if (category == null)
-            return Result.Failure(Error.Validation("Post.RemoveCategory", "Category cannot be null."));
+            return Result.Failure(PostErrors.CategoryNull);
 
         var removed = _categories.RemoveAll(c => c.Id == category.Id) > 0;
         if (removed)
-            RaiseDomainEvent(new PostCategoryRemovedDomainEvent(Id, category.Id));
+            RaiseDomainEvent(new PostCategoryRemovedDomainEvent(Id, category.Id, category.Name.Value));
 
         return Result.Success();
     }
-    
-    // Private helper methods
+
     private static Result ValidateInvariants(
         PostTitle? title,
         PostContent? content,
@@ -210,14 +252,29 @@ public sealed class Post : Entity
         Guid authorId)
     {
         return title is null
-            ? Result.Failure(Error.Validation("Post.Title", "Title cannot be null."))
+            ? Result.Failure(PostErrors.TitleNull)
             : content is null
-                ? Result.Failure(Error.Validation("Post.Content", "Content cannot be null."))
+                ? Result.Failure(PostErrors.ContentNull)
                 : excerpt is null
-                    ? Result.Failure(Error.Validation("Post.Excerpt", "Excerpt cannot be null."))
+                    ? Result.Failure(PostErrors.ExcerptNull)
                     : authorId == Guid.Empty
-                        ? Result.Failure(Error.Validation("Post.AuthorId", "AuthorId cannot be empty."))
-                            : Result.Success();
+                        ? Result.Failure(PostErrors.AuthorIdEmpty)
+                        : Result.Success();
+    }
+
+    private bool CanBePublished()
+    {
+        return Status != PublicationStatus.Published && Status != PublicationStatus.Archived;
+    }
+
+    private bool CanBeModified()
+    {
+        return Status != PublicationStatus.Archived;
+    }
+
+    private bool CanReceiveComments()
+    {
+        return Status == PublicationStatus.Published;
     }
 
     private static Result<PostSlug> GenerateSlug(string title)

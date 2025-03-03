@@ -2,4 +2,8 @@
 
 namespace Blogify.Domain.Comments.Events;
 
-public sealed record CommentAddedDomainEvent(Guid CommentId) : IDomainEvent;
+public sealed record CommentAddedDomainEvent(
+    Guid commentId,
+    Guid postId,
+    Guid authorId)
+    : DomainEvent;

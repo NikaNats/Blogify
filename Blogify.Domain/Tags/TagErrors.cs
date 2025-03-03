@@ -4,18 +4,15 @@ namespace Blogify.Domain.Tags;
 
 public static class TagErrors
 {
-    public static Error NotFound => Error.NotFound(
-        "Tag.NotFound",
-        "The tag was not found.");
-    
     public static readonly Error PostNull = Error.Validation(
         "Tag.Post.Null",
         "Post cannot be null."
     );
+
     public static readonly Error DuplicateName = Error.Validation(
-        "Tag.DuplicateName", 
+        "Tag.DuplicateName",
         "A tag with the same name already exists.");
-    
+
     public static readonly Error PostDuplicate = Error.Validation(
         "Tag.Post.Duplicate",
         "Post already exists in the tag."
@@ -25,6 +22,11 @@ public static class TagErrors
         "Tag.Post.NotFound",
         "Post does not exist in the tag."
     );
+
+    public static Error NotFound => Error.NotFound(
+        "Tag.NotFound",
+        "The tag was not found.");
+
     // Validation Errors
     public static Error NameEmpty => Error.Validation(
         "Tag.Name.Empty",

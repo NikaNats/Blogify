@@ -5,6 +5,8 @@ namespace Blogify.Domain.Users;
 
 public sealed class Email : ValueObject
 {
+    private const int MaxLength = 254; // RFC 5321 SMTP limit
+
     private Email(string address)
     {
         Address = address;
@@ -16,6 +18,9 @@ public sealed class Email : ValueObject
     {
         if (string.IsNullOrEmpty(emailAddress))
             return Result.Failure<Email>(UserErrors.InvalidEmail);
+
+        if (emailAddress.Length > MaxLength)
+            return Result.Failure<Email>(UserErrors.EmailTooLong);
 
         var trimmedEmail = emailAddress.Trim();
 
@@ -34,5 +39,10 @@ public sealed class Email : ValueObject
     protected override IEnumerable<object> GetAtomicValues()
     {
         yield return Address;
+    }
+
+    public static implicit operator string(Email email)
+    {
+        return email.Address;
     }
 }

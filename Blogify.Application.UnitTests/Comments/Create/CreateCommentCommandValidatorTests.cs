@@ -27,14 +27,14 @@ public class CreateCommentCommandValidatorTests
         // Act & Assert
         _validator.TestValidate(command)
             .ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage(CommentError.InvalidContent.Description);
+            .WithErrorMessage(CommentError.EmptyContent.Description);
     }
 
     [Fact]
     public void Validate_ContentExceedsMaxLength_ShouldHaveValidationError()
     {
         // Arrange
-        var longContent = new string('a', 501);
+        var longContent = new string('a', 1001);
         var command = new CreateCommentCommand(longContent, Guid.NewGuid(), Guid.NewGuid());
 
         // Act & Assert

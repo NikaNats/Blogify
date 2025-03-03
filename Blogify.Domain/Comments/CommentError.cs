@@ -6,60 +6,65 @@ public static class CommentError
 {
     private const string Prefix = "Comment";
 
+    public static readonly Error EmptyCommentId = Error.Validation(
+        $"{Prefix}.EmptyCommentId",
+        "A valid comment identifier is required.");
+
     public static readonly Error EmptyAuthorId = Error.Validation(
         $"{Prefix}.EmptyAuthorId",
-        "AuthorId cannot be empty.");
+        "A valid author identifier is required.");
 
     public static readonly Error EmptyPostId = Error.Validation(
         $"{Prefix}.EmptyPostId",
-        "PostId cannot be empty.");
+        "A valid post identifier is required.");
 
-    public static readonly Error InvalidContent = Error.Validation(
-        $"{Prefix}.InvalidContent",
-        "Content cannot be null or empty.");
-    
-    public static readonly Error InvalidId = Error.Validation(
-        "Comment.InvalidId",
-        "The provided comment ID is invalid.");
-    
-    public static readonly Error InvalidPostId = Error.Validation(
-        "Comment.InvalidPostId",
-        "Post ID cannot be empty.");
+    public static readonly Error EmptyContent = Error.Validation(
+        $"{Prefix}.EmptyContent",
+        "Comment content cannot be empty.");
+
+    public static readonly Error ContentTooShort = Error.Validation(
+        $"{Prefix}.ContentTooShort",
+        "Comment content is too short.");
 
     public static readonly Error ContentTooLong = Error.Validation(
         $"{Prefix}.ContentTooLong",
-        "Content exceeds the maximum allowed length.");
+        "Comment content exceeds the maximum allowed length of 1000 characters.");
 
-    public static readonly Error CommentNotFound = Error.NotFound(
-        $"{Prefix}.NotFound",
-        "The comment was not found.");
+    public static readonly Error DisallowedContent = Error.Validation(
+        $"{Prefix}.DisallowedContent",
+        "Comment contains disallowed content. Please review our community guidelines.");
 
+    // Domain rule errors
     public static readonly Error UnauthorizedUpdate = Error.Conflict(
         $"{Prefix}.UnauthorizedUpdate",
-        "You are not authorized to update this comment.");
+        "Only the author can update this comment.");
 
     public static readonly Error UnauthorizedDeletion = Error.Conflict(
         $"{Prefix}.UnauthorizedDeletion",
-        "You are not authorized to delete this comment.");
+        "Only the author can delete this comment.");
 
-    public static readonly Error UpdateFailed = Error.Failure(
-        $"{Prefix}.UpdateFailed",
-        "Failed to update the comment.");
+    public static readonly Error AlreadyDeleted = Error.Conflict(
+        $"{Prefix}.AlreadyDeleted",
+        "This comment has already been deleted.");
 
-    public static readonly Error DeletionFailed = Error.Failure(
-        $"{Prefix}.DeletionFailed",
-        "Failed to delete the comment.");
-    
-    public static readonly Error NoCommentsFound = Error.NotFound(
-        $"{Prefix}.NoCommentsFound",
-        "No comments found.");
-    
-    public static readonly Error EmptyCommentId = Error.Validation(
-        $"{Prefix}.EmptyCommentId",
-        "Comment ID cannot be empty.");
-    
-    public static readonly Error EmptyContent = Error.Validation(
-        $"{Prefix}.EmptyContent",
-        "Content cannot be empty.");
-    
+    public static readonly Error CannotModifyDeletedComment = Error.Conflict(
+        $"{Prefix}.CannotModifyDeletedComment",
+        "Deleted comments cannot be modified.");
+
+    public static readonly Error CannotFlagDeletedComment = Error.Conflict(
+        $"{Prefix}.CannotFlagDeletedComment",
+        "Deleted comments cannot be flagged.");
+
+    public static readonly Error CannotFlagOwnComment = Error.Conflict(
+        $"{Prefix}.CannotFlagOwnComment",
+        "You cannot flag your own comment.");
+
+    // Infrastructure errors
+    public static readonly Error NotFound = Error.NotFound(
+        $"{Prefix}.NotFound",
+        "The requested comment could not be found.");
+
+    public static readonly Error OperationFailed = Error.Failure(
+        $"{Prefix}.OperationFailed",
+        "The comment operation failed due to a technical error.");
 }

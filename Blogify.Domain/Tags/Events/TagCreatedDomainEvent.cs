@@ -2,4 +2,4 @@
 
 namespace Blogify.Domain.Tags.Events;
 
-public sealed record TagCreatedDomainEvent(Guid TagId) : IDomainEvent;
+public sealed record TagCreatedDomainEvent(Guid TagId) : DomainEvent;

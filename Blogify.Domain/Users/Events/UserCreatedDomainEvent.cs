@@ -2,4 +2,4 @@
 
 namespace Blogify.Domain.Users.Events;
 
-public sealed record UserCreatedDomainEvent(Guid UserId) : IDomainEvent;
+public sealed record UserCreatedDomainEvent(Guid UserId) : DomainEvent;

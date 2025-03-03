@@ -16,7 +16,7 @@ internal sealed class UpdateCommentCommandHandler(ICommentRepository commentRepo
         var comment = await commentRepository.GetByIdAsync(request.CommentId, cancellationToken);
         if (comment is null)
         {
-            return Result.Failure<Unit>(CommentError.CommentNotFound);
+            return Result.Failure<Unit>(CommentError.NotFound);
         }
 
         // Validate if the author is updating their own comment

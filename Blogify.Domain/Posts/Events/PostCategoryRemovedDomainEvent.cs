@@ -2,4 +2,7 @@
 
 namespace Blogify.Domain.Posts.Events;
 
-public sealed class PostCategoryRemovedDomainEvent(Guid postId, Guid categoryId) : IDomainEvent;
+public sealed record PostCategoryRemovedDomainEvent(
+    Guid PostId,
+    Guid CategoryId,
+    string CategoryName) : DomainEvent;
