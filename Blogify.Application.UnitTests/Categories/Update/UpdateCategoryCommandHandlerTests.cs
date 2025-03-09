@@ -15,21 +15,22 @@ public class UpdateCategoryCommandHandlerTests
         // Arrange
         var categoryRepository = Substitute.For<ICategoryRepository>();
         var handler = new UpdateCategoryCommandHandler(categoryRepository);
-    
+
         var categoryId = Guid.NewGuid();
         var originalName = "OldName";
         var originalDescription = "OldDescription";
 
         // Create category with known ID using production code
         var category = Category.Create(originalName, originalDescription).Value;
-    
+
         // Get the private constructor
         var constructor = typeof(Category).GetConstructors(
             BindingFlags.NonPublic | BindingFlags.Instance
         )[0];
-    
+
         // Reconstruct category with desired ID
-        var categoryWithId = (Category)constructor.Invoke(new object[] {
+        var categoryWithId = (Category)constructor.Invoke(new object[]
+        {
             categoryId,
             category.Name,
             category.Description
@@ -47,7 +48,7 @@ public class UpdateCategoryCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         await categoryRepository.Received(1).UpdateAsync(
-            Arg.Is<Category>(c => 
+            Arg.Is<Category>(c =>
                 c.Id == categoryId &&
                 c.Name.Value == "NewName" &&
                 c.Description.Value == "NewDescription"),
@@ -110,7 +111,7 @@ public class UpdateCategoryCommandHandlerTests
             handler.Handle(new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"), CancellationToken.None));
         await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
     }
-    
+
     [Fact]
     public async Task Handle_ShouldReturnSuccess_WhenNoChangesAreMade()
     {
@@ -122,13 +123,14 @@ public class UpdateCategoryCommandHandlerTests
         categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
 
         // Act
-        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "TestCategory", "Test Description"), CancellationToken.None);
+        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "TestCategory", "Test Description"),
+            CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
         await categoryRepository.DidNotReceive().UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
     }
-    
+
     [Fact]
     public async Task Handle_ShouldCallUpdateAsync_WhenNameIsUpdated()
     {
@@ -141,14 +143,14 @@ public class UpdateCategoryCommandHandlerTests
 
         // Act
         var result = await handler.Handle(
-            new UpdateCategoryCommand(categoryId, "NewName", "Test Description"), 
+            new UpdateCategoryCommand(categoryId, "NewName", "Test Description"),
             CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
         await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
     }
-    
+
     [Fact]
     public async Task Handle_ShouldCallUpdateAsync_WhenDescriptionIsUpdated()
     {
@@ -161,7 +163,7 @@ public class UpdateCategoryCommandHandlerTests
 
         // Act
         var result = await handler.Handle(
-            new UpdateCategoryCommand(categoryId, "TestCategory", "NewDescription"), 
+            new UpdateCategoryCommand(categoryId, "TestCategory", "NewDescription"),
             CancellationToken.None);
 
         // Assert

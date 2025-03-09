@@ -12,7 +12,7 @@ internal sealed class LogInUserCommandHandler(IJwtService jwtService)
         LogInUserCommand request,
         CancellationToken cancellationToken)
     {
-        Result<string> result = await jwtService.GetAccessTokenAsync(
+        var result = await jwtService.GetAccessTokenAsync(
             request.Email,
             request.Password,
             cancellationToken);

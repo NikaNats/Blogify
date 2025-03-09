@@ -1,5 +1,4 @@
 ﻿using Blogify.Application.Categories.CreateCategory;
-using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using FluentAssertions;
 using NSubstitute;
@@ -9,8 +8,8 @@ namespace Blogify.Application.UnitTests.Categories.Create;
 
 public class CreateCategoryCommandHandlerTests
 {
-    private readonly CreateCategoryCommandHandler _handler;
     private readonly ICategoryRepository _categoryRepositoryMock;
+    private readonly CreateCategoryCommandHandler _handler;
 
     public CreateCategoryCommandHandlerTests()
     {
@@ -29,7 +28,7 @@ public class CreateCategoryCommandHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        Result<Guid> result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -44,7 +43,7 @@ public class CreateCategoryCommandHandlerTests
         var command = new CreateCategoryCommand("", "Description1"); // Empty name is invalid
 
         // Act
-        Result<Guid> result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -60,7 +59,7 @@ public class CreateCategoryCommandHandlerTests
         var command = new CreateCategoryCommand("Category1", ""); // Empty description is invalid
 
         // Act
-        Result<Guid> result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -80,7 +79,7 @@ public class CreateCategoryCommandHandlerTests
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        Result<Guid> result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();

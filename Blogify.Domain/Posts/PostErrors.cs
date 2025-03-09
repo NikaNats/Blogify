@@ -107,4 +107,8 @@ public static class PostErrors
     public static Error CategoryNull => Error.Validation(
         "Post.Category.Null",
         "The category cannot be null.");
+    
+    public static Error PostIdEmpty => Error.Validation(
+        "Post.Id.Empty",
+        "The post Id cannot be empty.");
 }

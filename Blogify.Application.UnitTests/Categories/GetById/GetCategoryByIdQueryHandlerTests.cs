@@ -1,7 +1,5 @@
-﻿using Blogify.Application.Abstractions.Messaging;
-using Blogify.Application.Categories.GetCategoryById;
+﻿using Blogify.Application.Categories.GetCategoryById;
 using Blogify.Application.Exceptions;
-using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using FluentAssertions;
 using NSubstitute;
@@ -12,9 +10,9 @@ namespace Blogify.Application.UnitTests.Categories.GetById;
 public class GetCategoryByIdQueryHandlerTests
 {
     private static readonly GetCategoryByIdQuery Command = new(Guid.NewGuid());
+    private readonly ICategoryRepository _categoryRepositoryMock;
 
     private readonly GetCategoryByIdQueryHandler _handler;
-    private readonly ICategoryRepository _categoryRepositoryMock;
 
     public GetCategoryByIdQueryHandlerTests()
     {
@@ -32,7 +30,7 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns((Category?)null);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.Error.Should().Be(CategoryError.NotFound);
@@ -47,7 +45,7 @@ public class GetCategoryByIdQueryHandlerTests
             .ThrowsAsync(new Exception("Repository failed"));
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.Error.Should().Be(CategoryError.UnexpectedError);
@@ -64,7 +62,7 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns(category);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -85,12 +83,12 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns(category);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         await _categoryRepositoryMock.Received(1).GetByIdAsync(Command.Id, Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task Handle_Should_ReturnFailure_WhenIdIsInvalid()
     {
@@ -98,13 +96,13 @@ public class GetCategoryByIdQueryHandlerTests
         var invalidCommand = new GetCategoryByIdQuery(Guid.Empty);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(invalidCommand, default);
+        var result = await _handler.Handle(invalidCommand, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(CategoryError.NotFound); // Or a specific validation error
     }
-    
+
     [Fact]
     public async Task Handle_Should_MapCategoryToResponseCorrectly()
     {
@@ -116,7 +114,7 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns(category);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -126,6 +124,7 @@ public class GetCategoryByIdQueryHandlerTests
         result.Value.CreatedAt.Should().Be(category.CreatedAt);
         result.Value.UpdatedAt.Should().Be(category.LastModifiedAt);
     }
+
     [Fact]
     public async Task Handle_Should_ReturnFailure_WhenConcurrencyExceptionOccurs()
     {
@@ -135,12 +134,13 @@ public class GetCategoryByIdQueryHandlerTests
             .ThrowsAsync(new ConcurrencyException("Concurrency issue", new Exception()));
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(CategoryError.UnexpectedError); // Or a specific concurrency error
     }
+
     [Fact]
     public async Task Handle_Should_ReturnSuccess_WhenCategoryNameIsMaxLength()
     {
@@ -153,13 +153,13 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns(category);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be(maxLengthName);
     }
-    
+
     [Fact]
     public async Task Handle_Should_CallRepositoryOnce_WhenInvokedMultipleTimes()
     {
@@ -177,7 +177,7 @@ public class GetCategoryByIdQueryHandlerTests
         // Assert
         await _categoryRepositoryMock.Received(2).GetByIdAsync(Command.Id, Arg.Any<CancellationToken>());
     }
-    
+
     [Fact]
     public async Task Handle_Should_ReturnSuccess_WhenCategoryIsLargeOrComplex()
     {
@@ -190,7 +190,7 @@ public class GetCategoryByIdQueryHandlerTests
             .Returns(category);
 
         // Act
-        Result<CategoryByIdResponse> result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(Command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();

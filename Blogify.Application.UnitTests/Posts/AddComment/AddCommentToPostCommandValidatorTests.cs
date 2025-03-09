@@ -9,40 +9,52 @@ public class AddCommentToPostCommandValidatorTests
     private readonly AddCommentToPostCommandValidator _validator = new();
 
     [Fact]
-    public void Validate_ContentEmpty_ReturnsValidationError()
+    public void Validate_EmptyContent_ReturnsValidationError()
     {
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), string.Empty, Guid.NewGuid());
+        // Arrange
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "", Guid.NewGuid());
+
+        // Act
         var result = _validator.TestValidate(command);
-        
+
+        // Assert
         result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage(CommentError.EmptyContent.Description); // "Content cannot be empty"
+            .WithErrorMessage(CommentError.EmptyContent.Description);
     }
 
     [Fact]
     public void Validate_ContentExceedsMaxLength_ReturnsValidationError()
     {
+        // Arrange
         var command = new AddCommentToPostCommand(Guid.NewGuid(), new string('a', 501), Guid.NewGuid());
+
+        // Act
         var result = _validator.TestValidate(command);
-        
+
+        // Assert
         result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage(CommentError.ContentTooLong.Description); // "Content exceeds maximum allowed length"
+            .WithErrorMessage(CommentError.ContentTooLong.Description);
     }
 
     [Fact]
-    public void Validate_AuthorIdEmpty_ReturnsValidationError()
-    {
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.Empty);
-        var result = _validator.TestValidate(command);
-        
-        result.ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage(CommentError.EmptyAuthorId.Description); // "Author ID cannot be empty"
-    }
-
-    [Fact]
-    public void Validate_ValidCommand_ReturnsNoValidationErrors()
+    public void Validate_EmptyAuthorId_ReturnsValidationError()
     {
         // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Test comment", Guid.NewGuid());
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.Empty);
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.AuthorId)
+            .WithErrorMessage(CommentError.EmptyAuthorId.Description);
+    }
+
+    [Fact]
+    public void Validate_ValidCommand_PassesValidation()
+    {
+        // Arrange
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.NewGuid());
 
         // Act
         var result = _validator.TestValidate(command);

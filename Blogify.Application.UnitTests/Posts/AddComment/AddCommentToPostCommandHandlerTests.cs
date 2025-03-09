@@ -10,13 +10,12 @@ public class AddCommentToPostCommandHandlerTests
 {
     private readonly AddCommentToPostCommandHandler _handler;
     private readonly IPostRepository _postRepository;
-    private readonly ICommentRepository _commentRepository; 
 
     public AddCommentToPostCommandHandlerTests()
     {
         _postRepository = Substitute.For<IPostRepository>();
-        _commentRepository = Substitute.For<ICommentRepository>();
-        _handler = new AddCommentToPostCommandHandler(_postRepository, _commentRepository);
+        var commentRepository = Substitute.For<ICommentRepository>();
+        _handler = new AddCommentToPostCommandHandler(_postRepository, commentRepository);
     }
 
     [Fact]
@@ -94,10 +93,10 @@ public class AddCommentToPostCommandHandlerTests
             postExcerptResult.Value,
             Guid.NewGuid()
         );
-        
+
         var post = postResult.Value;
         post.Publish();
-        
+
         var command = new AddCommentToPostCommand(post.Id, "Test comment", Guid.NewGuid());
         _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
 

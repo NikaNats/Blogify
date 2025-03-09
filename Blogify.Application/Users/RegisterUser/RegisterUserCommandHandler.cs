@@ -2,35 +2,32 @@
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Blogify.Application.Users.RegisterUser;
 
-internal sealed class RegisterUserCommandHandler(
+public sealed class RegisterUserCommandHandler(
     IAuthenticationService authenticationService,
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<RegisterUserCommandHandler> logger)
     : ICommandHandler<RegisterUserCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(
         RegisterUserCommand request,
         CancellationToken cancellationToken)
     {
-        // Step 1: Validate and create domain objects
         var firstNameResult = FirstName.Create(request.FirstName);
         var lastNameResult = LastName.Create(request.LastName);
         var emailResult = Email.Create(request.Email);
 
-        // Step 2: Check for failures in domain object creation
         if (firstNameResult.IsFailure)
             return Result.Failure<Guid>(firstNameResult.Error);
-
         if (lastNameResult.IsFailure)
             return Result.Failure<Guid>(lastNameResult.Error);
-
         if (emailResult.IsFailure)
             return Result.Failure<Guid>(emailResult.Error);
 
-        // Step 3: Create the user
         var userResult = User.Create(
             firstNameResult.Value,
             lastNameResult.Value,
@@ -41,21 +38,40 @@ internal sealed class RegisterUserCommandHandler(
 
         var user = userResult.Value;
 
-        // Step 4: Register the user in the authentication system
-        var identityId = await authenticationService.RegisterAsync(
-            user,
-            request.Password,
-            cancellationToken);
+        try
+        {
+            var identityId = await authenticationService.RegisterAsync(
+                user,
+                request.Password,
+                cancellationToken);
 
-        user.SetIdentityId(identityId);
+            user.SetIdentityId(identityId);
 
-        // Step 5: Add the user to the repository
-        await userRepository.AddAsync(user, cancellationToken);
+            await userRepository.AddAsync(user, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Step 6: Save changes to the database
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            return Result.Success(user.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to register user {Email} in database after authentication", request.Email);
 
-        // Step 7: Return the user ID
-        return Result.Success(user.Id);
+            if (user.IdentityId != null)
+            {
+                try
+                {
+                    await authenticationService.DeleteIdentityAsync(user.IdentityId, cancellationToken);
+                    logger.LogInformation("Rolled back identity {IdentityId} due to persistence failure", user.IdentityId);
+                }
+                catch (Exception rollbackEx)
+                {
+                    logger.LogError(rollbackEx, "Failed to rollback identity {IdentityId} for user {Email}", user.IdentityId, request.Email);
+                    // Manual intervention may be required if rollback fails
+                }
+            }
+
+            return Result.Failure<Guid>(Error.Failure("User.Registration.Failed",
+                "Failed to register user due to an unexpected error."));
+        }
     }
 }

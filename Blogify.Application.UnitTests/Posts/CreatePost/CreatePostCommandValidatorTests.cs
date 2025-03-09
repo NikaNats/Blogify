@@ -1,6 +1,5 @@
 ﻿using Blogify.Application.Posts.CreatePost;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using FluentValidation.TestHelper;
 
 namespace Blogify.Application.UnitTests.Posts.CreatePost;

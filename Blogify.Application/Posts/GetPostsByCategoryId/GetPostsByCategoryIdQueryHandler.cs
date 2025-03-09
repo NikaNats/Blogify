@@ -5,21 +5,30 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetPostsByCategoryId;
 
-internal sealed class GetPostsByCategoryIdQueryHandler : IQueryHandler<GetPostsByCategoryIdQuery, List<PostResponse>>
+internal sealed class GetPostsByCategoryIdQueryHandler(IPostRepository postRepository)
+    : IQueryHandler<GetPostsByCategoryIdQuery, List<PostResponse>>
 {
-    private readonly IPostRepository _postRepository;
-
-    public GetPostsByCategoryIdQueryHandler(IPostRepository postRepository)
-    {
-        _postRepository = postRepository;
-    }
-
     public async Task<Result<List<PostResponse>>> Handle(GetPostsByCategoryIdQuery request,
         CancellationToken cancellationToken)
     {
-        var posts = await _postRepository.GetByCategoryIdAsync(request.CategoryId, cancellationToken);
-        var response = posts.Select(MapPostToResponse).ToList();
-        return Result.Success(response);
+        try
+        {
+            var posts = await postRepository.GetByCategoryIdAsync(
+                request.CategoryId, 
+                cancellationToken
+            );
+        
+            var response = posts.Select(MapPostToResponse).ToList();
+            return Result.Success(response);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<List<PostResponse>>(Error.Create(
+                "Posts.RetrievalFailed",
+                $"Failed to retrieve posts for category {request.CategoryId}",
+                ErrorType.Failure
+            ));
+        }
     }
 
     private static PostResponse MapPostToResponse(Post post)

@@ -5,12 +5,7 @@ namespace Blogify.Application.UnitTests.Categories.Update;
 
 public class UpdateCategoryCommandValidatorTests
 {
-    private readonly UpdateCategoryCommandValidator _validator;
-
-    public UpdateCategoryCommandValidatorTests()
-    {
-        _validator = new UpdateCategoryCommandValidator();
-    }
+    private readonly UpdateCategoryCommandValidator _validator = new();
 
     [Fact]
     public void Validate_ShouldHaveError_WhenNameIsEmpty()
@@ -76,7 +71,7 @@ public class UpdateCategoryCommandValidatorTests
         // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
-    
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -97,7 +92,8 @@ public class UpdateCategoryCommandValidatorTests
     public void Validate_ShouldHaveError_WhenDescriptionExceedsMaxLength()
     {
         // Arrange
-        var command = new UpdateCategoryCommand(Guid.NewGuid(), "TestCategory", new string('a', CategoryConstraints.DescriptionMaxLength + 1));
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), "TestCategory",
+            new string('a', CategoryConstraints.DescriptionMaxLength + 1));
 
         // Act
         var result = _validator.TestValidate(command);

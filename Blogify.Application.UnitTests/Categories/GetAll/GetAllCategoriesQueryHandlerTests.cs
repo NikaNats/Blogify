@@ -1,5 +1,4 @@
 ﻿using Blogify.Application.Categories.GetAllCategories;
-using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using FluentAssertions;
 using NSubstitute;
@@ -9,8 +8,8 @@ namespace Blogify.Application.UnitTests.Categories.GetAll;
 
 public class GetAllCategoriesTests
 {
-    private readonly GetAllCategoriesQueryHandler _handler;
     private readonly ICategoryRepository _categoryRepositoryMock;
+    private readonly GetAllCategoriesQueryHandler _handler;
 
     public GetAllCategoriesTests()
     {
@@ -29,7 +28,7 @@ public class GetAllCategoriesTests
         var query = new GetAllCategoriesQuery();
 
         // Act
-        Result<List<AllCategoryResponse>> result = await _handler.Handle(query, default);
+        var result = await _handler.Handle(query, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -52,7 +51,7 @@ public class GetAllCategoriesTests
         var query = new GetAllCategoriesQuery();
 
         // Act
-        Result<List<AllCategoryResponse>> result = await _handler.Handle(query, default);
+        var result = await _handler.Handle(query, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -72,7 +71,7 @@ public class GetAllCategoriesTests
         var query = new GetAllCategoriesQuery();
 
         // Act
-        Result<List<AllCategoryResponse>> result = await _handler.Handle(query, default);
+        var result = await _handler.Handle(query, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();

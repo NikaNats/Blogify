@@ -2,20 +2,15 @@
 using Blogify.Application.Abstractions.Authentication;
 using Blogify.Domain.Users;
 using Blogify.Infrastructure.Authentication.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class AuthenticationService : IAuthenticationService
+internal sealed class AuthenticationService(HttpClient httpClient, ILogger<AuthenticationService> logger)
+    : IAuthenticationService
 {
     private const string PasswordCredentialType = "password";
-
-    private readonly HttpClient _httpClient;
-
-    public AuthenticationService(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
+    
     public async Task<string> RegisterAsync(
         User user,
         string password,
@@ -23,24 +18,64 @@ internal sealed class AuthenticationService : IAuthenticationService
     {
         var userRepresentationModel = UserRepresentationModel.FromUser(user);
 
-        userRepresentationModel.Credentials = new CredentialRepresentationModel[]
-        {
-            new()
+        userRepresentationModel.Credentials =
+        [
+            new CredentialRepresentationModel
             {
                 Value = password,
                 Temporary = false,
                 Type = PasswordCredentialType
             }
-        };
+        ];
 
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await httpClient.PostAsJsonAsync(
             "users",
             userRepresentationModel,
             cancellationToken);
-
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError("Registration failed with status code {StatusCode}. Response: {ErrorContent}",
+                response.StatusCode, errorContent);
+            throw new HttpRequestException($"Failed to register user. Status code: {response.StatusCode}");
+        }
+        
         return ExtractIdentityIdFromLocationHeader(response);
     }
+    public async Task DeleteIdentityAsync(
+        string identityId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
 
+            var response = await httpClient.DeleteAsync(
+                $"users/{identityId}",
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                logger.LogInformation("Successfully deleted identity {IdentityId}", identityId);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogError(
+                    "Failed to delete identity {IdentityId}. Status code: {StatusCode}, Content: {ErrorContent}",
+                    identityId,
+                    response.StatusCode,
+                    errorContent);
+                throw new HttpRequestException(
+                    $"Failed to delete identity {identityId}. Status code: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while deleting identity {IdentityId}", identityId);
+            throw;
+        }
+    }
     private static string ExtractIdentityIdFromLocationHeader(
         HttpResponseMessage httpResponseMessage)
     {

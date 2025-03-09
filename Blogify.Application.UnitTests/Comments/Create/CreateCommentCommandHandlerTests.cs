@@ -10,8 +10,8 @@ namespace Blogify.Application.UnitTests.Comments.Create;
 public class CreateCommentCommandHandlerTests
 {
     private readonly ICommentRepository _commentRepository;
-    private readonly IPostRepository _postRepository;
     private readonly CreateCommentCommandHandler _handler;
+    private readonly IPostRepository _postRepository;
 
     public CreateCommentCommandHandlerTests()
     {
@@ -25,11 +25,11 @@ public class CreateCommentCommandHandlerTests
     {
         // Arrange
         var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.NewGuid());
-        
+
         // Ensure post exists
         _postRepository.ExistsAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        
+
         _commentRepository.AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
@@ -47,7 +47,7 @@ public class CreateCommentCommandHandlerTests
     {
         // Arrange
         var command = new CreateCommentCommand("", Guid.NewGuid(), Guid.NewGuid());
-        
+
         // Ensure post exists
         _postRepository.ExistsAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(true);
@@ -66,7 +66,7 @@ public class CreateCommentCommandHandlerTests
     {
         // Arrange
         var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.NewGuid());
-        
+
         // Simulate post not found
         _postRepository.ExistsAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(false);

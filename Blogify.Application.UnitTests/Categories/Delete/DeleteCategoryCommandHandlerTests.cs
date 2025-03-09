@@ -1,5 +1,4 @@
 ﻿using Blogify.Application.Categories.DeleteCategory;
-using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using FluentAssertions;
 using NSubstitute;
@@ -9,8 +8,8 @@ namespace Blogify.Application.UnitTests.Categories.Delete;
 
 public class DeleteCategoryCommandHandlerTests
 {
-    private readonly DeleteCategoryCommandHandler _handler;
     private readonly ICategoryRepository _categoryRepositoryMock;
+    private readonly DeleteCategoryCommandHandler _handler;
 
     public DeleteCategoryCommandHandlerTests()
     {
@@ -32,7 +31,7 @@ public class DeleteCategoryCommandHandlerTests
         var command = new DeleteCategoryCommand(categoryId);
 
         // Act
-        Result result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -52,7 +51,7 @@ public class DeleteCategoryCommandHandlerTests
         var command = new DeleteCategoryCommand(categoryId);
 
         // Act
-        Result result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -79,7 +78,7 @@ public class DeleteCategoryCommandHandlerTests
         var command = new DeleteCategoryCommand(categoryId);
 
         // Act
-        Result result = await _handler.Handle(command, default);
+        var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsFailure.Should().BeTrue();
