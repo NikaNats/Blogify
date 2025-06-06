@@ -1,7 +1,7 @@
 ﻿using Blogify.Application.Posts.PublishPost;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.PublishPost;
 
@@ -27,8 +27,8 @@ public class PublishPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -44,8 +44,8 @@ public class PublishPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        post.Status.Should().Be(PublicationStatus.Published);
+        result.IsSuccess.ShouldBeTrue();
+        post.Status.ShouldBe(PublicationStatus.Published);
         await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
     }
 

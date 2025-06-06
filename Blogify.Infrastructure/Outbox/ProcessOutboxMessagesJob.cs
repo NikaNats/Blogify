@@ -12,39 +12,26 @@ using Quartz;
 namespace Blogify.Infrastructure.Outbox;
 
 [DisallowConcurrentExecution]
-internal sealed class ProcessOutboxMessagesJob : IJob
+internal sealed class ProcessOutboxMessagesJob(
+    ISqlConnectionFactory sqlConnectionFactory,
+    IPublisher publisher,
+    IDateTimeProvider dateTimeProvider,
+    IOptions<OutboxOptions> outboxOptions,
+    ILogger<ProcessOutboxMessagesJob> logger)
+    : IJob
 {
     private static readonly JsonSerializerSettings JsonSerializerSettings = new()
     {
         TypeNameHandling = TypeNameHandling.All
     };
 
-    private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ILogger<ProcessOutboxMessagesJob> _logger;
-    private readonly OutboxOptions _outboxOptions;
-    private readonly IPublisher _publisher;
-
-    private readonly ISqlConnectionFactory _sqlConnectionFactory;
-
-    public ProcessOutboxMessagesJob(
-        ISqlConnectionFactory sqlConnectionFactory,
-        IPublisher publisher,
-        IDateTimeProvider dateTimeProvider,
-        IOptions<OutboxOptions> outboxOptions,
-        ILogger<ProcessOutboxMessagesJob> logger)
-    {
-        _sqlConnectionFactory = sqlConnectionFactory;
-        _publisher = publisher;
-        _dateTimeProvider = dateTimeProvider;
-        _logger = logger;
-        _outboxOptions = outboxOptions.Value;
-    }
+    private readonly OutboxOptions _outboxOptions = outboxOptions.Value;
 
     public async Task Execute(IJobExecutionContext context)
     {
-        _logger.LogInformation("Beginning to process outbox messages");
+        logger.LogInformation("Beginning to process outbox messages");
 
-        using var connection = _sqlConnectionFactory.CreateConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         using var transaction = connection.BeginTransaction();
 
         IReadOnlyList<OutboxMessageResponse> outboxMessages = await GetOutboxMessagesAsync(connection, transaction);
@@ -59,11 +46,11 @@ internal sealed class ProcessOutboxMessagesJob : IJob
                     outboxMessage.Content,
                     JsonSerializerSettings)!;
 
-                await _publisher.Publish(domainEvent, context.CancellationToken);
+                await publisher.Publish(domainEvent, context.CancellationToken);
             }
             catch (Exception caughtException)
             {
-                _logger.LogError(
+                logger.LogError(
                     caughtException,
                     "Exception while processing outbox message {MessageId}",
                     outboxMessage.Id);
@@ -76,7 +63,7 @@ internal sealed class ProcessOutboxMessagesJob : IJob
 
         transaction.Commit();
 
-        _logger.LogInformation("Completed processing outbox messages");
+        logger.LogInformation("Completed processing outbox messages");
     }
 
     private async Task<IReadOnlyList<OutboxMessageResponse>> GetOutboxMessagesAsync(
@@ -116,7 +103,7 @@ internal sealed class ProcessOutboxMessagesJob : IJob
             new
             {
                 outboxMessage.Id,
-                ProcessedOnUtc = _dateTimeProvider.UtcNow,
+                ProcessedOnUtc = dateTimeProvider.UtcNow,
                 Error = exception?.ToString()
             },
             transaction);

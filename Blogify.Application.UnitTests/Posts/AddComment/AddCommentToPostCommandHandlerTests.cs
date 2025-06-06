@@ -1,8 +1,8 @@
 ﻿using Blogify.Application.Posts.AddCommentToPost;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.AddComment;
 
@@ -29,8 +29,8 @@ public class AddCommentToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Post.NotFound");
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe("Post.NotFound");
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -42,14 +42,10 @@ public class AddCommentToPostCommandHandlerTests
         var postContentResult = PostContent.Create(new string('a', 100)); // Valid input: 100 characters
         var postExcerptResult = PostExcerpt.Create("Test Excerpt");
 
-        // Debugging: Log or inspect the error if creation fails
-        if (postContentResult.IsFailure)
-            throw new InvalidOperationException("PostContent creation failed: " + postContentResult.Error.Description);
-
         // Ensure all creations were successful
-        postTitleResult.IsSuccess.Should().BeTrue();
-        postContentResult.IsSuccess.Should().BeTrue();
-        postExcerptResult.IsSuccess.Should().BeTrue();
+        postTitleResult.IsSuccess.ShouldBeTrue();
+        postContentResult.IsSuccess.ShouldBeTrue();
+        postExcerptResult.IsSuccess.ShouldBeTrue();
 
         var postResult = Post.Create(
             postTitleResult.Value,
@@ -59,7 +55,7 @@ public class AddCommentToPostCommandHandlerTests
         );
 
         // Ensure the post creation was successful
-        postResult.IsSuccess.Should().BeTrue();
+        postResult.IsSuccess.ShouldBeTrue();
         var post = postResult.Value;
 
         var command = new AddCommentToPostCommand(post.Id, "Test comment", Guid.NewGuid());
@@ -69,8 +65,8 @@ public class AddCommentToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(PostErrors.CommentToUnpublishedPost.Code);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe(PostErrors.CommentToUnpublishedPost.Code);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -83,9 +79,9 @@ public class AddCommentToPostCommandHandlerTests
         var postExcerptResult = PostExcerpt.Create("Test Excerpt");
 
         // Ensure all creations were successful
-        postTitleResult.IsSuccess.Should().BeTrue();
-        postContentResult.IsSuccess.Should().BeTrue();
-        postExcerptResult.IsSuccess.Should().BeTrue();
+        postTitleResult.IsSuccess.ShouldBeTrue();
+        postContentResult.IsSuccess.ShouldBeTrue();
+        postExcerptResult.IsSuccess.ShouldBeTrue();
 
         var postResult = Post.Create(
             postTitleResult.Value,
@@ -104,8 +100,8 @@ public class AddCommentToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        post.Comments.Should().Contain(c => c.Content.Value == command.Content && c.AuthorId == command.AuthorId);
+        result.IsSuccess.ShouldBeTrue();
+        post.Comments.ShouldContain(c => c.Content.Value == command.Content && c.AuthorId == command.AuthorId);
         await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
     }
 
@@ -118,9 +114,9 @@ public class AddCommentToPostCommandHandlerTests
         var postExcerptResult = PostExcerpt.Create("Test Excerpt");
 
         // Ensure all creations were successful
-        postTitleResult.IsSuccess.Should().BeTrue();
-        postContentResult.IsSuccess.Should().BeTrue();
-        postExcerptResult.IsSuccess.Should().BeTrue();
+        postTitleResult.IsSuccess.ShouldBeTrue();
+        postContentResult.IsSuccess.ShouldBeTrue();
+        postExcerptResult.IsSuccess.ShouldBeTrue();
 
         var postResult = Post.Create(
             postTitleResult.Value,
@@ -130,7 +126,7 @@ public class AddCommentToPostCommandHandlerTests
         );
 
         // Ensure the post creation was successful
-        postResult.IsSuccess.Should().BeTrue();
+        postResult.IsSuccess.ShouldBeTrue();
         var post = postResult.Value;
 
         post.Publish(); // Ensure the post is published
@@ -141,7 +137,7 @@ public class AddCommentToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
+        result.IsFailure.ShouldBeTrue();
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 }

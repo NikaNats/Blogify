@@ -4,7 +4,7 @@ namespace Blogify.Infrastructure.Caching;
 
 public static class CacheOptions
 {
-    public static DistributedCacheEntryOptions DefaultExpiration => new()
+    private static DistributedCacheEntryOptions DefaultExpiration => new()
     {
         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
     };

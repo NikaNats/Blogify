@@ -6,20 +6,14 @@ using Microsoft.Extensions.Options;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class JwtService : IJwtService
+internal sealed class JwtService(HttpClient httpClient, IOptions<KeycloakOptions> keycloakOptions)
+    : IJwtService
 {
     private static readonly Error AuthenticationFailed = new(
         "Keycloak.AuthenticationFailed",
         "Failed to acquire access token do to authentication failure", ErrorType.AuthenticationFailed);
 
-    private readonly HttpClient _httpClient;
-    private readonly KeycloakOptions _keycloakOptions;
-
-    public JwtService(HttpClient httpClient, IOptions<KeycloakOptions> keycloakOptions)
-    {
-        _httpClient = httpClient;
-        _keycloakOptions = keycloakOptions.Value;
-    }
+    private readonly KeycloakOptions _keycloakOptions = keycloakOptions.Value;
 
     public async Task<Result<string>> GetAccessTokenAsync(
         string email,
@@ -40,7 +34,7 @@ internal sealed class JwtService : IJwtService
 
             using var authorizationRequestContent = new FormUrlEncodedContent(authRequestParameters);
 
-            var response = await _httpClient.PostAsync(
+            var response = await httpClient.PostAsync(
                 "",
                 authorizationRequestContent,
                 cancellationToken);

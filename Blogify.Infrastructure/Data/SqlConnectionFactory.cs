@@ -4,18 +4,11 @@ using Npgsql;
 
 namespace Blogify.Infrastructure.Data;
 
-public sealed class SqlConnectionFactory : ISqlConnectionFactory
+public sealed class SqlConnectionFactory(string connectionString) : ISqlConnectionFactory
 {
-    private readonly string _connectionString;
-
-    public SqlConnectionFactory(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
     public IDbConnection CreateConnection()
     {
-        var connection = new NpgsqlConnection(_connectionString);
+        var connection = new NpgsqlConnection(connectionString);
         connection.Open();
 
         return connection;

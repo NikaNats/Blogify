@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Blogify.Api.Controllers.Users;
 using Blogify.FunctionalTests.Infrastructure;
-using FluentAssertions;
+using Shouldly;
 
 namespace Blogify.FunctionalTests.Users;
 
@@ -21,7 +21,7 @@ public class LoginUserTests(FunctionalTestWebAppFactory factory) : BaseFunctiona
         var response = await HttpClient.PostAsJsonAsync("api/v1/users/login", request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -37,6 +37,6 @@ public class LoginUserTests(FunctionalTestWebAppFactory factory) : BaseFunctiona
         var response = await HttpClient.PostAsJsonAsync("api/v1/users/login", request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Blogify.Application.Comments.GetCommentsByPostId;
 using Blogify.Domain.Comments;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 
 namespace Blogify.Application.UnitTests.Comments.GetByPostId;
@@ -34,10 +34,11 @@ public class GetCommentsByPostIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value.Should().Contain(c => c.Content == "Content 1" && c.PostId == postId);
-        result.Value.Should().Contain(c => c.Content == "Content 2" && c.PostId == postId);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.Count.ShouldBe(2);
+        result.Value.ShouldContain(c => c.Content == "Content 1" && c.PostId == postId);
+        result.Value.ShouldContain(c => c.Content == "Content 2" && c.PostId == postId);
         await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<CancellationToken>());
     }
 
@@ -55,8 +56,9 @@ public class GetCommentsByPostIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.ShouldBeEmpty();
         await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<CancellationToken>());
     }
 
@@ -70,8 +72,8 @@ public class GetCommentsByPostIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.EmptyPostId);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.EmptyPostId);
         await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
@@ -85,7 +87,7 @@ public class GetCommentsByPostIdQueryHandlerTests
         var query = new GetCommentsByPostIdQuery(postId);
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _handler.Handle(query, cancellationToken));
+        await Should.ThrowAsync<OperationCanceledException>(() => _handler.Handle(query, cancellationToken));
         await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

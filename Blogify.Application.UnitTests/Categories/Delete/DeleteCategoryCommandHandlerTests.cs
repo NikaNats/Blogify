@@ -1,6 +1,6 @@
 ﻿using Blogify.Application.Categories.DeleteCategory;
 using Blogify.Domain.Categories;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -34,7 +34,7 @@ public class DeleteCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.ShouldBeTrue();
         await _categoryRepositoryMock.Received(1).DeleteAsync(category, Arg.Any<CancellationToken>());
     }
 
@@ -54,9 +54,9 @@ public class DeleteCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Category.NotFound");
-        result.Error.Description.Should().Be("Category not found.");
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe("Category.NotFound");
+        result.Error.Description.ShouldBe("Category not found.");
         await _categoryRepositoryMock.DidNotReceive().DeleteAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 
@@ -81,8 +81,8 @@ public class DeleteCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CategoryError.UnexpectedError);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CategoryError.UnexpectedError);
     }
 
     [Fact]

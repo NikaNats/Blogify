@@ -3,24 +3,17 @@ using Microsoft.AspNetCore.Http;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class UserContext : IUserContext
+internal sealed class UserContext(IHttpContextAccessor httpContextAccessor) : IUserContext
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public UserContext(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
-
     public Guid UserId =>
-        _httpContextAccessor
+        httpContextAccessor
             .HttpContext?
             .User
             .GetUserId() ??
         throw new ApplicationException("User context is unavailable");
 
     public string IdentityId =>
-        _httpContextAccessor
+        httpContextAccessor
             .HttpContext?
             .User
             .GetIdentityId() ??

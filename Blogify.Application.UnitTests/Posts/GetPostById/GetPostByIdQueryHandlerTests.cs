@@ -1,7 +1,7 @@
 ﻿using Blogify.Application.Posts.GetPostById;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetPostById;
 
@@ -27,8 +27,8 @@ public class GetPostByIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
     }
 
     [Fact]
@@ -43,9 +43,9 @@ public class GetPostByIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(post.Id);
-        result.Value.Title.Should().Be(post.Title.Value);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Id.ShouldBe(post.Id);
+        result.Value.Title.ShouldBe(post.Title.Value);
     }
 
     private Post CreateDraftPost()

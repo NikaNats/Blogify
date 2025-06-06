@@ -3,14 +3,10 @@ using Microsoft.Extensions.Options;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class JwtBearerOptionsSetup : IConfigureNamedOptions<JwtBearerOptions>
+internal sealed class JwtBearerOptionsSetup(IOptions<AuthenticationOptions> authenticationOptions)
+    : IConfigureNamedOptions<JwtBearerOptions>
 {
-    private readonly AuthenticationOptions _authenticationOptions;
-
-    public JwtBearerOptionsSetup(IOptions<AuthenticationOptions> authenticationOptions)
-    {
-        _authenticationOptions = authenticationOptions.Value;
-    }
+    private readonly AuthenticationOptions _authenticationOptions = authenticationOptions.Value;
 
     public void Configure(JwtBearerOptions options)
     {

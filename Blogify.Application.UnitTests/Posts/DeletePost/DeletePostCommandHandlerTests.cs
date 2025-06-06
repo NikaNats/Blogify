@@ -1,8 +1,8 @@
 ﻿using Blogify.Application.Exceptions;
 using Blogify.Application.Posts.DeletePost;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.DeletePost;
 
@@ -28,8 +28,8 @@ public class DeletePostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
         await _postRepository.DidNotReceive().DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -46,7 +46,7 @@ public class DeletePostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.ShouldBeTrue();
         await _postRepository.Received(1).DeleteAsync(post, Arg.Any<CancellationToken>());
     }
 
@@ -64,8 +64,8 @@ public class DeletePostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.Overlap);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.Overlap);
     }
 
     private Post CreateDraftPost()

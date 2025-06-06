@@ -6,15 +6,8 @@ using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Blogify.Infrastructure.Authorization;
 
-internal sealed class CustomClaimsTransformation : IClaimsTransformation
+internal sealed class CustomClaimsTransformation(IServiceProvider serviceProvider) : IClaimsTransformation
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public CustomClaimsTransformation(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity is not { IsAuthenticated: true } ||
@@ -22,7 +15,7 @@ internal sealed class CustomClaimsTransformation : IClaimsTransformation
              principal.HasClaim(claim => claim.Type == JwtRegisteredClaimNames.Sub)))
             return principal;
 
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
 
         var authorizationService = scope.ServiceProvider.GetRequiredService<AuthorizationService>();
 

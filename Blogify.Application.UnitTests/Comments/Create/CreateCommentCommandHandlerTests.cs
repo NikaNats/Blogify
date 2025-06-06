@@ -2,7 +2,7 @@
 using Blogify.Application.Comments.CreateComment;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 
 namespace Blogify.Application.UnitTests.Comments.Create;
@@ -37,8 +37,8 @@ public class CreateCommentCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBe(Guid.Empty);
         await _commentRepository.Received(1).AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
     }
 
@@ -56,8 +56,8 @@ public class CreateCommentCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.EmptyContent);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.EmptyContent);
         await _commentRepository.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
     }
 
@@ -75,8 +75,8 @@ public class CreateCommentCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
         await _commentRepository.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
     }
 
@@ -88,7 +88,7 @@ public class CreateCommentCommandHandlerTests
         var cancellationToken = new CancellationToken(true);
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _handler.Handle(command, cancellationToken));
+        await Should.ThrowAsync<OperationCanceledException>(() => _handler.Handle(command, cancellationToken));
         await _commentRepository.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
     }
 }

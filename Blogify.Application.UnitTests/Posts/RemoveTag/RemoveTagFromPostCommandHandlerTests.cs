@@ -1,8 +1,8 @@
 ﻿using Blogify.Application.Posts.RemoveTagFromPost;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.RemoveTag;
 
@@ -30,8 +30,8 @@ public class RemoveTagFromPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -48,8 +48,8 @@ public class RemoveTagFromPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(TagErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(TagErrors.NotFound);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -68,8 +68,8 @@ public class RemoveTagFromPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        post.Tags.Should().NotContain(t => t.Id == tag.Id);
+        result.IsSuccess.ShouldBeTrue();
+        post.Tags.ShouldNotContain(t => t.Id == tag.Id);
         await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
     }
 

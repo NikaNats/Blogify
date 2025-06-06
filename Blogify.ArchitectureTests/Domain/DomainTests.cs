@@ -1,12 +1,13 @@
 ﻿using System.Reflection;
 using Blogify.ArchitectureTests.Infrastructure;
 using Blogify.Domain.Abstractions;
-using FluentAssertions;
 using NetArchTest.Rules;
+using Shouldly;
+using Xunit.Abstractions;
 
 namespace Blogify.ArchitectureTests.Domain;
 
-public class DomainTests : BaseTest
+public class DomainTests(ITestOutputHelper testOutputHelper) : BaseTest
 {
     [Fact]
     public void DomainEvents_Should_BeSealed()
@@ -14,11 +15,13 @@ public class DomainTests : BaseTest
         TestResult result = Types.InAssembly(DomainAssembly)
             .That()
             .ImplementInterface(typeof(IDomainEvent))
+            .And()
+            .AreNotAbstract() // Abstract types (e.g., DomainEvent base class) are excluded since they are designed for inheritance.
             .Should()
             .BeSealed()
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -31,7 +34,7 @@ public class DomainTests : BaseTest
             .HaveNameEndingWith("DomainEvent")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -54,6 +57,6 @@ public class DomainTests : BaseTest
             }
         }
 
-        failingTypes.Should().BeEmpty();
+        failingTypes.ShouldBeEmpty();  // Shouldly assertion
     }
 }

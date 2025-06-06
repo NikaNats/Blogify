@@ -2,10 +2,4 @@
 
 namespace Blogify.Infrastructure.Authorization;
 
-public sealed class HasPermissionAttribute : AuthorizeAttribute
-{
-    public HasPermissionAttribute(string permission)
-        : base(permission)
-    {
-    }
-}
+public sealed class HasPermissionAttribute(string permission) : AuthorizeAttribute(permission);

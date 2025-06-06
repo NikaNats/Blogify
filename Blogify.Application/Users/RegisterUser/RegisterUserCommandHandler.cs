@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Blogify.Application.Users.RegisterUser;
 
-public sealed class RegisterUserCommandHandler(
+internal sealed class RegisterUserCommandHandler(
     IAuthenticationService authenticationService,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,

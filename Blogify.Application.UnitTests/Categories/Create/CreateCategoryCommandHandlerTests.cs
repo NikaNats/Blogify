@@ -1,6 +1,6 @@
 ﻿using Blogify.Application.Categories.CreateCategory;
 using Blogify.Domain.Categories;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -31,8 +31,8 @@ public class CreateCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ToString().ShouldNotBeNullOrEmpty();
         await _categoryRepositoryMock.Received(1).AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 
@@ -46,9 +46,9 @@ public class CreateCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Category.NameNullOrEmpty");
-        result.Error.Description.Should().Be("Category name cannot be null or empty.");
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe("Category.NameNullOrEmpty");
+        result.Error.Description.ShouldBe("Category name cannot be null or empty.");
         await _categoryRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 
@@ -62,9 +62,9 @@ public class CreateCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Category.DescriptionNullOrEmpty");
-        result.Error.Description.Should().Be("Category description cannot be null or empty.");
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe("Category.DescriptionNullOrEmpty");
+        result.Error.Description.ShouldBe("Category description cannot be null or empty.");
         await _categoryRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>());
     }
 
@@ -82,8 +82,8 @@ public class CreateCategoryCommandHandlerTests
         var result = await _handler.Handle(command, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CategoryError.UnexpectedError);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CategoryError.UnexpectedError);
     }
 
     [Fact]

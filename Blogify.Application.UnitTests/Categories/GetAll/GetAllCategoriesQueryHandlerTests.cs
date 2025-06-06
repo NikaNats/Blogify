@@ -1,6 +1,6 @@
 ﻿using Blogify.Application.Categories.GetAllCategories;
 using Blogify.Domain.Categories;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -31,8 +31,8 @@ public class GetAllCategoriesTests
         var result = await _handler.Handle(query, default);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
@@ -41,7 +41,6 @@ public class GetAllCategoriesTests
         // Arrange
         var category1 = Category.Create("Category1", "Description1").Value;
         var category2 = Category.Create("Category2", "Description2").Value;
-
         var categories = new List<Category> { category1, category2 }.AsReadOnly();
 
         _categoryRepositoryMock
@@ -54,10 +53,10 @@ public class GetAllCategoriesTests
         var result = await _handler.Handle(query, default);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value[0].Name.Should().Be("Category1");
-        result.Value[1].Name.Should().Be("Category2");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Count.ShouldBe(2);
+        result.Value[0].Name.ShouldBe("Category1");
+        result.Value[1].Name.ShouldBe("Category2");
     }
 
     [Fact]
@@ -74,8 +73,8 @@ public class GetAllCategoriesTests
         var result = await _handler.Handle(query, default);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CategoryError.UnexpectedError);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CategoryError.UnexpectedError);
     }
 
     [Fact]
@@ -83,7 +82,6 @@ public class GetAllCategoriesTests
     {
         // Arrange
         var category = Category.Create("Category1", "Description1").Value;
-
         var categories = new List<Category> { category }.AsReadOnly();
 
         _categoryRepositoryMock

@@ -3,8 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Blogify.Application.Users.GetLoggedInUser;
 using Blogify.FunctionalTests.Infrastructure;
-using FluentAssertions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Shouldly;
 
 namespace Blogify.FunctionalTests.Users;
 
@@ -17,7 +17,7 @@ public class GetLoggedInUserTests(FunctionalTestWebAppFactory factory) : BaseFun
         var response = await HttpClient.GetAsync("api/v1/users/me");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -33,6 +33,6 @@ public class GetLoggedInUserTests(FunctionalTestWebAppFactory factory) : BaseFun
         var user = await HttpClient.GetFromJsonAsync<UserResponse>("api/v1/users/me");
 
         // Assert
-        user.Should().NotBeNull();
+        user.ShouldNotBeNull();
     }
 }

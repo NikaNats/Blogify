@@ -2,9 +2,9 @@
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
-using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetPostsByTagId;
 
@@ -45,12 +45,12 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldHaveSingleItem();
 
         var response = result.Value[0];
-        response.Categories.Should().ContainSingle(c => c.Id == category.Id);
-        response.Tags.Should().ContainSingle(t => t.Id == tag.Id);
+        response.Categories.ShouldContain(c => c.Id == category.Id);
+        response.Tags.ShouldContain(t => t.Id == tag.Id);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
@@ -83,10 +83,10 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Posts.RetrievalFailed");
-        result.Error.Description.Should().Contain(categoryId.ToString());
-        // result.Error.Code.Should().Be(exception);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.Code.ShouldBe("Posts.RetrievalFailed");
+        result.Error.Description.ShouldContain(categoryId.ToString());
+        // result.Error.Code.ShouldBe(exception); // Unclear test, leave it as-is for now
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var excerpt = PostExcerpt.Create("Test Excerpt").Value;
 
         var postResult = Post.Create(title, content, excerpt, authorId);
-        postResult.IsSuccess.Should().BeTrue("Test data setup failed");
+        postResult.IsSuccess.ShouldBeTrue("Test data setup failed");
 
         var post = postResult.Value;
         post.Publish();

@@ -1,6 +1,6 @@
 ﻿using Blogify.Domain.Users;
 using Blogify.Domain.Users.Events;
-using FluentAssertions;
+using Shouldly;  // Changed namespace
 
 namespace Blogify.Domain.UnitTests.Users;
 
@@ -20,14 +20,14 @@ public static class UserTests
             var result = User.Create(firstName, lastName, email);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Should().NotBeNull();
-            result.Value.Id.Should().NotBe(Guid.Empty);
-            result.Value.FirstName.Should().Be(firstName);
-            result.Value.LastName.Should().Be(lastName);
-            result.Value.Email.Address.Should().Be(email.Address);
-            result.Value.IdentityId.Should().BeEmpty();
-            result.Value.Roles.Should().ContainSingle(r => r == UserData.Registered);
+            result.IsSuccess.ShouldBeTrue();
+            result.Value.ShouldNotBeNull();
+            result.Value.Id.ShouldNotBe(Guid.Empty);
+            result.Value.FirstName.ShouldBe(firstName);
+            result.Value.LastName.ShouldBe(lastName);
+            result.Value.Email.Address.ShouldBe(email.Address);
+            result.Value.IdentityId.ShouldBeEmpty();
+            result.Value.Roles.ShouldContain(r => r == UserData.Registered, 1);
         }
 
         [Fact]
@@ -35,20 +35,21 @@ public static class UserTests
         {
             // Act
             var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail);
-
+    
             // Assert
             var events = result.Value.DomainEvents;
-            events.Should().HaveCount(2);
-
-            events.Should().ContainSingle(e => e is UserCreatedDomainEvent)
-                .Which.Should().BeOfType<UserCreatedDomainEvent>()
-                .Which.UserId.Should().Be(result.Value.Id);
-
-            events.Should().ContainSingle(e => e is RoleAssignedDomainEvent)
-                .Which.Should().BeOfType<RoleAssignedDomainEvent>()
-                .Which.Should().Match<RoleAssignedDomainEvent>(e =>
-                    e.UserId == result.Value.Id &&
-                    e.RoleId == UserData.Registered.Id);
+            events.Count.ShouldBe(2);
+    
+            // Find and validate UserCreatedDomainEvent
+            var userCreatedEvent = events.OfType<UserCreatedDomainEvent>().FirstOrDefault();
+            userCreatedEvent.ShouldNotBeNull();
+            userCreatedEvent.UserId.ShouldBe(result.Value.Id);
+    
+            // Find and validate RoleAssignedDomainEvent
+            var roleAssignedEvent = events.OfType<RoleAssignedDomainEvent>().FirstOrDefault();
+            roleAssignedEvent.ShouldNotBeNull();
+            roleAssignedEvent.UserId.ShouldBe(result.Value.Id);
+            roleAssignedEvent.RoleId.ShouldBe(UserData.Registered.Id);
         }
 
         [Theory]
@@ -63,8 +64,8 @@ public static class UserTests
             var lastNameResult = LastName.Create(invalidLastNameInput);
 
             // Assert
-            lastNameResult.IsFailure.Should().BeTrue();
-            lastNameResult.Error.Should().Be(UserErrors.InvalidLastName);
+            lastNameResult.IsFailure.ShouldBeTrue();
+            lastNameResult.Error.ShouldBe(UserErrors.InvalidLastName);
         }
 
         [Theory]
@@ -84,14 +85,14 @@ public static class UserTests
                 var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, invalidEmailResult.Value);
 
                 // Assert
-                result.IsFailure.Should().BeTrue();
-                result.Error.Should().Be(UserErrors.InvalidEmail);
+                result.IsFailure.ShouldBeTrue();
+                result.Error.ShouldBe(UserErrors.InvalidEmail);
             }
             else
             {
                 // Assert
-                invalidEmailResult.IsFailure.Should().BeTrue();
-                invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
+                invalidEmailResult.IsFailure.ShouldBeTrue();
+                invalidEmailResult.Error.ShouldBe(UserErrors.InvalidEmail);
             }
         }
 
@@ -108,8 +109,8 @@ public static class UserTests
             var firstNameResult = FirstName.Create(invalidFirstNameInput);
 
             // Assert
-            firstNameResult.IsFailure.Should().BeTrue();
-            firstNameResult.Error.Should().Be(UserErrors.InvalidFirstName);
+            firstNameResult.IsFailure.ShouldBeTrue();
+            firstNameResult.Error.ShouldBe(UserErrors.InvalidFirstName);
         }
 
         [Fact]
@@ -122,8 +123,8 @@ public static class UserTests
             var firstNameResult = FirstName.Create(longFirstName);
 
             // Assert
-            firstNameResult.IsFailure.Should().BeTrue();
-            firstNameResult.Error.Should().Be(UserErrors.FirstNameTooLong);
+            firstNameResult.IsFailure.ShouldBeTrue();
+            firstNameResult.Error.ShouldBe(UserErrors.FirstNameTooLong);
         }
 
         [Fact]
@@ -136,8 +137,8 @@ public static class UserTests
             var lastNameResult = LastName.Create(longLastName);
 
             // Assert
-            lastNameResult.IsFailure.Should().BeTrue();
-            lastNameResult.Error.Should().Be(UserErrors.LastNameTooLong);
+            lastNameResult.IsFailure.ShouldBeTrue();
+            lastNameResult.Error.ShouldBe(UserErrors.LastNameTooLong);
         }
 
         [Fact]
@@ -150,8 +151,8 @@ public static class UserTests
             var emailResult = Email.Create(longEmail);
 
             // Assert
-            emailResult.IsFailure.Should().BeTrue();
-            emailResult.Error.Should().Be(UserErrors.EmailTooLong);
+            emailResult.IsFailure.ShouldBeTrue();
+            emailResult.Error.ShouldBe(UserErrors.EmailTooLong);
         }
     }
 
@@ -169,13 +170,12 @@ public static class UserTests
             user.AddRole(newRole);
 
             // Assert
-            user.Roles.Should().Contain(newRole);
+            user.Roles.ShouldContain(newRole);
             var events = user.DomainEvents;
-            events.Should().ContainSingle()
-                .Which.Should().BeOfType<RoleAssignedDomainEvent>()
-                .Which.Should().Match<RoleAssignedDomainEvent>(e =>
-                    e.UserId == user.Id &&
-                    e.RoleId == newRole.Id);
+            events.Count.ShouldBe(1);
+            var roleEvent = events.First().ShouldBeOfType<RoleAssignedDomainEvent>();
+            roleEvent.UserId.ShouldBe(user.Id);
+            roleEvent.RoleId.ShouldBe(newRole.Id);
         }
 
         [Fact]
@@ -190,8 +190,8 @@ public static class UserTests
             user.AddRole(existingRole);
 
             // Assert
-            user.Roles.Count(r => r == existingRole).Should().Be(1);
-            user.DomainEvents.Should().BeEmpty();
+            user.Roles.Count(r => r == existingRole).ShouldBe(1);
+            user.DomainEvents.ShouldBeEmpty();
         }
 
         [Fact]
@@ -206,10 +206,10 @@ public static class UserTests
             user.AddRole(UserData.Premium);
 
             // Assert
-            user.Roles.Should().HaveCount(3); // Including default Registered role
-            user.Roles.Should().Contain(UserData.Registered);
-            user.Roles.Should().Contain(UserData.Administrator);
-            user.Roles.Should().Contain(UserData.Premium);
+            user.Roles.Count.ShouldBe(3); // Including default Registered role
+            user.Roles.ShouldContain(UserData.Registered);
+            user.Roles.ShouldContain(UserData.Administrator);
+            user.Roles.ShouldContain(UserData.Premium);
         }
     }
 
@@ -227,14 +227,12 @@ public static class UserTests
             var result = user.ChangeEmail(newEmail);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            user.Email.Address.Should().Be(newEmail.Address);
-            var events = user.DomainEvents;
-            events.Should().ContainSingle()
-                .Which.Should().BeOfType<EmailChangedDomainEvent>()
-                .Which.Should().Match<EmailChangedDomainEvent>(e =>
-                    e.UserId == user.Id &&
-                    e.NewEmail == newEmail.Address);
+            result.IsSuccess.ShouldBeTrue();
+            user.Email.Address.ShouldBe(newEmail.Address);
+            user.DomainEvents.Count.ShouldBe(1);
+            var emailEvent = user.DomainEvents.First().ShouldBeOfType<EmailChangedDomainEvent>();
+            emailEvent.UserId.ShouldBe(user.Id);
+            emailEvent.NewEmail.ShouldBe(newEmail.Address);
         }
 
         [Fact]
@@ -248,9 +246,9 @@ public static class UserTests
             var result = user.ChangeEmail(UserData.DefaultEmail);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            user.Email.Address.Should().Be(UserData.DefaultEmail.Address);
-            user.DomainEvents.Should().BeEmpty();
+            result.IsSuccess.ShouldBeTrue();
+            user.Email.Address.ShouldBe(UserData.DefaultEmail.Address);
+            user.DomainEvents.ShouldBeEmpty();
         }
 
         [Theory]
@@ -273,16 +271,16 @@ public static class UserTests
                 var result = user.ChangeEmail(invalidEmailResult.Value);
 
                 // Assert
-                result.IsFailure.Should().BeTrue();
-                result.Error.Should().Be(UserErrors.InvalidEmail);
-                user.Email.Should().Be(originalEmail);
-                user.DomainEvents.Should().BeEmpty();
+                result.IsFailure.ShouldBeTrue();
+                result.Error.ShouldBe(UserErrors.InvalidEmail);
+                user.Email.ShouldBe(originalEmail);
+                user.DomainEvents.ShouldBeEmpty();
             }
             else
             {
                 // Assert
-                invalidEmailResult.IsFailure.Should().BeTrue();
-                invalidEmailResult.Error.Should().Be(UserErrors.InvalidEmail);
+                invalidEmailResult.IsFailure.ShouldBeTrue();
+                invalidEmailResult.Error.ShouldBe(UserErrors.InvalidEmail);
             }
         }
     }
@@ -300,7 +298,7 @@ public static class UserTests
             user.SetIdentityId(identityId);
 
             // Assert
-            user.IdentityId.Should().Be(identityId);
+            user.IdentityId.ShouldBe(identityId);
         }
 
         [Fact]
@@ -316,7 +314,7 @@ public static class UserTests
             user.SetIdentityId(secondIdentityId);
 
             // Assert
-            user.IdentityId.Should().Be(secondIdentityId);
+            user.IdentityId.ShouldBe(secondIdentityId);
         }
 
         [Theory]
@@ -332,7 +330,7 @@ public static class UserTests
             user.SetIdentityId(UserData.InvalidNames[index]);
 
             // Assert
-            user.IdentityId.Should().Be(UserData.InvalidNames[index]);
+            user.IdentityId.ShouldBe(UserData.InvalidNames[index]);
         }
     }
 
@@ -351,17 +349,16 @@ public static class UserTests
             var result = user.ChangeName(newFirstName, newLastName);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            user.FirstName.Value.Should().Be("Jane");
-            user.LastName.Value.Should().Be("Smith");
-            user.DomainEvents.Should().ContainSingle()
-                .Which.Should().BeOfType<UserNameChangedDomainEvent>()
-                .Which.Should().Match<UserNameChangedDomainEvent>(e =>
-                    e.Id == user.Id &&
-                    e.OldFirstName == "John" &&
-                    e.OldLastName == "Doe" &&
-                    e.FirstNameValue == "Jane" &&
-                    e.LastNameValue == "Smith");
+            result.IsSuccess.ShouldBeTrue();
+            user.FirstName.Value.ShouldBe("Jane");
+            user.LastName.Value.ShouldBe("Smith");
+            user.DomainEvents.Count.ShouldBe(1);
+            var nameEvent = user.DomainEvents.First().ShouldBeOfType<UserNameChangedDomainEvent>();
+            nameEvent.Id.ShouldBe(user.Id);
+            nameEvent.OldFirstName.ShouldBe("John");
+            nameEvent.OldLastName.ShouldBe("Doe");
+            nameEvent.FirstNameValue.ShouldBe("Jane");
+            nameEvent.LastNameValue.ShouldBe("Smith");
         }
 
         [Fact]
@@ -375,10 +372,10 @@ public static class UserTests
             var result = user.ChangeName(UserData.DefaultFirstName, UserData.DefaultLastName);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            user.FirstName.Should().Be(UserData.DefaultFirstName);
-            user.LastName.Should().Be(UserData.DefaultLastName);
-            user.DomainEvents.Should().BeEmpty();
+            result.IsSuccess.ShouldBeTrue();
+            user.FirstName.ShouldBe(UserData.DefaultFirstName);
+            user.LastName.ShouldBe(UserData.DefaultLastName);
+            user.DomainEvents.ShouldBeEmpty();
         }
 
         [Fact]
@@ -393,15 +390,14 @@ public static class UserTests
             var result = user.ChangeName(newFirstName, UserData.DefaultLastName);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            user.FirstName.Value.Should().Be("Jane");
-            user.LastName.Should().Be(UserData.DefaultLastName);
-            user.DomainEvents.Should().ContainSingle()
-                .Which.Should().BeOfType<UserNameChangedDomainEvent>()
-                .Which.Should().Match<UserNameChangedDomainEvent>(e =>
-                    e.Id == user.Id &&
-                    e.OldFirstName == "John" &&
-                    e.FirstNameValue == "Jane");
+            result.IsSuccess.ShouldBeTrue();
+            user.FirstName.Value.ShouldBe("Jane");
+            user.LastName.ShouldBe(UserData.DefaultLastName);
+            user.DomainEvents.Count.ShouldBe(1);
+            var nameEvent = user.DomainEvents.First().ShouldBeOfType<UserNameChangedDomainEvent>();
+            nameEvent.Id.ShouldBe(user.Id);
+            nameEvent.OldFirstName.ShouldBe("John");
+            nameEvent.FirstNameValue.ShouldBe("Jane");
         }
     }
 
@@ -414,8 +410,8 @@ public static class UserTests
             var result = FirstName.Create(" John ");
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Value.Should().Be("John");
+            result.IsSuccess.ShouldBeTrue();
+            result.Value.Value.ShouldBe("John");
         }
 
         [Fact]
@@ -425,8 +421,8 @@ public static class UserTests
             var result = FirstName.Create("");
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be(UserErrors.InvalidFirstName);
+            result.IsFailure.ShouldBeTrue();
+            result.Error.ShouldBe(UserErrors.InvalidFirstName);
         }
 
         [Fact]
@@ -439,8 +435,8 @@ public static class UserTests
             var result = FirstName.Create(longName);
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be(UserErrors.FirstNameTooLong);
+            result.IsFailure.ShouldBeTrue();
+            result.Error.ShouldBe(UserErrors.FirstNameTooLong);
         }
 
         [Fact]
@@ -453,8 +449,8 @@ public static class UserTests
             var result = FirstName.Create(maxName);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Value.Should().Be(maxName);
+            result.IsSuccess.ShouldBeTrue();
+            result.Value.Value.ShouldBe(maxName);
         }
     }
 
@@ -467,8 +463,8 @@ public static class UserTests
             var result = Email.Create("Test@Example.com");
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Address.Should().Be("test@example.com");
+            result.IsSuccess.ShouldBeTrue();
+            result.Value.Address.ShouldBe("test@example.com");
         }
 
         [Fact]
@@ -481,8 +477,8 @@ public static class UserTests
             var result = Email.Create(longEmail);
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be(UserErrors.EmailTooLong);
+            result.IsFailure.ShouldBeTrue();
+            result.Error.ShouldBe(UserErrors.EmailTooLong);
         }
 
         [Fact]
@@ -495,8 +491,8 @@ public static class UserTests
             var result = Email.Create(maxEmail);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Address.Should().Be(maxEmail.ToLowerInvariant());
+            result.IsSuccess.ShouldBeTrue();
+            result.Value.Address.ShouldBe(maxEmail.ToLowerInvariant());
         }
 
         [Fact]
@@ -507,7 +503,7 @@ public static class UserTests
             var email2 = Email.Create("test@EXAMPLE.COM").Value;
 
             // Assert
-            email1.Should().Be(email2);
+            email1.ShouldBe(email2);
         }
     }
 }

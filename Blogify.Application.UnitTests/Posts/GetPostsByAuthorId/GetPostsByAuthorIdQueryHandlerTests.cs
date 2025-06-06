@@ -1,7 +1,7 @@
 ﻿using Blogify.Application.Posts.GetPostsByAuthorId;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetPostsByAuthorId;
 
@@ -27,8 +27,8 @@ public class GetPostsByAuthorIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByAuthorIdQuery(authorId), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
@@ -43,10 +43,10 @@ public class GetPostsByAuthorIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByAuthorIdQuery(authorId), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value[0].AuthorId.Should().Be(authorId);
-        result.Value[1].AuthorId.Should().Be(authorId);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Count.ShouldBe(2);
+        result.Value[0].AuthorId.ShouldBe(authorId);
+        result.Value[1].AuthorId.ShouldBe(authorId);
     }
 
     private Post CreatePostWithAuthor(Guid authorId)

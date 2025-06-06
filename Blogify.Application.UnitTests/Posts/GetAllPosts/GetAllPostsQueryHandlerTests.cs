@@ -1,7 +1,7 @@
 ﻿using Blogify.Application.Posts.GetAllPosts;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetAllPosts;
 
@@ -26,8 +26,8 @@ public class GetAllPostsQueryHandlerTests
         var result = await _handler.Handle(new GetAllPostsQuery(), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
@@ -45,11 +45,11 @@ public class GetAllPostsQueryHandlerTests
         var result = await _handler.Handle(new GetAllPostsQuery(), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value[0].Id.Should().Be(posts[0].Id);
-        result.Value[1].Id.Should().Be(posts[1].Id);
-        result.Value[1].Status.Should().Be(PublicationStatus.Published);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Count.ShouldBe(2);
+        result.Value[0].Id.ShouldBe(posts[0].Id);
+        result.Value[1].Id.ShouldBe(posts[1].Id);
+        result.Value[1].Status.ShouldBe(PublicationStatus.Published);
     }
 
     #region Helper Methods

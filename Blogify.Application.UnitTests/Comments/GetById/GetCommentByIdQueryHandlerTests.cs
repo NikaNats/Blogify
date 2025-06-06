@@ -1,6 +1,6 @@
 ﻿using Blogify.Application.Comments.GetCommentById;
 using Blogify.Domain.Comments;
-using FluentAssertions;
+using Shouldly;
 using NSubstitute;
 
 namespace Blogify.Application.UnitTests.Comments.GetById;
@@ -29,13 +29,13 @@ public class GetCommentByIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
-        result.Value.Id.Should().Be(comment.Id);
-        result.Value.Content.Should().Be(comment.Content.Value);
-        result.Value.AuthorId.Should().Be(comment.AuthorId);
-        result.Value.PostId.Should().Be(comment.PostId);
-        result.Value.CreatedAt.Should().Be(comment.CreatedAt);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.Id.ShouldBe(comment.Id);
+        result.Value.Content.ShouldBe(comment.Content.Value);
+        result.Value.AuthorId.ShouldBe(comment.AuthorId);
+        result.Value.PostId.ShouldBe(comment.PostId);
+        result.Value.CreatedAt.ShouldBe(comment.CreatedAt);
         await _commentRepositoryMock.Received(1).GetByIdAsync(comment.Id, Arg.Any<CancellationToken>());
     }
 
@@ -52,8 +52,8 @@ public class GetCommentByIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.NotFound);
         await _commentRepositoryMock.Received(1).GetByIdAsync(commentId, Arg.Any<CancellationToken>());
     }
 
@@ -68,8 +68,8 @@ public class GetCommentByIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CommentError.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.NotFound);
         await _commentRepositoryMock.Received().GetByIdAsync(Guid.Empty, Arg.Any<CancellationToken>());
     }
 }

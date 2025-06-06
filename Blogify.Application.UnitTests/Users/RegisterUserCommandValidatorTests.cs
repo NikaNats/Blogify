@@ -1,294 +1,167 @@
 ﻿using Blogify.Application.Users.RegisterUser;
-using FluentAssertions;
 using FluentValidation.Results;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Users
 {
     public class RegisterUserCommandValidatorTests
     {
-        /// <summary>
-        /// Tests that a command with all valid properties passes validation.
-        /// </summary>
         [Fact]
         public void Validate_ValidCommand_Succeeds()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeTrue();
-            result.Errors.Should().BeEmpty();
+            result.IsValid.ShouldBeTrue();
+            result.Errors.ShouldBeEmpty();
         }
 
-        /// <summary>
-        /// Tests that an empty FirstName fails validation with an error for FirstName.
-        /// </summary>
         [Fact]
         public void Validate_EmptyFirstName_FailsWithFirstNameError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "",
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("test@example.com", "", "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle()
-                .Which.PropertyName.Should().Be("FirstName");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("FirstName");
         }
 
-        /// <summary>
-        /// Tests that a null FirstName fails validation with an error for FirstName.
-        /// </summary>
         [Fact]
         public void Validate_NullFirstName_FailsWithFirstNameError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: null!,
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("test@example.com", null!, "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle()
-                .Which.PropertyName.Should().Be("FirstName");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("FirstName");
         }
 
-        /// <summary>
-        /// Tests that an empty LastName fails validation with an error for LastName.
-        /// </summary>
         [Fact]
         public void Validate_EmptyLastName_FailsWithLastNameError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: "",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", "", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle()
-                .Which.PropertyName.Should().Be("LastName");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("LastName");
         }
 
-        /// <summary>
-        /// Tests that a null LastName fails validation with an error for LastName.
-        /// </summary>
         [Fact]
         public void Validate_NullLastName_FailsWithLastNameError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: null!,
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", null!, "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle()
-                .Which.PropertyName.Should().Be("LastName");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("LastName");
         }
 
-        /// <summary>
-        /// Tests that an invalid email fails validation with an error for Email.
-        /// </summary>
         [Fact]
         public void Validate_InvalidEmail_FailsWithEmailError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "invalid",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("invalid", "John", "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName == "Email");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldContain(e => e.PropertyName == "Email");
         }
 
-        /// <summary>
-        /// Tests that an empty email fails validation with an error for Email.
-        /// </summary>
         [Fact]
         public void Validate_EmptyEmail_FailsWithEmailError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand("", "John", "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName == "Email");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldContain(e => e.PropertyName == "Email");
         }
 
-        /// <summary>
-        /// Tests that a null email fails validation with an error for Email.
-        /// </summary>
         [Fact]
         public void Validate_NullEmail_FailsWithEmailError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: null!,
-                FirstName: "John",
-                LastName: "Doe",
-                Password: "SecurePass123"
-            );
+            var command = new RegisterUserCommand(null!, "John", "Doe", "SecurePass123");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName == "Email");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldContain(e => e.PropertyName == "Email");
         }
 
-        /// <summary>
-        /// Tests that an empty password fails validation with errors for Password.
-        /// </summary>
         [Fact]
         public void Validate_EmptyPassword_FailsWithPasswordErrors()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: ""
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", "Doe", "");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName == "Password");
-            result.Errors.Where(e => e.PropertyName == "Password").Should().HaveCount(2); // NotEmpty and MinimumLength
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldContain(e => e.PropertyName == "Password");
+            result.Errors.Count(e => e.PropertyName == "Password").ShouldBe(2);
         }
 
-        /// <summary>
-        /// Tests that a null password fails validation with errors for Password.
-        /// </summary>
         [Fact]
         public void Validate_NullPassword_FailsWithPasswordErrors()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: null!
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", "Doe", null!);
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain(e => e.PropertyName == "Password");
-            result.Errors.Where(e => e.PropertyName == "Password").Should().ContainSingle(); // Only NotEmpty applies
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldContain(e => e.PropertyName == "Password");
+            result.Errors.Count(e => e.PropertyName == "Password").ShouldBe(1);
         }
 
-        /// <summary>
-        /// Tests that a short password (less than 5 characters) fails validation with an error for Password.
-        /// </summary>
         [Fact]
         public void Validate_ShortPassword_FailsWithPasswordError()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "test@example.com",
-                FirstName: "John",
-                LastName: "Doe",
-                Password: "1234"
-            );
+            var command = new RegisterUserCommand("test@example.com", "John", "Doe", "1234");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().ContainSingle()
-                .Which.PropertyName.Should().Be("Password");
+            result.IsValid.ShouldBeFalse();
+            result.Errors.ShouldHaveSingleItem().PropertyName.ShouldBe("Password");
         }
 
-        /// <summary>
-        /// Tests that a command with multiple invalid properties fails validation with errors for each invalid property.
-        /// </summary>
         [Fact]
         public void Validate_MultipleInvalidProperties_FailsWithMultipleErrors()
         {
-            // Arrange
-            var command = new RegisterUserCommand(
-                Email: "",
-                FirstName: "",
-                LastName: "",
-                Password: ""
-            );
+            var command = new RegisterUserCommand("", "", "", "");
             var validator = new RegisterUserCommandValidator();
 
-            // Act
             ValidationResult result = validator.Validate(command);
 
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().HaveCountGreaterThan(1);
-            result.Errors.Select(e => e.PropertyName)
-                .Should().Contain(new[] { "Email", "FirstName", "LastName", "Password" });
+            result.IsValid.ShouldBeFalse();
+            result.Errors.Count.ShouldBeGreaterThan(1);
+
+            var propertyNames = result.Errors
+                .Select(e => e.PropertyName)
+                .Distinct()
+                .ToList();
+
+            propertyNames.ShouldContain("Email", "because the Email field is required");
+            propertyNames.ShouldContain("FirstName", "because the FirstName field is required");
+            propertyNames.ShouldContain("LastName", "because the LastName field is required");
+            propertyNames.ShouldContain("Password", "because the Password field is required");
+
         }
+
     }
 }

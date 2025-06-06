@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Blogify.Api.Controllers.Categories;
 using Blogify.FunctionalTests.Infrastructure;
-using FluentAssertions;
+using Shouldly;
 using Xunit.Abstractions;
 
 namespace Blogify.FunctionalTests.Categories;
@@ -30,7 +30,7 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
     {
         var request = CreateUniqueCategory();
         var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
-        response.StatusCode.Should().Be(HttpStatusCode.Created, "Failed to seed test category");
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
         testOutputHelper.WriteLine($"Created category response: {jsonResponse}");
@@ -44,9 +44,10 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
     private async Task<CategoryResponse> GetCategoryById(Guid categoryId)
     {
         var response = await HttpClient.GetAsync($"{ApiEndpoint}/{categoryId}");
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        return await response.Content.ReadFromJsonAsync<CategoryResponse>() 
-            ?? throw new InvalidOperationException("Failed to deserialize category response");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var category = await response.Content.ReadFromJsonAsync<CategoryResponse>();
+        category.ShouldNotBeNull();
+        return category;
     }
 
     [Fact]
@@ -60,15 +61,14 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var jsonResponse = await response.Content.ReadAsStringAsync();
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var categoryId = JsonSerializer.Deserialize<Guid>(jsonResponse);
         var createdCategory = await GetCategoryById(categoryId);
 
-        createdCategory.Should().NotBeNull()
-            .And.Match<CategoryResponse>(c =>
-                c.Id == categoryId &&
-                c.Name == request.Name &&
-                c.Description == request.Description);
+        createdCategory.ShouldNotBeNull();
+        createdCategory.Id.ShouldBe(categoryId);
+        createdCategory.Name.ShouldBe(request.Name);
+        createdCategory.Description.ShouldBe(request.Description);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -96,8 +96,9 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var categories = await response.Content.ReadFromJsonAsync<List<CategoryResponse>>();
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        categories.Should().NotBeNull().And.NotBeEmpty();
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        categories.ShouldNotBeNull();
+        categories.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -111,8 +112,11 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var category = await response.Content.ReadFromJsonAsync<CategoryResponse>();
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        category.Should().BeEquivalentTo(seededCategory);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        category.ShouldNotBeNull();
+        category.Id.ShouldBe(seededCategory.Id);
+        category.Name.ShouldBe(seededCategory.Name);
+        category.Description.ShouldBe(seededCategory.Description);
     }
 
     [Fact]
@@ -125,7 +129,7 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var response = await HttpClient.GetAsync($"{ApiEndpoint}/{invalidId}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -140,12 +144,11 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var updatedCategory = await GetCategoryById(categoryId);
 
         // Assert
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        updatedCategory.Should().NotBeNull()
-            .And.Match<CategoryResponse>(c =>
-                c.Id == categoryId &&
-                c.Name == updateRequest.Name &&
-                c.Description == updateRequest.Description);
+        updateResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        updatedCategory.ShouldNotBeNull();
+        updatedCategory.Id.ShouldBe(categoryId);
+        updatedCategory.Name.ShouldBe(updateRequest.Name);
+        updatedCategory.Description.ShouldBe(updateRequest.Description);
     }
 
     [Fact]
@@ -159,7 +162,7 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{invalidId}", updateRequest);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -173,8 +176,8 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var getResponse = await HttpClient.GetAsync($"{ApiEndpoint}/{categoryId}");
 
         // Assert
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        getResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -187,6 +190,6 @@ public class CategoriesControllerTests(FunctionalTestWebAppFactory factory, ITes
         var response = await HttpClient.DeleteAsync($"{ApiEndpoint}/{invalidId}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.ArchitectureTests.Infrastructure;
-using FluentAssertions;
 using FluentValidation;
 using NetArchTest.Rules;
+using Shouldly;
 
 namespace Blogify.ArchitectureTests.Application;
 
@@ -20,7 +20,7 @@ public class ApplicationTests : BaseTest
             .HaveNameEndingWith("CommandHandler")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -34,9 +34,15 @@ public class ApplicationTests : BaseTest
             .Should()
             .NotBePublic()
             .GetResult();
-        
-        result.IsSuccessful.Should().BeTrue();
 
+        if (!result.IsSuccessful)
+        {
+            var failingTypes = result.FailingTypes.Select(t => t.FullName).ToList();
+            string message = $"The following types are public: {string.Join(", ", failingTypes)}";
+            Assert.False(true, message); // This will fail the test and display the message
+        }
+
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -49,7 +55,7 @@ public class ApplicationTests : BaseTest
             .HaveNameEndingWith("QueryHandler")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -62,7 +68,7 @@ public class ApplicationTests : BaseTest
             .NotBePublic()
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -75,7 +81,7 @@ public class ApplicationTests : BaseTest
             .HaveNameEndingWith("Validator")
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 
     [Fact]
@@ -88,6 +94,6 @@ public class ApplicationTests : BaseTest
             .NotBePublic()
             .GetResult();
 
-        result.IsSuccessful.Should().BeTrue();
+        result.IsSuccessful.ShouldBeTrue();
     }
 }

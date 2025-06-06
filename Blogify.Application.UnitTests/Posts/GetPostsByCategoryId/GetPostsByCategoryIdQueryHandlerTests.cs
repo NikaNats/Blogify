@@ -1,9 +1,9 @@
 ﻿using Blogify.Application.Posts.GetPostsByTagId;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
-using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetPostsByCategoryId;
 
@@ -32,11 +32,11 @@ public class GetPostsByTagIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByTagIdQuery(tag.Id), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.ShouldBeTrue();
         var response = result.Value.Single();
 
         // Verify tag relationship
-        response.Tags.Should().ContainSingle(t => t.Id == tag.Id);
+        response.Tags.ShouldContain(t => t.Id == tag.Id);
 
         // Cleanup relationships
         post.RemoveTag(tag);
@@ -46,7 +46,7 @@ public class GetPostsByTagIdQueryHandlerTests
     private static Tag CreateAndAssociateTagWithPost(Post post)
     {
         var tagResult = Tag.Create("Integration-Test-Tag");
-        tagResult.IsSuccess.Should().BeTrue("Test data setup failed");
+        tagResult.IsSuccess.ShouldBeTrue("Test data setup failed");
 
         var tag = tagResult.Value;
 
@@ -54,8 +54,8 @@ public class GetPostsByTagIdQueryHandlerTests
         var addPostResult = tag.AddPost(post);
         var addTagResult = post.AddTag(tag);
 
-        addPostResult.IsSuccess.Should().BeTrue("Failed to add post to tag");
-        addTagResult.IsSuccess.Should().BeTrue("Failed to add tag to post");
+        addPostResult.IsSuccess.ShouldBeTrue("Failed to add post to tag");
+        addTagResult.IsSuccess.ShouldBeTrue("Failed to add tag to post");
 
         return tag;
     }
@@ -72,8 +72,8 @@ public class GetPostsByTagIdQueryHandlerTests
         var result = await _handler.Handle(new GetPostsByTagIdQuery(tagId), CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class GetPostsByTagIdQueryHandlerTests
         var excerpt = PostExcerpt.Create("Test excerpt").Value;
 
         var postResult = Post.Create(title, content, excerpt, authorId);
-        postResult.IsSuccess.Should().BeTrue("Invalid test data setup");
+        postResult.IsSuccess.ShouldBeTrue("Invalid test data setup");
 
         var post = postResult.Value;
         post.Publish();

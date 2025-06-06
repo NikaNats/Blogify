@@ -1,8 +1,8 @@
 ﻿using Blogify.Application.Posts.AssignCategoriesToPost;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
-using FluentAssertions;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.AssignCategories;
 
@@ -30,8 +30,8 @@ public class AssignCategoriesToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PostErrors.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -48,8 +48,8 @@ public class AssignCategoriesToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(CategoryError.NotFound);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CategoryError.NotFound);
         await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
     }
 
@@ -69,9 +69,9 @@ public class AssignCategoriesToPostCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        post.Categories.Should().Contain(c => c.Id == category1.Id);
-        post.Categories.Should().Contain(c => c.Id == category2.Id);
+        result.IsSuccess.ShouldBeTrue();
+        post.Categories.ShouldContain(c => c.Id == category1.Id);
+        post.Categories.ShouldContain(c => c.Id == category2.Id);
         await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
     }
 
