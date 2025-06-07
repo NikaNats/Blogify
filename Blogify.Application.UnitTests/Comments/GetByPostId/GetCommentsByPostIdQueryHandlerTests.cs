@@ -1,7 +1,7 @@
 ﻿using Blogify.Application.Comments.GetCommentsByPostId;
 using Blogify.Domain.Comments;
-using Shouldly;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Comments.GetByPostId;
 

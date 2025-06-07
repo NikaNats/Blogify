@@ -17,7 +17,7 @@ internal sealed class TagRepository(ApplicationDbContext dbContext) : Repository
     public async Task<Tag?> GetByNameAsync(string name, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        
+
         return await DbContext
             .Set<Tag>()
             .AsNoTracking()

@@ -12,3 +12,4 @@
 //     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 //     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 // }
+

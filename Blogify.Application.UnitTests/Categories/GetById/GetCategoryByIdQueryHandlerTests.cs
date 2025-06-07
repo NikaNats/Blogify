@@ -1,9 +1,9 @@
 ﻿using Blogify.Application.Categories.GetCategoryById;
 using Blogify.Application.Exceptions;
 using Blogify.Domain.Categories;
-using Shouldly;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Categories.GetById;
 

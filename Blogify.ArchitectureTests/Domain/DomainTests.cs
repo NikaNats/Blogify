@@ -12,7 +12,7 @@ public class DomainTests(ITestOutputHelper testOutputHelper) : BaseTest
     [Fact]
     public void DomainEvents_Should_BeSealed()
     {
-        TestResult result = Types.InAssembly(DomainAssembly)
+        var result = Types.InAssembly(DomainAssembly)
             .That()
             .ImplementInterface(typeof(IDomainEvent))
             .And()
@@ -27,7 +27,7 @@ public class DomainTests(ITestOutputHelper testOutputHelper) : BaseTest
     [Fact]
     public void DomainEvent_ShouldHave_DomainEventPostfix()
     {
-        TestResult result = Types.InAssembly(DomainAssembly)
+        var result = Types.InAssembly(DomainAssembly)
             .That()
             .ImplementInterface(typeof(IDomainEvent))
             .Should()
@@ -46,17 +46,14 @@ public class DomainTests(ITestOutputHelper testOutputHelper) : BaseTest
             .GetTypes();
 
         var failingTypes = new List<Type>();
-        foreach (Type entityType in entityTypes)
+        foreach (var entityType in entityTypes)
         {
-            ConstructorInfo[] constructors = entityType.GetConstructors(BindingFlags.NonPublic |
-                                                                        BindingFlags.Instance);
+            var constructors = entityType.GetConstructors(BindingFlags.NonPublic |
+                                                          BindingFlags.Instance);
 
-            if (!constructors.Any(c => c.IsPrivate && c.GetParameters().Length == 0))
-            {
-                failingTypes.Add(entityType);
-            }
+            if (!constructors.Any(c => c.IsPrivate && c.GetParameters().Length == 0)) failingTypes.Add(entityType);
         }
 
-        failingTypes.ShouldBeEmpty();  // Shouldly assertion
+        failingTypes.ShouldBeEmpty(); // Shouldly assertion
     }
 }

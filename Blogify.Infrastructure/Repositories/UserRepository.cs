@@ -9,27 +9,12 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) : Repositor
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        foreach (var role in user.Roles)
-        {
-            DbContext.Attach(role);
-        }
+        foreach (var role in user.Roles) DbContext.Attach(role);
 
         await DbContext.AddAsync(user, cancellationToken);
         await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public  void Add(User user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-
-        foreach (var role in user.Roles)
-        {
-            DbContext.Attach(role);
-        }
-
-        DbContext.Add(user);
-    }
-    
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(email);
@@ -39,5 +24,14 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) : Repositor
             .AsNoTracking()
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Email.Address == email, cancellationToken);
+    }
+
+    public void Add(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        foreach (var role in user.Roles) DbContext.Attach(role);
+
+        DbContext.Add(user);
     }
 }

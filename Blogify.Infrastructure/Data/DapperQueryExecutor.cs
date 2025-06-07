@@ -1,14 +1,13 @@
 ﻿using System.Data;
-using Dapper;
 using Blogify.Application.Abstractions.Data;
+using Dapper;
 
-namespace Blogify.Infrastructure.Data
+namespace Blogify.Infrastructure.Data;
+
+public class DapperQueryExecutor : IDapperQueryExecutor
 {
-    public class DapperQueryExecutor : IDapperQueryExecutor
+    public Task<T> QuerySingleAsync<T>(IDbConnection connection, string sql, object parameters)
     {
-        public Task<T> QuerySingleAsync<T>(IDbConnection connection, string sql, object parameters)
-        {
-            return connection.QuerySingleAsync<T>(sql, parameters);
-        }
+        return connection.QuerySingleAsync<T>(sql, parameters);
     }
 }

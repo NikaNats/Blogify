@@ -1,5 +1,5 @@
-﻿using FluentValidation;
-using Blogify.Domain.Comments;
+﻿using Blogify.Domain.Comments;
+using FluentValidation;
 
 namespace Blogify.Application.Comments.UpdateComment;
 
@@ -12,12 +12,10 @@ internal sealed class UpdateCommentCommandValidator : AbstractValidator<UpdateCo
 
         RuleFor(x => x.Content)
             .NotEmpty().WithMessage(CommentError.EmptyContent.Description)
-            .MaximumLength(500).WithMessage(CommentError.ContentTooLong.Description);
+            .MaximumLength(1000).WithMessage(CommentError.ContentTooLong.Description);
 
-        RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
-
-        // RuleFor(x => x.PostId)
-        //     .NotEmpty().WithMessage(CommentError.EmptyPostId.Description);
+        RuleFor(x => x.CommentId)
+            .Equal(x => x.RouteId)
+            .WithMessage("Comment ID in the route does not match the Comment ID in the body.");
     }
 }

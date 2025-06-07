@@ -34,7 +34,7 @@ internal sealed class ProcessOutboxMessagesJob(
         using var connection = sqlConnectionFactory.CreateConnection();
         using var transaction = connection.BeginTransaction();
 
-        IReadOnlyList<OutboxMessageResponse> outboxMessages = await GetOutboxMessagesAsync(connection, transaction);
+        var outboxMessages = await GetOutboxMessagesAsync(connection, transaction);
 
         foreach (var outboxMessage in outboxMessages)
         {
@@ -79,7 +79,7 @@ internal sealed class ProcessOutboxMessagesJob(
                    FOR UPDATE
                    """;
 
-        IEnumerable<OutboxMessageResponse> outboxMessages = await connection.QueryAsync<OutboxMessageResponse>(
+        var outboxMessages = await connection.QueryAsync<OutboxMessageResponse>(
             sql,
             transaction: transaction);
 

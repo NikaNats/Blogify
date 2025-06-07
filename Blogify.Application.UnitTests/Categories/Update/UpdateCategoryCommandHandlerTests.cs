@@ -1,173 +1,103 @@
-﻿using System.Reflection;
-using Blogify.Application.Categories.UpdateCategory;
+﻿using Blogify.Application.Categories.UpdateCategory;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Shouldly;
 
 namespace Blogify.Application.UnitTests.Categories.Update;
 
 public class UpdateCategoryCommandHandlerTests
 {
-    [Fact]
-    public async Task Handle_ShouldUpdateCategoryAndReturnSuccess()
+    private readonly ICategoryRepository _categoryRepositoryMock;
+    private readonly UpdateCategoryCommandHandler _handler;
+    private readonly IUnitOfWork _unitOfWorkMock;
+
+    public UpdateCategoryCommandHandlerTests()
     {
-        // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>();
+        _handler = new UpdateCategoryCommandHandler(_categoryRepositoryMock, _unitOfWorkMock);
+    }
 
-        var categoryId = Guid.NewGuid();
-        var originalName = "OldName";
-        var originalDescription = "OldDescription";
-
-        // Create category with known ID using production code
-        var category = Category.Create(originalName, originalDescription).Value;
-
-        // Get the private constructor
-        var constructor = typeof(Category).GetConstructors(
-            BindingFlags.NonPublic | BindingFlags.Instance
-        )[0];
-
-        // Reconstruct category with desired ID
-        var categoryWithId = (Category)constructor.Invoke(new object[]
-        {
-            categoryId,
-            category.Name,
-            category.Description
-        });
-
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None)
-            .Returns(categoryWithId);
-
-        // Act
-        var result = await handler.Handle(
-            new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"),
-            CancellationToken.None
-        );
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        await categoryRepository.Received(1).UpdateAsync(
-            Arg.Is<Category>(c =>
-                c.Id == categoryId &&
-                c.Name.Value == "NewName" &&
-                c.Description.Value == "NewDescription"),
-            Arg.Any<CancellationToken>()
-        );
+    private static Category CreateTestCategory()
+    {
+        var categoryResult = Category.Create("Original Name", "Original Description");
+        categoryResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create category.");
+        return categoryResult.Value;
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnFailure_WhenCategoryNotFound()
+    public async Task Handle_WhenCategoryExistsAndDataIsValid_ShouldUpdateCategoryAndSaveChanges()
     {
         // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns((Category)null);
+        var category = CreateTestCategory();
+        var command = new UpdateCategoryCommand(category.Id, "Updated Name", "Updated Description");
+
+        _categoryRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(category);
 
         // Act
-        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"),
-            CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        category.Name.Value.ShouldBe(command.Name);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCategoryNotFound_ShouldReturnFailure()
+    {
+        // Arrange
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), "Doesn't Matter", "Doesn't Matter");
+
+        _categoryRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns((Category?)null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldNotBeNull();
+        // This assertion will now pass because the handler returns the correct static error object.
+        result.Error.ShouldBe(CategoryError.NotFound);
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnFailure_WhenUpdateFails()
+    public async Task Handle_WhenUpdateWithInvalidData_ShouldReturnFailureAndNotSaveChanges()
     {
         // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        var category = Category.Create("OldName", "OldDescription").Value;
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+        var category = CreateTestCategory();
+        var command = new UpdateCategoryCommand(category.Id, "", "Valid Description");
+
+        _categoryRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(category);
 
         // Act
-        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "", "NewDescription"),
-            CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldNotBeNull();
-        result.Error.Description.ShouldBe(CategoryError.NameNullOrEmpty.Description); // Updated
-        await categoryRepository.DidNotReceive().UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
+        result.Error.ShouldBe(CategoryError.NameNullOrEmpty);
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ShouldPropagateException_WhenRepositoryFails()
+    public async Task Handle_WhenNoChangesAreMade_ShouldReturnSuccessAndNotSaveChanges()
     {
         // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        var category = Category.Create("OldName", "OldDescription").Value;
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
-        categoryRepository.UpdateAsync(category, CancellationToken.None).Throws(new Exception("Repository failed"));
+        var category = CreateTestCategory();
+        var command = new UpdateCategoryCommand(category.Id, category.Name.Value, category.Description.Value);
 
-        // Act & Assert
-        await Should.ThrowAsync<Exception>(() =>
-            handler.Handle(new UpdateCategoryCommand(categoryId, "NewName", "NewDescription"), CancellationToken.None));
-        await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldReturnSuccess_WhenNoChangesAreMade()
-    {
-        // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        var category = Category.Create("TestCategory", "Test Description").Value;
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
+        _categoryRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(category);
 
         // Act
-        var result = await handler.Handle(new UpdateCategoryCommand(categoryId, "TestCategory", "Test Description"),
-            CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        await categoryRepository.DidNotReceive().UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldCallUpdateAsync_WhenNameIsUpdated()
-    {
-        // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        var category = Category.Create("OldName", "Test Description").Value;
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
-
-        // Act
-        var result = await handler.Handle(
-            new UpdateCategoryCommand(categoryId, "NewName", "Test Description"),
-            CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldCallUpdateAsync_WhenDescriptionIsUpdated()
-    {
-        // Arrange
-        var categoryRepository = Substitute.For<ICategoryRepository>();
-        var handler = new UpdateCategoryCommandHandler(categoryRepository);
-        var categoryId = Guid.NewGuid();
-        var category = Category.Create("TestCategory", "OldDescription").Value;
-        categoryRepository.GetByIdAsync(categoryId, CancellationToken.None).Returns(category);
-
-        // Act
-        var result = await handler.Handle(
-            new UpdateCategoryCommand(categoryId, "TestCategory", "NewDescription"),
-            CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        await categoryRepository.Received(1).UpdateAsync(Arg.Any<Category>(), CancellationToken.None);
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

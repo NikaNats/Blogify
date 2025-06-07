@@ -10,7 +10,7 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
     : IAuthenticationService
 {
     private const string PasswordCredentialType = "password";
-    
+
     public async Task<string> RegisterAsync(
         User user,
         string password,
@@ -32,7 +32,7 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
             "users",
             userRepresentationModel,
             cancellationToken);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -40,16 +40,16 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
                 response.StatusCode, errorContent);
             throw new HttpRequestException($"Failed to register user. Status code: {response.StatusCode}");
         }
-        
+
         return ExtractIdentityIdFromLocationHeader(response);
     }
+
     public async Task DeleteIdentityAsync(
         string identityId,
         CancellationToken cancellationToken = default)
     {
         try
         {
-
             var response = await httpClient.DeleteAsync(
                 $"users/{identityId}",
                 cancellationToken);
@@ -76,6 +76,7 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
             throw;
         }
     }
+
     private static string ExtractIdentityIdFromLocationHeader(
         HttpResponseMessage httpResponseMessage)
     {

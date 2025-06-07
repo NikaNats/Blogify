@@ -5,7 +5,9 @@ using MediatR;
 
 namespace Blogify.Application.Categories.AddPostToCategoryCommand;
 
-internal sealed class AddPostToCategoryCommandHandler(ICategoryRepository categoryRepository, IPostRepository postRepository)
+internal sealed class AddPostToCategoryCommandHandler(
+    ICategoryRepository categoryRepository,
+    IPostRepository postRepository)
     : IRequestHandler<AddPostToCategoryCommand, Result>
 {
     public async Task<Result> Handle(AddPostToCategoryCommand request, CancellationToken cancellationToken)

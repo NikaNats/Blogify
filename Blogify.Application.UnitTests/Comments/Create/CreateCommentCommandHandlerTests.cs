@@ -2,8 +2,8 @@
 using Blogify.Application.Comments.CreateComment;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
-using Shouldly;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Comments.Create;
 

@@ -1,5 +1,4 @@
-﻿using Blogify.Application.Abstractions.Messaging;
-using Blogify.Application.Exceptions;
+﻿using Blogify.Application.Exceptions;
 using Blogify.Domain.Abstractions;
 using FluentValidation;
 using MediatR;
@@ -25,9 +24,9 @@ internal sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValid
             .Select(validator => validator.Validate(validationContext))
             .Where(validationResult => validationResult.Errors.Count > 0)
             .SelectMany(validationResult => validationResult.Errors)
-            .Select(failure  => new ValidationError(
-                failure .PropertyName,
-                failure .ErrorMessage))
+            .Select(failure => new ValidationError(
+                failure.PropertyName,
+                failure.ErrorMessage))
             .ToList();
 
         if (validationErrors.Count != 0) throw new ValidationException(validationErrors);

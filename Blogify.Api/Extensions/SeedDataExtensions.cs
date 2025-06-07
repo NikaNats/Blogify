@@ -26,10 +26,7 @@ internal static class SeedDataExtensions
 
         var configuration = services.GetRequiredService<IConfiguration>();
 
-        if (configuration.GetValue<bool>(DisableDataSeedingKey))
-        {
-            return;
-        }
+        if (configuration.GetValue<bool>(DisableDataSeedingKey)) return;
 
         var sqlConnectionFactory = services.GetRequiredService<ISqlConnectionFactory>();
         using var connection = sqlConnectionFactory.CreateConnection();
@@ -63,7 +60,8 @@ internal static class SeedDataExtensions
         }
     }
 
-    private static async Task<List<Guid>> SeedCategoriesAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
+    private static async Task<List<Guid>> SeedCategoriesAsync(IDbConnection connection, IDbTransaction transaction,
+        Faker faker)
     {
         var categories = GenerateEntities(faker, DefaultNumberOfCategories, () => Category.Create(
             faker.Commerce.Department(),
@@ -80,14 +78,15 @@ internal static class SeedDataExtensions
             c.Id,
             Name = c.Name.Value,
             Description = c.Description.Value,
-            CreatedAt = c.CreatedAt,
+            c.CreatedAt,
             LastModifiedAt = (DateTime?)null
         }), transaction);
 
         return categories.Select(c => c.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedTagsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
+    private static async Task<List<Guid>> SeedTagsAsync(IDbConnection connection, IDbTransaction transaction,
+        Faker faker)
     {
         var tags = GenerateEntities(faker, DefaultNumberOfTags, () => Tag.Create(
             faker.Lorem.Word()
@@ -102,14 +101,15 @@ internal static class SeedDataExtensions
         {
             t.Id,
             Name = t.Name.Value,
-            CreatedAt = t.CreatedAt,
+            t.CreatedAt,
             LastModifiedAt = (DateTime?)null
         }), transaction);
 
         return tags.Select(t => t.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedUsersAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
+    private static async Task<List<Guid>> SeedUsersAsync(IDbConnection connection, IDbTransaction transaction,
+        Faker faker)
     {
         var users = GenerateEntities(faker, DefaultNumberOfUsers, () => User.Create(
             FirstName.Create(faker.Name.FirstName()).Value,
@@ -128,17 +128,18 @@ internal static class SeedDataExtensions
             FirstName = u.FirstName.Value,
             LastName = u.LastName.Value,
             Email = u.Email.Address,
-            u.IdentityId,
+            u.IdentityId
         }), transaction);
 
         return users.Select(u => u.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> userIds)
+    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction,
+        Faker faker, List<Guid> userIds)
     {
         var posts = GenerateEntities(faker, DefaultNumberOfPosts, () => Post.Create(
             PostTitle.Create(faker.Lorem.Sentence(5)).Value,
-            PostContent.Create(faker.Lorem.Paragraphs(3)).Value,
+            PostContent.Create(faker.Lorem.Paragraphs()).Value,
             PostExcerpt.Create(faker.Lorem.Sentence(10)).Value,
             faker.PickRandom(userIds)
         ).Value);
@@ -155,8 +156,8 @@ internal static class SeedDataExtensions
             Content = p.Content.Value,
             Excerpt = p.Excerpt.Value,
             Slug = p.Title.Value,
-            AuthorId = p.AuthorId,
-            CreatedAt = p.CreatedAt,
+            p.AuthorId,
+            p.CreatedAt,
             LastModifiedAt = (DateTime?)null,
             PublishedAt = faker.Date.Between(DateTime.UtcNow.AddMonths(-6), DateTime.UtcNow),
             Status = "Published"
@@ -165,7 +166,8 @@ internal static class SeedDataExtensions
         return posts.Select(p => p.Id).ToList();
     }
 
-    private static async Task SeedCommentsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> postIds, List<Guid> userIds)
+    private static async Task SeedCommentsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker,
+        List<Guid> postIds, List<Guid> userIds)
     {
         var comments = GenerateEntities(faker, DefaultNumberOfComments, () => Comment.Create(
             faker.Lorem.Sentence(faker.Random.Int(5, 15)),
@@ -182,23 +184,24 @@ internal static class SeedDataExtensions
         {
             c.Id,
             Content = c.Content.Value, // Ensure this is a simple type (e.g., string)
-            AuthorId = c.AuthorId,
-            PostId = c.PostId,
-            CreatedAt = c.CreatedAt,
+            c.AuthorId,
+            c.PostId,
+            c.CreatedAt,
             LastModifiedAt = (DateTime?)null
         }), transaction);
     }
 
-    private static async Task SeedPostCategoriesAsync(IDbConnection connection, IDbTransaction transaction, List<Guid> postIds, List<Guid> categoryIds, Faker faker)
+    private static async Task SeedPostCategoriesAsync(IDbConnection connection, IDbTransaction transaction,
+        List<Guid> postIds, List<Guid> categoryIds, Faker faker)
     {
         var postCategories = postIds
             .SelectMany(postId => categoryIds
                 .OrderBy(_ => Guid.NewGuid())
                 .Take(faker.Random.Int(1, 3))
-                .Select(categoryId => new 
-                { 
-                    post_id = postId, 
-                    category_id = categoryId 
+                .Select(categoryId => new
+                {
+                    post_id = postId,
+                    category_id = categoryId
                 }))
             .ToList();
 
@@ -210,16 +213,17 @@ internal static class SeedDataExtensions
         await connection.ExecuteAsync(sql, postCategories, transaction);
     }
 
-    private static async Task SeedPostTagsAsync(IDbConnection connection, IDbTransaction transaction, List<Guid> postIds, List<Guid> tagIds, Faker faker)
+    private static async Task SeedPostTagsAsync(IDbConnection connection, IDbTransaction transaction,
+        List<Guid> postIds, List<Guid> tagIds, Faker faker)
     {
         var postTags = postIds
             .SelectMany(postId => tagIds
                 .OrderBy(_ => Guid.NewGuid()) // Randomize tag selection
                 .Take(faker.Random.Int(1, 3)) // Assign 1-3 tags per post
-                .Select(tagId => new 
-                { 
-                    post_id = postId, 
-                    tag_id = tagId,
+                .Select(tagId => new
+                {
+                    post_id = postId,
+                    tag_id = tagId
                 }))
             .ToList();
 

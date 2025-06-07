@@ -1,6 +1,8 @@
 ﻿using Blogify.Domain.Users;
 using Blogify.Domain.Users.Events;
-using Shouldly;  // Changed namespace
+using Shouldly;
+
+// Changed namespace
 
 namespace Blogify.Domain.UnitTests.Users;
 
@@ -35,16 +37,16 @@ public static class UserTests
         {
             // Act
             var result = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail);
-    
+
             // Assert
             var events = result.Value.DomainEvents;
             events.Count.ShouldBe(2);
-    
+
             // Find and validate UserCreatedDomainEvent
             var userCreatedEvent = events.OfType<UserCreatedDomainEvent>().FirstOrDefault();
             userCreatedEvent.ShouldNotBeNull();
             userCreatedEvent.UserId.ShouldBe(result.Value.Id);
-    
+
             // Find and validate RoleAssignedDomainEvent
             var roleAssignedEvent = events.OfType<RoleAssignedDomainEvent>().FirstOrDefault();
             roleAssignedEvent.ShouldNotBeNull();

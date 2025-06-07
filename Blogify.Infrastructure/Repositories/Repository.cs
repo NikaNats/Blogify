@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using Blogify.Application.Exceptions;
 using Blogify.Domain.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,7 +35,7 @@ internal abstract class Repository<TEntity>(ApplicationDbContext dbContext)
         ArgumentNullException.ThrowIfNull(entity);
 
         _dbSet.Update(entity);
-        await DbContext.SaveChangesAsync(cancellationToken); 
+        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
     public virtual async Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
@@ -54,7 +53,7 @@ internal abstract class Repository<TEntity>(ApplicationDbContext dbContext)
 
         return await _dbSet.AnyAsync(predicate, cancellationToken);
     }
-    
+
     protected virtual IQueryable<TEntity> GetQueryable()
     {
         return _dbSet.AsQueryable();

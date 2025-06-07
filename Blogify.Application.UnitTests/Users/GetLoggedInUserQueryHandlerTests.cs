@@ -10,10 +10,10 @@ namespace Blogify.Application.UnitTests.Users;
 
 public class GetLoggedInUserQueryHandlerTests
 {
-    private readonly IDbConnection _dbConnection;
-    private readonly IDapperQueryExecutor _queryExecutor;
-    private readonly GetLoggedInUserQueryHandler _handler;
     private readonly CancellationToken _cancellationToken = CancellationToken.None;
+    private readonly IDbConnection _dbConnection;
+    private readonly GetLoggedInUserQueryHandler _handler;
+    private readonly IDapperQueryExecutor _queryExecutor;
 
     public GetLoggedInUserQueryHandlerTests()
     {

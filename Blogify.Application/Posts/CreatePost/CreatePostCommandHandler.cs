@@ -5,33 +5,33 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.CreatePost;
 
-internal sealed class CreatePostCommandHandler(IPostRepository postRepository)
+internal sealed class CreatePostCommandHandler(
+    IPostRepository postRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<CreatePostCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreatePostCommand request, CancellationToken cancellationToken)
     {
+        var postResult = Post.Create(
+            request.Title,
+            request.Content,
+            request.Excerpt,
+            request.AuthorId);
+
+        if (postResult.IsFailure) return Result.Failure<Guid>(postResult.Error);
+
+        var post = postResult.Value;
+        await postRepository.AddAsync(post, cancellationToken);
+
         try
         {
-            var post = Post.Create(
-                request.Title,
-                request.Content,
-                request.Excerpt,
-                request.AuthorId);
-
-            if (post.IsFailure) return Result.Failure<Guid>(post.Error);
-
-            await postRepository.AddAsync(post.Value, cancellationToken);
-
-            return Result.Success(post.Value.Id);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch (ConcurrencyException)
         {
             return Result.Failure<Guid>(PostErrors.Overlap);
         }
-        catch (Exception ex)
-        {
-            return Result.Failure<Guid>(Error.Failure("Post.Create.Failed",
-                "An error occurred while creating the post."));
-        }
+
+        return Result.Success(post.Id);
     }
 }

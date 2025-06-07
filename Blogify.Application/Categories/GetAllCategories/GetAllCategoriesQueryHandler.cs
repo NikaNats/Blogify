@@ -1,7 +1,6 @@
-﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
-using MediatR;
 
 namespace Blogify.Application.Categories.GetAllCategories;
 
@@ -14,13 +13,7 @@ internal sealed class
     {
         try
         {
-
             var categories = await categoryRepository.GetAllAsync(cancellationToken);
-
-            if (categories == null || !categories.Any())
-            {
-                return Result.Success(new List<AllCategoryResponse>());
-            }
 
             var response = categories.Select(category => new AllCategoryResponse(
                 category.Id,
@@ -28,7 +21,6 @@ internal sealed class
                 category.Description.Value,
                 category.CreatedAt,
                 category.LastModifiedAt)).ToList();
-
 
             return Result.Success(response);
         }

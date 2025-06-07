@@ -82,7 +82,7 @@ public static class DependencyInjection
 
         services.AddSingleton<ISqlConnectionFactory>(_ =>
             new SqlConnectionFactory(connectionString));
-        
+
         services.AddTransient<IDapperQueryExecutor, DapperQueryExecutor>();
 
         SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());

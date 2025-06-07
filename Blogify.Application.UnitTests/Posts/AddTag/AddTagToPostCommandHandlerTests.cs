@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.AddTagToPost;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 using NSubstitute;
@@ -9,22 +10,76 @@ namespace Blogify.Application.UnitTests.Posts.AddTag;
 public class AddTagToPostCommandHandlerTests
 {
     private readonly AddTagToPostCommandHandler _handler;
-    private readonly IPostRepository _postRepository;
-    private readonly ITagRepository _tagRepository;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly ITagRepository _tagRepositoryMock;
+    private readonly IUnitOfWork _unitOfWorkMock;
 
     public AddTagToPostCommandHandlerTests()
     {
-        _postRepository = Substitute.For<IPostRepository>();
-        _tagRepository = Substitute.For<ITagRepository>();
-        _handler = new AddTagToPostCommandHandler(_postRepository, _tagRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _tagRepositoryMock = Substitute.For<ITagRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>();
+
+        _handler = new AddTagToPostCommandHandler(
+            _postRepositoryMock,
+            _tagRepositoryMock,
+            _unitOfWorkMock);
+    }
+
+    // Helper to create a valid Post for tests.
+    private static Post CreateTestPost()
+    {
+        var postResult = Post.Create(
+            PostTitle.Create("Test Post").Value,
+            PostContent.Create(new string('a', 100)).Value,
+            PostExcerpt.Create("An excerpt.").Value,
+            Guid.NewGuid());
+        postResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create post.");
+        return postResult.Value;
+    }
+
+    // Helper to create a valid Tag for tests.
+    private static Tag CreateTestTag()
+    {
+        var tagResult = Tag.Create("TestTag");
+        tagResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create tag.");
+        return tagResult.Value;
     }
 
     [Fact]
-    public async Task Handle_PostNotFound_ReturnsNotFoundFailure()
+    public async Task Handle_WhenPostAndTagExist_ShouldAddTagAndSaveChanges()
+    {
+        // Arrange
+        var post = CreateTestPost();
+        var tag = CreateTestTag();
+        var command = new AddTagToPostCommand(post.Id, tag.Id);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
+            .Returns(tag);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+
+        // Verify the tag was added to the in-memory collection on the post entity.
+        post.Tags.ShouldContain(t => t.Id == tag.Id);
+
+        // Verify the entire transaction was committed. This is the crucial check.
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenPostNotFound_ShouldReturnFailure()
     {
         // Arrange
         var command = new AddTagToPostCommand(Guid.NewGuid(), Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post)null);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns((Post?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -32,17 +87,20 @@ public class AddTagToPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(PostErrors.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_TagNotFound_ReturnsTagNotFoundFailure()
+    public async Task Handle_WhenTagNotFound_ShouldReturnFailure()
     {
         // Arrange
-        var post = CreateDraftPost();
+        var post = CreateTestPost();
         var command = new AddTagToPostCommand(post.Id, Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _tagRepository.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns((Tag)null);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
+            .Returns((Tag?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -50,62 +108,32 @@ public class AddTagToPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(TagErrors.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_TagAlreadyExists_ReturnsSuccessWithoutUpdate()
+    public async Task Handle_WhenTagAlreadyOnPost_ShouldReturnSuccessAndNotSaveChanges()
     {
         // Arrange
-        var tag = CreateTag();
-        var post = CreateDraftPost();
-        post.AddTag(tag); // Tag already exists
+        var post = CreateTestPost();
+        var tag = CreateTestTag();
+        post.AddTag(tag); // Pre-add the tag to the post.
+
         var command = new AddTagToPostCommand(post.Id, tag.Id);
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _tagRepository.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
+            .Returns(tag);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        post.Tags.ShouldHaveSingleItem(); // No duplicates added
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+
+        // The domain logic should be idempotent. If the tag is already there,
+        // no change should occur, and thus we should not commit the transaction.
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    [Fact]
-    public async Task Handle_ValidTag_AddsTagAndUpdatesPost()
-    {
-        // Arrange
-        var tag = CreateTag();
-        var post = CreateDraftPost();
-        var command = new AddTagToPostCommand(post.Id, tag.Id);
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _tagRepository.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        post.Tags.ShouldContain(t => t.Id == tag.Id);
-        await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
-    }
-
-    #region Helper Methods
-
-    private static Post CreateDraftPost()
-    {
-        var title = PostTitle.Create("Test Post").Value;
-        var content = PostContent.Create(new string('a', 100)).Value;
-        var excerpt = PostExcerpt.Create("Test Excerpt").Value;
-        return Post.Create(title, content, excerpt, Guid.NewGuid()).Value;
-    }
-
-    private Tag CreateTag()
-    {
-        return Tag.Create(TagName.Create("TestTag").Value.Value).Value;
-    }
-
-    #endregion
 }

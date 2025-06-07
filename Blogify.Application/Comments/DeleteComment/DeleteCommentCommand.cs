@@ -4,5 +4,4 @@ using MediatR;
 namespace Blogify.Application.Comments.DeleteComment;
 
 public sealed record DeleteCommentCommand(
-    Guid CommentId,
-    Guid AuthorId) : ICommand<Unit>;
+    Guid CommentId) : ICommand<Unit>;

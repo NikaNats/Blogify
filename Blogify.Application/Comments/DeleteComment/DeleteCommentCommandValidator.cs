@@ -1,5 +1,5 @@
-﻿using FluentValidation;
-using Blogify.Domain.Comments;
+﻿using Blogify.Domain.Comments;
+using FluentValidation;
 
 namespace Blogify.Application.Comments.DeleteComment;
 
@@ -9,8 +9,5 @@ internal sealed class DeleteCommentCommandValidator : AbstractValidator<DeleteCo
     {
         RuleFor(x => x.CommentId)
             .NotEmpty().WithMessage(CommentError.EmptyCommentId.Description);
-
-        RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
     }
 }

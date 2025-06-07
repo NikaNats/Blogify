@@ -14,10 +14,10 @@ internal sealed class GetPostsByCategoryIdQueryHandler(IPostRepository postRepos
         try
         {
             var posts = await postRepository.GetByCategoryIdAsync(
-                request.CategoryId, 
+                request.CategoryId,
                 cancellationToken
             );
-        
+
             var response = posts.Select(MapPostToResponse).ToList();
             return Result.Success(response);
         }

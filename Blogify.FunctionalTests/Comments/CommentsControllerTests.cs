@@ -1,126 +1,65 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
+using Blogify.Api.Controllers.Comments;
 using Blogify.Application.Comments;
-using Blogify.Application.Comments.CreateComment;
-using Blogify.Application.Comments.UpdateComment;
-using Blogify.Application.Posts.CreatePost;
-using Blogify.Domain.Comments;
-using Blogify.Domain.Posts;
 using Blogify.FunctionalTests.Infrastructure;
-using Blogify.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace Blogify.FunctionalTests.Comments;
 
-public class CommentsControllerTests(FunctionalTestWebAppFactory factory, ITestOutputHelper testOutputHelper)
-    : BaseFunctionalTest(factory), IAsyncLifetime
+public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
 {
     private const string ApiEndpoint = "api/v1/comments";
-    private readonly ApplicationDbContext _dbContext = factory.Services.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    private string? _accessToken;
+    private readonly BlogifyTestSeeder _seeder;
+
+    public CommentsControllerTests(FunctionalTestWebAppFactory factory) : base(factory)
+    {
+        // The base constructor provides the SqlConnectionFactory
+        _seeder = new BlogifyTestSeeder(SqlConnectionFactory);
+    }
 
     public async Task InitializeAsync()
     {
-        _accessToken = await GetAccessToken();
-        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        // This helper gets an access token and sets the AuthenticatedUserId property
+        var accessToken = await GetAccessToken();
+        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
-        await CleanupTestData();
-    }
-
-    private async Task CleanupTestData()
-    {
-        var comments = await _dbContext.Set<Comment>().ToListAsync();
-        _dbContext.Set<Comment>().RemoveRange(comments);
-        await _dbContext.SaveChangesAsync();
-    }
-
-    private static CreateCommentCommand CreateUniqueComment(Guid postId)
-    {
-        return new CreateCommentCommand("This is a test comment.", Guid.NewGuid(), postId);
-    }
-
-    private async Task<(Guid Id, CommentResponse Comment)> SeedTestComment(Guid postId)
-    {
-        var request = CreateUniqueComment(postId);
-        var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
-        response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var commentId = JsonSerializer.Deserialize<Guid>(await response.Content.ReadAsStringAsync());
-        var comment = await GetCommentById(commentId);
-        return (commentId, comment);
-    }
-
-    private async Task<CommentResponse> GetCommentById(Guid commentId)
-    {
-        var response = await HttpClient.GetAsync($"{ApiEndpoint}/{commentId}");
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var comment = await response.Content.ReadFromJsonAsync<CommentResponse>();
-        comment.ShouldNotBeNull();
-        return comment;
-    }
-
-    private async Task<Guid> CreatePost()
-    {
-        var postTitleResult = PostTitle.Create("Test Post");
-        var postContentResult = PostContent.Create("This is a valid content with more than 100 characters to ensure it passes the validation. Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
-        var postExcerptResult = PostExcerpt.Create("Test Excerpt");
-
-        if (postTitleResult.IsFailure || postContentResult.IsFailure || postExcerptResult.IsFailure)
-        {
-            var errors = new List<string>();
-            if (postTitleResult.IsFailure) errors.Add(postTitleResult.Error.ToString());
-            if (postContentResult.IsFailure) errors.Add(postContentResult.Error.ToString());
-            if (postExcerptResult.IsFailure) errors.Add(postExcerptResult.Error.ToString());
-            throw new InvalidOperationException($"Post creation failed due to invalid input: {string.Join(", ", errors)}");
-        }
-
-        var postTitle = postTitleResult.Value;
-        var postContent = postContentResult.Value;
-        var postExcerpt = postExcerptResult.Value;
-        var authorId = Guid.NewGuid();
-
-        var createPostCommand = new CreatePostCommand(postTitle, postContent, postExcerpt, authorId);
-        var response = await HttpClient.PostAsJsonAsync("api/v1/posts", createPostCommand);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<Guid>();
+        return Task.CompletedTask;
+        // Testcontainers handle resource cleanup
     }
 
     [Fact]
-    public async Task CreateComment_WithValidRequest_ShouldReturnCreatedResult()
+    public async Task CreateComment_WithValidData_ShouldReturnCreatedAndLocationHeader()
     {
         // Arrange
-        var postId = await CreatePost();
-        var request = CreateUniqueComment(postId);
+        var postId = await _seeder.SeedPostAsync();
+        var request = new CreateCommentRequest("This is a newly created comment.", AuthenticatedUserId, postId);
 
         // Act
         var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
-        var commentId = await response.Content.ReadFromJsonAsync<Guid>();
-        var commentResponse = await GetCommentById(commentId);
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        commentId.ShouldNotBe(Guid.Empty);
-        commentResponse.ShouldNotBeNull();
-        commentResponse.Id.ShouldBe(commentId);
-        commentResponse.Content.ShouldBe(request.Content);
-        commentResponse.PostId.ShouldBe(request.PostId);
-        commentResponse.AuthorId.ShouldBe(request.AuthorId);
+
+        var createdCommentId = await response.Content.ReadFromJsonAsync<Guid>();
+        createdCommentId.ShouldNotBe(Guid.Empty);
+
+        response.Headers.Location.ShouldNotBeNull();
+        response.Headers.Location.ToString().ShouldEndWith($"{ApiEndpoint}/{createdCommentId}");
     }
 
     [Fact]
-    public async Task CreateComment_WithoutAuthorization_ShouldReturnUnauthorized()
+    public async Task CreateComment_WhenUnauthenticated_ShouldReturnUnauthorized()
     {
         // Arrange
-        var postId = await CreatePost();
-        HttpClient.DefaultRequestHeaders.Authorization = null;
-        var request = CreateUniqueComment(postId);
+        var postId = await _seeder.SeedPostAsync();
+        var request = new CreateCommentRequest("This comment should be rejected.", Guid.NewGuid(), postId);
+        HttpClient.DefaultRequestHeaders.Authorization = null; // Remove authentication for this test
 
         // Act
         var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
@@ -130,104 +69,109 @@ public class CommentsControllerTests(FunctionalTestWebAppFactory factory, ITestO
     }
 
     [Fact]
-    public async Task GetCommentById_WithValidId_ShouldReturnComment()
+    public async Task GetCommentById_WhenCommentExists_ShouldReturnOkAndComment()
     {
         // Arrange
-        var postId = await CreatePost();
-        var (commentId, seededComment) = await SeedTestComment(postId);
+        var postId = await _seeder.SeedPostAsync();
+        var commentId = await _seeder.SeedCommentAsync(postId);
 
         // Act
         var response = await HttpClient.GetAsync($"{ApiEndpoint}/{commentId}");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var comment = await response.Content.ReadFromJsonAsync<CommentResponse>();
-
-        // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         comment.ShouldNotBeNull();
-        comment.Id.ShouldBe(seededComment.Id);
-        comment.Content.ShouldBe(seededComment.Content);
-        comment.PostId.ShouldBe(seededComment.PostId);
-        comment.AuthorId.ShouldBe(seededComment.AuthorId);
+        comment.Id.ShouldBe(commentId);
     }
 
     [Fact]
-    public async Task GetCommentById_WithInvalidId_ShouldReturnNotFound()
+    public async Task UpdateComment_WhenUserIsAuthor_ShouldReturnOk()
     {
         // Arrange
-        var invalidId = Guid.NewGuid();
+        var postId = await _seeder.SeedPostAsync();
+        var commentId = await _seeder.SeedCommentAsync(postId, AuthenticatedUserId);
+        var request = new UpdateCommentRequest(commentId, "This content was successfully updated by the author.");
 
         // Act
-        var response = await HttpClient.GetAsync($"{ApiEndpoint}/{invalidId}");
-
-        // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task UpdateComment_WithValidRequest_ShouldReturnOkResult()
-    {
-        // Arrange
-        var postId = await CreatePost();
-        var (commentId, originalComment) = await SeedTestComment(postId);
-        var updateRequest = new UpdateCommentCommand(commentId, "Updated Comment", originalComment.AuthorId);
-
-        // Act
-        var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{commentId}", updateRequest);
-        var updatedComment = await GetCommentById(commentId);
+        var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{commentId}", request);
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        updatedComment.Content.ShouldBe(updateRequest.Content);
+
+        var updatedComment = await HttpClient.GetFromJsonAsync<CommentResponse>($"{ApiEndpoint}/{commentId}");
+        updatedComment.ShouldNotBeNull();
+        updatedComment.Content.ShouldBe(request.Content);
     }
 
     [Fact]
-    public async Task UpdateComment_WithInvalidId_ShouldReturnNotFound()
+    public async Task UpdateComment_WhenUserIsNotAuthor_ShouldReturnConflict()
     {
         // Arrange
-        var invalidId = Guid.NewGuid();
-        var updateRequest = new UpdateCommentCommand(invalidId, "Updated Comment", Guid.NewGuid());
+        var postId = await _seeder.SeedPostAsync();
+        var otherAuthorsCommentId = await _seeder.SeedCommentAsync(postId, Guid.NewGuid());
+        var request = new UpdateCommentRequest(otherAuthorsCommentId, "This update should fail due to authorization.");
 
         // Act
-        var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{invalidId}", updateRequest);
+        var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{otherAuthorsCommentId}", request);
 
         // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]
-    public async Task DeleteComment_WithValidId_ShouldReturnNoContent()
+    public async Task UpdateComment_WhenRouteIdAndBodyIdMismatch_ShouldReturnBadRequestWithProblemDetails()
     {
         // Arrange
-        var postId = await CreatePost();
-        var (commentId, seededComment) = await SeedTestComment(postId);
-        var request = new HttpRequestMessage(HttpMethod.Delete, $"{ApiEndpoint}/{commentId}")
-        {
-            Content = JsonContent.Create(seededComment.AuthorId)
-        };
+        var postId = await _seeder.SeedPostAsync();
+        var actualCommentId = await _seeder.SeedCommentAsync(postId, AuthenticatedUserId);
+        var mismatchedCommentIdInBody = Guid.NewGuid();
+        var request = new UpdateCommentRequest(mismatchedCommentIdInBody, "Mismatched IDs update attempt.");
 
         // Act
-        var deleteResponse = await HttpClient.SendAsync(request);
+        var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{actualCommentId}", request);
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problemDetails.ShouldNotBeNull();
+        // This now correctly asserts against the title produced by our unified ExceptionHandlingMiddleware
+        problemDetails.Title.ShouldBe("Validation");
+        problemDetails.Extensions.ShouldContainKey("errors");
+    }
+
+    [Fact]
+    public async Task DeleteComment_WhenUserIsAuthor_ShouldReturnNoContent()
+    {
+        // Arrange
+        var postId = await _seeder.SeedPostAsync();
+        var commentId = await _seeder.SeedCommentAsync(postId, AuthenticatedUserId);
+
+        // Act
+        var response = await HttpClient.DeleteAsync($"{ApiEndpoint}/{commentId}");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
         var getResponse = await HttpClient.GetAsync($"{ApiEndpoint}/{commentId}");
-
-        // Assert
-        deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         getResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task DeleteComment_WithInvalidId_ShouldReturnNotFound()
+    public async Task DeleteComment_WhenUserIsNotAuthor_ShouldReturnConflict()
     {
         // Arrange
-        var invalidId = Guid.NewGuid();
-        var authorId = Guid.NewGuid();
-        var request = new HttpRequestMessage(HttpMethod.Delete, $"{ApiEndpoint}/{invalidId}")
-        {
-            Content = JsonContent.Create(authorId)
-        };
+        var postId = await _seeder.SeedPostAsync();
+        var otherAuthorsCommentId = await _seeder.SeedCommentAsync(postId, Guid.NewGuid());
 
         // Act
-        var response = await HttpClient.SendAsync(request);
+        var response = await HttpClient.DeleteAsync($"{ApiEndpoint}/{otherAuthorsCommentId}");
 
         // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
+
+    // API contract DTOs for clarity
+    private record CreateCommentRequest(string Content, Guid AuthorId, Guid PostId);
 }

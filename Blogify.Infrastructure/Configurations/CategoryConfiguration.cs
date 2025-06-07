@@ -1,5 +1,4 @@
 ﻿using Blogify.Domain.Categories;
-using Blogify.Domain.Posts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,7 +19,7 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
                 .IsRequired()
                 .HasMaxLength(200)
                 .HasComment("The name of the category. Must be unique.");
-            
+
             nameBuilder.HasIndex(n => n.Value)
                 .IsUnique();
         });

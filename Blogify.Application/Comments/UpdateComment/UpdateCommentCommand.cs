@@ -4,8 +4,7 @@ using MediatR;
 namespace Blogify.Application.Comments.UpdateComment;
 
 public sealed record UpdateCommentCommand(
+    Guid RouteId,
     Guid CommentId,
-    string Content,
-    Guid AuthorId
-    // Guid PostId
-    ) : ICommand<Unit>;
+    string Content
+) : ICommand<Unit>;

@@ -11,7 +11,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void CommandHandler_ShouldHave_NameEndingWith_CommandHandler()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .ImplementInterface(typeof(ICommandHandler<>))
             .Or()
@@ -26,7 +26,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void CommandHandler_Should_NotBePublic()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .ImplementInterface(typeof(ICommandHandler<>))
             .Or()
@@ -38,7 +38,7 @@ public class ApplicationTests : BaseTest
         if (!result.IsSuccessful)
         {
             var failingTypes = result.FailingTypes.Select(t => t.FullName).ToList();
-            string message = $"The following types are public: {string.Join(", ", failingTypes)}";
+            var message = $"The following types are public: {string.Join(", ", failingTypes)}";
             Assert.False(true, message); // This will fail the test and display the message
         }
 
@@ -48,7 +48,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void QueryHandler_ShouldHave_NameEndingWith_QueryHandler()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .ImplementInterface(typeof(IQueryHandler<,>))
             .Should()
@@ -61,7 +61,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void QueryHandler_Should_NotBePublic()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .ImplementInterface(typeof(IQueryHandler<,>))
             .Should()
@@ -74,7 +74,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void Validator_ShouldHave_NameEndingWith_Validator()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .Inherit(typeof(AbstractValidator<>))
             .Should()
@@ -87,7 +87,7 @@ public class ApplicationTests : BaseTest
     [Fact]
     public void Validator_Should_NotBePublic()
     {
-        TestResult result = Types.InAssembly(ApplicationAssembly)
+        var result = Types.InAssembly(ApplicationAssembly)
             .That()
             .Inherit(typeof(AbstractValidator<>))
             .Should()

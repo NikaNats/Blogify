@@ -4,16 +4,21 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.PublishPost;
 
-internal sealed class PublishPostCommandHandler(IPostRepository postRepository) : ICommandHandler<PublishPostCommand>
+internal sealed class PublishPostCommandHandler(
+    IPostRepository postRepository,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<PublishPostCommand>
 {
     public async Task<Result> Handle(PublishPostCommand request, CancellationToken cancellationToken)
     {
         var post = await postRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (post is null)
-            return Result.Failure(PostErrors.NotFound);
+        if (post is null) return Result.Failure(PostErrors.NotFound);
 
-        post.Publish();
-        await postRepository.UpdateAsync(post, cancellationToken);
+        var publishResult = post.Publish();
+        if (publishResult.IsFailure) return publishResult;
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
         return Result.Success();
     }
 }

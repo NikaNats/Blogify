@@ -21,7 +21,10 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
 {
     private const string ApiEndpoint = "api/v1/posts";
     private const string TagsApiEndpoint = "api/v1/tags";
-    private readonly ApplicationDbContext _dbContext = factory.Services.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    private readonly ApplicationDbContext _dbContext =
+        factory.Services.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
     private string? _accessToken;
 
     public async Task InitializeAsync()
@@ -61,7 +64,8 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
     private async Task<(Guid Id, PostResponse Post)> SeedTestPost()
     {
         var request = CreateUniquePost();
-        testOutputHelper.WriteLine($"Sending request to {ApiEndpoint} with payload: {JsonSerializer.Serialize(request)}");
+        testOutputHelper.WriteLine(
+            $"Sending request to {ApiEndpoint} with payload: {JsonSerializer.Serialize(request)}");
 
         var response = await HttpClient.PostAsJsonAsync(ApiEndpoint, request);
         testOutputHelper.WriteLine($"Response Status: {response.StatusCode}");
@@ -256,7 +260,8 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
         );
         postContentResult.IsSuccess.ShouldBeTrue();
 
-        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
+        HttpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", await GetAccessToken());
         var request = new AddCommentToPostRequest(postContentResult.Value.Value);
 
         var response = await HttpClient.PostAsJsonAsync($"{ApiEndpoint}/{postId}/comments", request);
@@ -275,7 +280,8 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
         );
         postContentResult.IsSuccess.ShouldBeTrue();
 
-        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
+        HttpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", await GetAccessToken());
         var request = new AddCommentToPostRequest(postContentResult.Value.Value);
 
         var response = await HttpClient.PostAsJsonAsync($"{ApiEndpoint}/{invalidPostId}/comments", request);
@@ -290,7 +296,8 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
         var postContentResult = PostContent.Create("");
         postContentResult.IsFailure.ShouldBeTrue();
 
-        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessToken());
+        HttpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", await GetAccessToken());
         var request = new AddCommentToPostRequest("");
 
         var response = await HttpClient.PostAsJsonAsync($"{ApiEndpoint}/{postId}/comments", request);

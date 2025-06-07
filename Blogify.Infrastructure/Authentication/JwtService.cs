@@ -6,12 +6,13 @@ using Microsoft.Extensions.Options;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class JwtService(HttpClient httpClient, IOptions<KeycloakOptions> keycloakOptions)
+internal sealed class JwtService(IHttpClientFactory httpClientFactory, IOptions<KeycloakOptions> keycloakOptions)
     : IJwtService
 {
     private static readonly Error AuthenticationFailed = new(
         "Keycloak.AuthenticationFailed",
-        "Failed to acquire access token do to authentication failure", ErrorType.AuthenticationFailed);
+        "Failed to acquire access token due to authentication failure",
+        ErrorType.AuthenticationFailed);
 
     private readonly KeycloakOptions _keycloakOptions = keycloakOptions.Value;
 
@@ -34,25 +35,23 @@ internal sealed class JwtService(HttpClient httpClient, IOptions<KeycloakOptions
 
             using var authorizationRequestContent = new FormUrlEncodedContent(authRequestParameters);
 
+            var httpClient = httpClientFactory.CreateClient();
             var response = await httpClient.PostAsync(
-                "",
+                _keycloakOptions.TokenUrl,
                 authorizationRequestContent,
                 cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                // Log error content here
                 return Result.Failure<string>(AuthenticationFailed);
             }
-            
-            var authorizationToken = await response
-                .Content
-                .ReadFromJsonAsync<AuthorizationToken>(cancellationToken);
 
-            if (authorizationToken is null) return Result.Failure<string>(AuthenticationFailed);
+            var authorizationToken = await response.Content.ReadFromJsonAsync<AuthorizationToken>(cancellationToken);
 
-            return authorizationToken.AccessToken;
+            return authorizationToken is null
+                ? Result.Failure<string>(AuthenticationFailed)
+                : Result.Success(authorizationToken.AccessToken);
         }
         catch (HttpRequestException)
         {

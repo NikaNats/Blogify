@@ -48,7 +48,7 @@ public static class MappingExtensions
             tag.Name.Value,
             tag.CreatedAt);
     }
-    
+
     public static List<AllCategoryResponse> MapToCategoryResponses(this IEnumerable<Category> categories)
     {
         if (categories == null)

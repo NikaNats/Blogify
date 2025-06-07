@@ -32,7 +32,7 @@ public sealed class Category : Entity
         get => _description;
         private set => SetProperty(ref _description, value);
     }
-    
+
     public IReadOnlyCollection<Post> Posts => _posts.AsReadOnly();
 
     public static Result<Category> Create(string name, string description)

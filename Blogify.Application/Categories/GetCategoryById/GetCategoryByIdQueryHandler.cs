@@ -1,7 +1,6 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
-using MediatR;
 
 namespace Blogify.Application.Categories.GetCategoryById;
 
@@ -15,10 +14,7 @@ internal sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRe
         try
         {
             var category = await categoryRepository.GetByIdAsync(request.Id, cancellationToken);
-            if (category is null)
-            {
-                return Result.Failure<CategoryByIdResponse>(CategoryError.NotFound);
-            }
+            if (category is null) return Result.Failure<CategoryByIdResponse>(CategoryError.NotFound);
 
             var response = new CategoryByIdResponse(
                 category.Id,

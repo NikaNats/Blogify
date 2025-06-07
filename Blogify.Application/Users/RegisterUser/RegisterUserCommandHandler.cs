@@ -57,18 +57,18 @@ internal sealed class RegisterUserCommandHandler(
             logger.LogError(ex, "Failed to register user {Email} in database after authentication", request.Email);
 
             if (user.IdentityId != null)
-            {
                 try
                 {
                     await authenticationService.DeleteIdentityAsync(user.IdentityId, cancellationToken);
-                    logger.LogInformation("Rolled back identity {IdentityId} due to persistence failure", user.IdentityId);
+                    logger.LogInformation("Rolled back identity {IdentityId} due to persistence failure",
+                        user.IdentityId);
                 }
                 catch (Exception rollbackEx)
                 {
-                    logger.LogError(rollbackEx, "Failed to rollback identity {IdentityId} for user {Email}", user.IdentityId, request.Email);
+                    logger.LogError(rollbackEx, "Failed to rollback identity {IdentityId} for user {Email}",
+                        user.IdentityId, request.Email);
                     // Manual intervention may be required if rollback fails
                 }
-            }
 
             return Result.Failure<Guid>(Error.Failure("User.Registration.Failed",
                 "Failed to register user due to an unexpected error."));

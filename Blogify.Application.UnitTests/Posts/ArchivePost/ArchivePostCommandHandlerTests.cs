@@ -1,93 +1,110 @@
 ﻿using Blogify.Application.Posts.ArchivePost;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using NSubstitute;
+using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.ArchivePost;
 
 public class ArchivePostCommandHandlerTests
 {
     private readonly ArchivePostCommandHandler _handler;
-    private readonly IPostRepository _postRepository;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly IUnitOfWork _unitOfWorkMock;
 
     public ArchivePostCommandHandlerTests()
     {
-        _postRepository = Substitute.For<IPostRepository>();
-        _handler = new ArchivePostCommandHandler(_postRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>();
+        _handler = new ArchivePostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
     }
 
-    [Fact]
-    public async Task Handle_PostExists_PostArchivedSuccessfully()
+    // A robust helper that creates a valid Post or throws if setup fails.
+    private static Post CreateTestPost(PublicationStatus initialStatus = PublicationStatus.Draft)
     {
-        // Arrange
-        var postId = Guid.NewGuid();
-        var post = CreateValidPost();
-
-        _postRepository.GetByIdAsync(postId, CancellationToken.None).Returns(post);
-
-        // Act
-        var result = await _handler.Handle(new ArchivePostCommand(postId), CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess, "Handler should return success when archiving a post.");
-        await _postRepository.Received(1).UpdateAsync(post, CancellationToken.None);
-        Assert.Equal(PublicationStatus.Archived, post.Status);
-    }
-
-    [Fact]
-    public async Task Handle_PostNotFound_ReturnsFailure()
-    {
-        // Arrange
-        var postId = Guid.NewGuid();
-        _postRepository.GetByIdAsync(postId, CancellationToken.None).Returns((Post)null);
-
-        // Act
-        var result = await _handler.Handle(new ArchivePostCommand(postId), CancellationToken.None);
-
-        // Assert
-        Assert.False(result.IsSuccess, "Handler should return failure when the post is not found.");
-        Assert.Equal("Post.NotFound", result.Error.Code);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Handle_PostAlreadyArchived_ReturnsSuccessWithoutUpdating()
-    {
-        // Arrange
-        var postId = Guid.NewGuid();
-        var post = CreateValidPost();
-        post.Archive();
-
-        _postRepository.GetByIdAsync(postId, CancellationToken.None).Returns(post);
-
-        // Act
-        var result = await _handler.Handle(new ArchivePostCommand(postId), CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess, "Handler should return success when the post is already archived.");
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), CancellationToken.None);
-    }
-
-    // Helper Method
-    private static Post CreateValidPost()
-    {
-        var titleResult = PostTitle.Create("Valid Title");
-        Assert.True(titleResult.IsSuccess, "PostTitle creation failed.");
-
-        var contentResult =
-            PostContent.Create(
-                "This is a valid post content that meets the minimum length requirement of 100 characters. It must be long enough to pass the validation rules.");
-        Assert.True(contentResult.IsSuccess, "PostContent creation failed.");
-
-        var excerptResult = PostExcerpt.Create("Valid excerpt.");
-        Assert.True(excerptResult.IsSuccess, "PostExcerpt creation failed.");
-
         var postResult = Post.Create(
-            titleResult.Value,
-            contentResult.Value,
-            excerptResult.Value,
+            PostTitle.Create("Valid Title").Value,
+            PostContent.Create(new string('a', 100)).Value,
+            PostExcerpt.Create("Valid excerpt.").Value,
             Guid.NewGuid());
 
-        Assert.True(postResult.IsSuccess, "Post creation failed.");
-        return postResult.Value;
+        // A setup helper should ensure success, not assert.
+        if (postResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create post.");
+
+        var post = postResult.Value;
+
+        // Set the initial status for the test scenario
+        if (initialStatus == PublicationStatus.Published) post.Publish();
+        if (initialStatus == PublicationStatus.Archived) post.Archive();
+
+        return post;
+    }
+
+    [Fact]
+    public async Task Handle_WhenPostExistsAsDraft_ShouldArchivePostAndSaveChanges()
+    {
+        // Arrange
+        var post = CreateTestPost(PublicationStatus.Draft);
+        var command = new ArchivePostCommand(post.Id);
+
+        _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(post);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        post.Status.ShouldBe(PublicationStatus.Archived);
+
+        // Verify the change was committed.
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenPostNotFound_ShouldReturnFailure()
+    {
+        // Arrange
+        var command = new ArchivePostCommand(Guid.NewGuid());
+
+        _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns((Post?)null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
+
+        // Verify no attempt was made to save changes.
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+// ... inside ArchivePostCommandHandlerTests class
+
+    [Fact]
+    public async Task Handle_WhenPostIsAlreadyArchived_ShouldReturnSuccessAndNotSaveChanges()
+    {
+        // Arrange
+        // Helper creates the post and archives it.
+        var post = CreateTestPost(PublicationStatus.Archived);
+        // Clear any events raised during setup.
+        post.ClearDomainEvents();
+
+        var command = new ArchivePostCommand(post.Id);
+
+        _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(post);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+
+        // This assertion will now pass because the fixed handler only saves when
+        // a PostArchivedDomainEvent is raised. In this case, it won't be.
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

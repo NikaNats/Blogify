@@ -30,7 +30,7 @@ internal sealed class AuthorizationService(ApplicationDbContext dbContext, ICach
     public async Task<HashSet<string>> GetPermissionsForUserAsync(string identityId)
     {
         var cacheKey = $"auth:permissions-{identityId}";
-        HashSet<string>? cachedPermissions = await cacheService.GetAsync<HashSet<string>>(cacheKey);
+        var cachedPermissions = await cacheService.GetAsync<HashSet<string>>(cacheKey);
 
         if (cachedPermissions is not null) return cachedPermissions;
 

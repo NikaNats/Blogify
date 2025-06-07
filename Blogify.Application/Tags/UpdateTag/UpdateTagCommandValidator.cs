@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Blogify.Application.Tags.UpdateTag;
 
-internal  sealed class UpdateTagCommandValidator : AbstractValidator<UpdateTagCommand>
+internal sealed class UpdateTagCommandValidator : AbstractValidator<UpdateTagCommand>
 {
     public UpdateTagCommandValidator()
     {

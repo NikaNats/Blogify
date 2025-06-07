@@ -203,7 +203,7 @@ public sealed class Post : Entity
             return Result.Success();
 
         _tags.Add(tag);
-        RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id, tag.Name.Value));
+        RaiseDomainEvent(new PostTaggedDomainEvent(Id, tag.Id));
         UpdateModificationTimestamp();
         return Result.Success();
     }
@@ -215,7 +215,7 @@ public sealed class Post : Entity
 
         var removed = _tags.RemoveAll(t => t.Id == tag.Id) > 0;
         if (removed)
-            RaiseDomainEvent(new PostUntaggedDomainEvent(Id, tag.Id, tag.Name.Value));
+            RaiseDomainEvent(new PostUntaggedDomainEvent(Id, tag.Id));
 
         return Result.Success();
     }
@@ -229,7 +229,7 @@ public sealed class Post : Entity
             return Result.Success();
 
         _categories.Add(category);
-        RaiseDomainEvent(new PostCategoryAddedDomainEvent(Id, category.Id, category.Name.Value));
+        RaiseDomainEvent(new PostCategoryAddedDomainEvent(Id, category.Id));
         return Result.Success();
     }
 
@@ -240,7 +240,7 @@ public sealed class Post : Entity
 
         var removed = _categories.RemoveAll(c => c.Id == category.Id) > 0;
         if (removed)
-            RaiseDomainEvent(new PostCategoryRemovedDomainEvent(Id, category.Id, category.Name.Value));
+            RaiseDomainEvent(new PostCategoryRemovedDomainEvent(Id, category.Id));
 
         return Result.Success();
     }

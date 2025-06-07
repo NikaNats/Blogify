@@ -38,7 +38,8 @@ public class UpdatePostCommandValidatorTests
 
         result.IsValid.ShouldBeFalse("a command with a null title should fail validation");
         result.Errors.ShouldHaveSingleItem()
-            .ErrorMessage.ShouldBe(PostErrors.TitleEmpty.Description, "the error should indicate the title cannot be empty");
+            .ErrorMessage.ShouldBe(PostErrors.TitleEmpty.Description,
+                "the error should indicate the title cannot be empty");
     }
 
     [Fact]
@@ -55,7 +56,8 @@ public class UpdatePostCommandValidatorTests
 
         result.IsValid.ShouldBeFalse("a command with null content should fail validation");
         result.Errors.ShouldHaveSingleItem()
-            .ErrorMessage.ShouldBe(PostErrors.ContentEmpty.Description, "the error should indicate the content cannot be empty");
+            .ErrorMessage.ShouldBe(PostErrors.ContentEmpty.Description,
+                "the error should indicate the content cannot be empty");
     }
 
     [Fact]
@@ -72,7 +74,8 @@ public class UpdatePostCommandValidatorTests
 
         result.IsValid.ShouldBeFalse("a command with a null excerpt should fail validation");
         result.Errors.ShouldHaveSingleItem()
-            .ErrorMessage.ShouldBe(PostErrors.ExcerptEmpty.Description, "the error should indicate the excerpt cannot be empty");
+            .ErrorMessage.ShouldBe(PostErrors.ExcerptEmpty.Description,
+                "the error should indicate the excerpt cannot be empty");
     }
 
     [Fact]
@@ -110,5 +113,4 @@ public class UpdatePostCommandValidatorTests
         result.Errors.Select(e => e.ErrorMessage)
             .ShouldContain(error => error.Contains("Id"), "the error should relate to the invalid Id");
     }
-
 }

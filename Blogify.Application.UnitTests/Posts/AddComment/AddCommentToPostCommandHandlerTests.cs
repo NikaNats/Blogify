@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.AddCommentToPost;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 using NSubstitute;
@@ -8,136 +9,118 @@ namespace Blogify.Application.UnitTests.Posts.AddComment;
 
 public class AddCommentToPostCommandHandlerTests
 {
+    private readonly ICommentRepository _commentRepositoryMock;
     private readonly AddCommentToPostCommandHandler _handler;
-    private readonly IPostRepository _postRepository;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly IUnitOfWork _unitOfWorkMock;
 
     public AddCommentToPostCommandHandlerTests()
     {
-        _postRepository = Substitute.For<IPostRepository>();
-        var commentRepository = Substitute.For<ICommentRepository>();
-        _handler = new AddCommentToPostCommandHandler(_postRepository, commentRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _commentRepositoryMock = Substitute.For<ICommentRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>();
+        _handler = new AddCommentToPostCommandHandler(
+            _postRepositoryMock,
+            _commentRepositoryMock,
+            _unitOfWorkMock);
     }
 
-    [Fact]
-    public async Task Handle_PostNotFound_ReturnsNotFoundFailure()
+    // Helper to create a valid Post entity for tests, simplifying Arrange blocks.
+    private static Post CreateTestPost(bool isPublished = false)
     {
-        // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Test comment", Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post)null);
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.Code.ShouldBe("Post.NotFound");
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_PostNotPublished_ReturnsValidationFailure()
-    {
-        // Arrange
-        var postTitleResult = PostTitle.Create("Test Post");
-        var postContentResult = PostContent.Create(new string('a', 100)); // Valid input: 100 characters
-        var postExcerptResult = PostExcerpt.Create("Test Excerpt");
-
-        // Ensure all creations were successful
-        postTitleResult.IsSuccess.ShouldBeTrue();
-        postContentResult.IsSuccess.ShouldBeTrue();
-        postExcerptResult.IsSuccess.ShouldBeTrue();
-
         var postResult = Post.Create(
-            postTitleResult.Value,
-            postContentResult.Value,
-            postExcerptResult.Value,
+            PostTitle.Create("Test Post").Value,
+            PostContent.Create(new string('a', 100)).Value,
+            PostExcerpt.Create("An excerpt.").Value,
             Guid.NewGuid()
         );
+        postResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create post.");
 
-        // Ensure the post creation was successful
-        postResult.IsSuccess.ShouldBeTrue();
         var post = postResult.Value;
+        if (isPublished) post.Publish();
 
-        var command = new AddCommentToPostCommand(post.Id, "Test comment", Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.Code.ShouldBe(PostErrors.CommentToUnpublishedPost.Code);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        return post;
     }
 
     [Fact]
-    public async Task Handle_PostPublished_AddsCommentAndReturnsSuccess()
+    public async Task Handle_WhenPostIsPublished_ShouldAddCommentAndSaveChanges()
     {
         // Arrange
-        var postTitleResult = PostTitle.Create("Test Post");
-        var postContentResult = PostContent.Create(new string('a', 100)); // Valid input: 100 characters
-        var postExcerptResult = PostExcerpt.Create("Test Excerpt");
+        var post = CreateTestPost(true);
+        var command = new AddCommentToPostCommand(post.Id, "This is a valid comment.", Guid.NewGuid());
 
-        // Ensure all creations were successful
-        postTitleResult.IsSuccess.ShouldBeTrue();
-        postContentResult.IsSuccess.ShouldBeTrue();
-        postExcerptResult.IsSuccess.ShouldBeTrue();
-
-        var postResult = Post.Create(
-            postTitleResult.Value,
-            postContentResult.Value,
-            postExcerptResult.Value,
-            Guid.NewGuid()
-        );
-
-        var post = postResult.Value;
-        post.Publish();
-
-        var command = new AddCommentToPostCommand(post.Id, "Test comment", Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        post.Comments.ShouldContain(c => c.Content.Value == command.Content && c.AuthorId == command.AuthorId);
-        await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
+
+        // Verify a new comment was added to the repository.
+        await _commentRepositoryMock.Received(1).AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+
+        // Verify the entire transaction was committed.
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_CommentCreationFails_ReturnsFailure()
+    public async Task Handle_WhenPostIsNotPublished_ShouldReturnFailure()
     {
         // Arrange
-        var postTitleResult = PostTitle.Create("Test Post");
-        var postContentResult = PostContent.Create(new string('a', 100));
-        var postExcerptResult = PostExcerpt.Create("Test Excerpt");
+        var post = CreateTestPost(false); // Post is a draft
+        var command = new AddCommentToPostCommand(post.Id, "This comment should be rejected.", Guid.NewGuid());
 
-        // Ensure all creations were successful
-        postTitleResult.IsSuccess.ShouldBeTrue();
-        postContentResult.IsSuccess.ShouldBeTrue();
-        postExcerptResult.IsSuccess.ShouldBeTrue();
-
-        var postResult = Post.Create(
-            postTitleResult.Value,
-            postContentResult.Value,
-            postExcerptResult.Value,
-            Guid.NewGuid()
-        );
-
-        // Ensure the post creation was successful
-        postResult.IsSuccess.ShouldBeTrue();
-        var post = postResult.Value;
-
-        post.Publish(); // Ensure the post is published
-        var command = new AddCommentToPostCommand(post.Id, string.Empty, Guid.NewGuid()); // Invalid comment content
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsFailure.ShouldBeTrue();
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        result.Error.ShouldBe(PostErrors.CommentToUnpublishedPost);
+
+        // Verify no new comment was added and no changes were saved.
+        await _commentRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenPostNotFound_ShouldReturnFailure()
+    {
+        // Arrange
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "This comment will fail.", Guid.NewGuid());
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns((Post?)null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(PostErrors.NotFound);
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenCommentContentIsInvalid_ShouldReturnFailure()
+    {
+        // Arrange
+        var post = CreateTestPost(true);
+        var command = new AddCommentToPostCommand(post.Id, "", Guid.NewGuid()); // Invalid empty content
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
+            .Returns(post);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.EmptyContent);
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

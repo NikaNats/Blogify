@@ -1,7 +1,6 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
-using MediatR;
 
 namespace Blogify.Application.Categories.CreateCategory;
 
@@ -12,13 +11,9 @@ internal sealed class CreateCategoryCommandHandler(ICategoryRepository categoryR
     {
         try
         {
-            // Check for duplicate name in the application layer
             var existingCategory = await categoryRepository.GetByNameAsync(request.Name, cancellationToken);
-            if (existingCategory != null)
-            {
-                return Result.Failure<Guid>(CategoryError.NameAlreadyExists);
-            }
-            
+            if (existingCategory != null) return Result.Failure<Guid>(CategoryError.NameAlreadyExists);
+
             var categoryResult = Category.Create(request.Name, request.Description);
             if (categoryResult.IsFailure)
                 return Result.Failure<Guid>(categoryResult.Error);

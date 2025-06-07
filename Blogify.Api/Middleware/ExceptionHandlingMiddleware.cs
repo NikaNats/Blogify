@@ -15,49 +15,38 @@ internal sealed class ExceptionHandlingMiddleware(
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
+            logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
 
-            var exceptionDetails = GetExceptionDetails(exception);
+            var problemDetails = CreateProblemDetails(exception, context);
 
-            var problemDetails = new ProblemDetails
-            {
-                Status = exceptionDetails.Status,
-                Type = exceptionDetails.Type,
-                Title = exceptionDetails.Title,
-                Detail = exceptionDetails.Detail
-            };
-
-            if (exceptionDetails.Errors is not null) problemDetails.Extensions["errors"] = exceptionDetails.Errors;
-
-            context.Response.StatusCode = exceptionDetails.Status;
+            context.Response.StatusCode = problemDetails.Status ?? StatusCodes.Status500InternalServerError;
 
             await context.Response.WriteAsJsonAsync(problemDetails);
         }
     }
-
-    private static ExceptionDetails GetExceptionDetails(Exception exception)
+    
+    private static ProblemDetails CreateProblemDetails(Exception exception, HttpContext context)
     {
         return exception switch
         {
-            ValidationException validationException => new ExceptionDetails(
-                StatusCodes.Status400BadRequest,
-                "ValidationFailure",
-                "Validation error",
-                "One or more validation errors has occurred",
-                validationException.Errors),
-            _ => new ExceptionDetails(
-                StatusCodes.Status500InternalServerError,
-                "ServerError",
-                "Server error",
-                "An unexpected error has occurred",
-                null)
+            ValidationException validationException => new ProblemDetails
+            {
+                Title = "Validation",
+                Type = "https://api.blogify.com/errors/validation",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "One or more validation errors occurred.",
+                Instance = context.Request.Path,
+                Extensions = { ["errors"] = validationException.Errors }
+            },
+
+            _ => new ProblemDetails
+            {
+                Title = "ServerError",
+                Type = "https://api.blogify.com/errors/servererror",
+                Status = StatusCodes.Status500InternalServerError,
+                Detail = "An unexpected internal server error has occurred.",
+                Instance = context.Request.Path.Value
+            }
         };
     }
-
-    internal sealed record ExceptionDetails(
-        int Status,
-        string Type,
-        string Title,
-        string Detail,
-        IEnumerable<object>? Errors);
 }

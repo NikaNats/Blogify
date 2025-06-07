@@ -72,7 +72,8 @@ public class PostDomainTests
         var result = Posts.Post.Create(null!, content, excerpt, authorId);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.Title.Null", result.Error.Code);    }
+        Assert.Equal("Post.Title.Null", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Creation")]
@@ -85,7 +86,8 @@ public class PostDomainTests
         var result = Posts.Post.Create(title, content, excerpt, authorId);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.Content.Null", result.Error.Code);    }
+        Assert.Equal("Post.Content.Null", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Creation")]
@@ -98,7 +100,8 @@ public class PostDomainTests
         var result = Posts.Post.Create(title, content, excerpt, authorId);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.Excerpt.Null", result.Error.Code);    }
+        Assert.Equal("Post.Excerpt.Null", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Creation")]
@@ -110,7 +113,8 @@ public class PostDomainTests
         var result = Posts.Post.Create(title, content, excerpt, Guid.Empty);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.AuthorId.Empty", result.Error.Code);    }
+        Assert.Equal("Post.AuthorId.Empty", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Creation")]
@@ -158,7 +162,8 @@ public class PostDomainTests
         var result = post.Update(newTitle, newContent, newExcerpt);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.Update.Archived", result.Error.Code);    }
+        Assert.Equal("Post.Update.Archived", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Update")]
@@ -200,7 +205,8 @@ public class PostDomainTests
         var result = post.Publish();
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.AlreadyPublished", result.Error.Code);    }
+        Assert.Equal("Post.AlreadyPublished", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Publishing")]
@@ -210,7 +216,8 @@ public class PostDomainTests
         var result = post.Publish();
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Post.Publish.Archived", result.Error.Code);    }
+        Assert.Equal("Post.Publish.Archived", result.Error.Code);
+    }
 
     [Fact]
     [Trait("Category", "Publishing")]

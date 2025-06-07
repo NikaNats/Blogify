@@ -19,7 +19,7 @@ internal sealed class PermissionAuthorizationHandler(IServiceProvider servicePro
 
         var identityId = context.User.GetIdentityId();
 
-        HashSet<string> permissions = await authorizationService.GetPermissionsForUserAsync(identityId);
+        var permissions = await authorizationService.GetPermissionsForUserAsync(identityId);
 
         if (permissions.Contains(requirement.Permission)) context.Succeed(requirement);
     }

@@ -5,35 +5,27 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.DeletePost;
 
-internal sealed class DeletePostCommandHandler(IPostRepository postRepository)
+internal sealed class DeletePostCommandHandler(
+    IPostRepository postRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<DeletePostCommand>
 {
     public async Task<Result> Handle(DeletePostCommand request, CancellationToken cancellationToken)
     {
+        var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
+        if (post is null) return Result.Failure(PostErrors.NotFound);
+
+        await postRepository.DeleteAsync(post, cancellationToken);
+
         try
         {
-            // Retrieve the post from the repository
-            var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
-            if (post is null)
-                return Result.Failure(PostErrors.NotFound);
-
-            // // Business rule validation: Prevent removal of published posts
-            // if (post.Status == PostStatus.Published)
-            //     return Result.Failure(PostErrors.CannotRemovePublishedPost);
-
-            // Remove the post from the repository
-            await postRepository.DeleteAsync(post, cancellationToken);
-
-            return Result.Success();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch (ConcurrencyException)
         {
             return Result.Failure(PostErrors.Overlap);
         }
-        catch (Exception ex)
-        {
-            return Result.Failure(Error.Failure("Post.Remove.Failed",
-                "An error occurred while removing the post."));
-        }
+
+        return Result.Success();
     }
 }

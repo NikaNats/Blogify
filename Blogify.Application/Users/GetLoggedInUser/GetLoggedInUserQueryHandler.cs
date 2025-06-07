@@ -3,7 +3,6 @@ using Blogify.Application.Abstractions.Data;
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Users;
-using Dapper;
 
 namespace Blogify.Application.Users.GetLoggedInUser;
 
@@ -35,7 +34,7 @@ internal sealed class GetLoggedInUserQueryHandler(
                 connection,
                 sql,
                 new { userContext.IdentityId });
-            
+
             return user;
         }
         catch (InvalidOperationException)
@@ -46,7 +45,7 @@ internal sealed class GetLoggedInUserQueryHandler(
         {
             return Result.Failure<UserResponse>(new Error(
                 "Database.Error",
-                ex.Message,ErrorType.Unexpected));
+                ex.Message, ErrorType.Unexpected));
         }
     }
 }

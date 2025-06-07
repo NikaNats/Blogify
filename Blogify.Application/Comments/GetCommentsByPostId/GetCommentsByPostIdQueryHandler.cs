@@ -1,7 +1,6 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
-using MediatR;
 
 namespace Blogify.Application.Comments.GetCommentsByPostId;
 
@@ -13,12 +12,12 @@ internal sealed class
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         if (request.PostId == Guid.Empty)
             return Result.Failure<List<CommentResponse>>(CommentError.EmptyPostId);
 
         var comments = await commentRepository.GetByPostIdAsync(request.PostId, cancellationToken);
-    
+
         var response = comments
             .Select(comment => new CommentResponse(
                 comment.Id,

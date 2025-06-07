@@ -5,33 +5,29 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Posts.AddTagToPost;
 
-internal sealed class AddTagToPostCommandHandler(IPostRepository postRepository, ITagRepository tagRepository)
+internal sealed class AddTagToPostCommandHandler(
+    IPostRepository postRepository,
+    ITagRepository tagRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<AddTagToPostCommand>
 {
     public async Task<Result> Handle(AddTagToPostCommand request, CancellationToken cancellationToken)
     {
         var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
-        if (post is null)
-            return Result.Failure(PostErrors.NotFound);
+        if (post is null) return Result.Failure(PostErrors.NotFound);
 
         var tag = await tagRepository.GetByIdAsync(request.TagId, cancellationToken);
-        if (tag is null)
-            return Result.Failure(TagErrors.NotFound);
+        if (tag is null) return Result.Failure(TagErrors.NotFound);
 
-        // Check if tag already exists before attempting to add
-        var tagExists = post.Tags.Any(t => t.Id == tag.Id);
-        if (tagExists) return Result.Success();
-        
-        // Add the tag to the post
+        var eventCountBefore = post.DomainEvents.Count;
+
         var addTagResult = post.AddTag(tag);
-        if (addTagResult.IsFailure)
-            return addTagResult;
-
-        var addPostResult = tag.AddPost(post);
-        if (addPostResult.IsFailure)
-            return addPostResult;
+        if (addTagResult.IsFailure) return addTagResult;
         
-        await postRepository.UpdateAsync(post, cancellationToken);
+        var eventCountAfter = post.DomainEvents.Count;
+
+        if (eventCountAfter > eventCountBefore)
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

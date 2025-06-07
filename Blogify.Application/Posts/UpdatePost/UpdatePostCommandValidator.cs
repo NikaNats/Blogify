@@ -10,7 +10,7 @@ internal sealed class UpdatePostCommandValidator : AbstractValidator<UpdatePostC
         RuleFor(x => x.Id)
             .NotEqual(Guid.Empty)
             .WithMessage(PostErrors.PostIdEmpty.Description);
-        
+
         // Validate Title
         RuleFor(x => x.Title)
             .NotNull().WithMessage(PostErrors.TitleEmpty.Description);

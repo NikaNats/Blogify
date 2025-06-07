@@ -19,16 +19,16 @@ public abstract class Entity : IEquatable<Entity>
     }
 
     public Guid Id { get; }
-    
+
     public DateTimeOffset CreatedAt { get; }
-    
+
     public DateTimeOffset? LastModifiedAt { get; private set; }
-    
+
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-    
+
     public IReadOnlyCollection<string> ModifiedProperties => _modifiedProperties;
 
-    
+
     public bool Equals(Entity? other)
     {
         if (other is null)
@@ -67,7 +67,7 @@ public abstract class Entity : IEquatable<Entity>
         _modifiedProperties.Add(propertyName);
         LastModifiedAt = DateTimeOffset.UtcNow;
     }
-    
+
     public void ResetChangeTracking()
     {
         _modifiedProperties.Clear();

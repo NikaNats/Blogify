@@ -1,9 +1,8 @@
 ﻿using System.Data;
 
-namespace Blogify.Application.Abstractions.Data
+namespace Blogify.Application.Abstractions.Data;
+
+public interface IDapperQueryExecutor
 {
-    public interface IDapperQueryExecutor
-    {
-        Task<T> QuerySingleAsync<T>(IDbConnection connection, string sql, object parameters);
-    }
+    Task<T> QuerySingleAsync<T>(IDbConnection connection, string sql, object parameters);
 }
