@@ -1,8 +1,10 @@
 ﻿using Blogify.Application.Categories.CreateCategory;
 using Blogify.Domain.Categories;
+using EmptyFiles;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Shouldly;
+using Category = Blogify.Domain.Categories.Category;
 
 namespace Blogify.Application.UnitTests.Categories.Create;
 

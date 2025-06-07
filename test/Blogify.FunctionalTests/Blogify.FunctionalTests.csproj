@@ -29,10 +29,7 @@
     <ItemGroup>
         <Using Include="Xunit"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Blogify.Api\Blogify.Api.csproj"/>
-    </ItemGroup>
+    
 
     <!--    <ItemGroup>-->
     <!--      <Content Include=".files\blogify-realm-export.json" />-->
@@ -42,6 +39,10 @@
         <None Update=".files\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Blogify.Api\Blogify.Api.csproj" />
     </ItemGroup>
 
 </Project>

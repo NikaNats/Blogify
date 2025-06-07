@@ -27,7 +27,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Blogify.Application\Blogify.Application.csproj"/>
+      <ProjectReference Include="..\..\src\Blogify.Application\Blogify.Application.csproj" />
+      <ProjectReference Include="..\..\src\Blogify.Domain\Blogify.Domain.csproj" />
     </ItemGroup>
 
 </Project>
