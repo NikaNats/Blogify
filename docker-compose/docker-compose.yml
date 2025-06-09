@@ -2,8 +2,8 @@ services:
   blogify.api:
     image: blogify/api:${API_VERSION:-latest}
     build:
-      context: .
-      dockerfile: Blogify.Api/Dockerfile
+      context: ../src/Blogify.Api
+      dockerfile: Dockerfile
     depends_on:
       blogify-db:
         condition: service_healthy
@@ -12,7 +12,7 @@ services:
       blogify-idp:
         condition: service_healthy
       blogify-seq:
-        condition: service_healthy
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 5000
@@ -68,7 +68,11 @@ services:
       - "18080:8080"
       - "19000:9000"  # Expose management port for health checks
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health/ready || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q '200'"
+        ]
       interval: 30s
       timeout: 10s
       retries: 6
@@ -122,5 +126,7 @@ volumes:
     driver: local
 
 networks:
+  blogify-network:
+    driver: bridge
   internal:
     driver: bridge

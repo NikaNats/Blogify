@@ -21,14 +21,29 @@ internal sealed class ConfigureSwaggerOptions(IApiVersionDescriptionProvider pro
 
     private static OpenApiInfo CreateVersionInfo(ApiVersionDescription apiVersionDescription)
     {
-        var openApiInfo = new OpenApiInfo
+        var info = new OpenApiInfo
         {
-            Title = $"Blogify.Api v{apiVersionDescription.ApiVersion}",
-            Version = apiVersionDescription.ApiVersion.ToString()
+            Title = $"Blogify API v{apiVersionDescription.ApiVersion}",
+            Version = apiVersionDescription.ApiVersion.ToString(),
+            Description = "A modern and efficient API for the Blogify platform.",
+            Contact = new OpenApiContact
+            {
+                Name = "Blogify Support",
+                Email = "support@blogify.com",
+                Url = new Uri("https://your-company.com/contact")
+            },
+            License = new OpenApiLicense
+            {
+                Name = "MIT License",
+                Url = new Uri("https://opensource.org/licenses/MIT")
+            }
         };
 
-        if (apiVersionDescription.IsDeprecated) openApiInfo.Description += " This API version has been deprecated.";
+        if (apiVersionDescription.IsDeprecated)
+        {
+            info.Description += " This API version has been deprecated.";
+        }
 
-        return openApiInfo;
+        return info;
     }
 }
