@@ -26,38 +26,16 @@ public class AddTagToPostCommandHandlerTests
             _unitOfWorkMock);
     }
 
-    // Helper to create a valid Post for tests.
-    private static Post CreateTestPost()
-    {
-        var postResult = Post.Create(
-            PostTitle.Create("Test Post").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("An excerpt.").Value,
-            Guid.NewGuid());
-        postResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create post.");
-        return postResult.Value;
-    }
-
-    // Helper to create a valid Tag for tests.
-    private static Tag CreateTestTag()
-    {
-        var tagResult = Tag.Create("TestTag");
-        tagResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create tag.");
-        return tagResult.Value;
-    }
-
     [Fact]
     public async Task Handle_WhenPostAndTagExist_ShouldAddTagAndSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost();
-        var tag = CreateTestTag();
+        var post = TestFactory.CreatePost();
+        var tag = TestFactory.CreateTag();
         var command = new AddTagToPostCommand(post.Id, tag.Id);
 
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns(tag);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -65,10 +43,11 @@ public class AddTagToPostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        // Verify the tag was added to the in-memory collection on the post entity.
-        post.Tags.ShouldContain(t => t.Id == tag.Id);
+        // --- FIXED: Assert on the collection of IDs, not entities. ---
+        post.TagIds.ShouldContain(tag.Id);
 
-        // Verify the entire transaction was committed. This is the crucial check.
+        // Verify the entire transaction was committed. This is the crucial check,
+        // and relies on the handler correctly detecting that a domain event was raised.
         await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -77,9 +56,7 @@ public class AddTagToPostCommandHandlerTests
     {
         // Arrange
         var command = new AddTagToPostCommand(Guid.NewGuid(), Guid.NewGuid());
-
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns((Post?)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -94,13 +71,10 @@ public class AddTagToPostCommandHandlerTests
     public async Task Handle_WhenTagNotFound_ShouldReturnFailure()
     {
         // Arrange
-        var post = CreateTestPost();
+        var post = TestFactory.CreatePost();
         var command = new AddTagToPostCommand(post.Id, Guid.NewGuid());
-
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns((Tag?)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns((Tag?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -112,19 +86,18 @@ public class AddTagToPostCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenTagAlreadyOnPost_ShouldReturnSuccessAndNotSaveChanges()
+    public async Task Handle_WhenTagAlreadyOnPost_ShouldSucceedAndNotSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost();
-        var tag = CreateTestTag();
+        var post = TestFactory.CreatePost();
+        var tag = TestFactory.CreateTag();
         post.AddTag(tag); // Pre-add the tag to the post.
+        post.ClearDomainEvents(); // Clear event from the initial setup add.
 
         var command = new AddTagToPostCommand(post.Id, tag.Id);
 
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns(tag);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -132,8 +105,35 @@ public class AddTagToPostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        // The domain logic should be idempotent. If the tag is already there,
-        // no change should occur, and thus we should not commit the transaction.
+        // The domain logic is idempotent. If the tag is already there,
+        // no change should occur, and thus the handler should not commit the transaction.
         await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    #region TestFactory
+
+    private static class TestFactory
+    {
+        // Helper to create a valid Post for tests.
+        internal static Post CreatePost()
+        {
+            var postResult = Post.Create(
+                "Test Post",
+                new string('a', 101),
+                "An excerpt.",
+                Guid.NewGuid());
+            postResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create post.");
+            return postResult.Value;
+        }
+
+        // Helper to create a valid Tag for tests.
+        internal static Tag CreateTag()
+        {
+            var tagResult = Tag.Create("TestTag");
+            tagResult.IsSuccess.ShouldBeTrue("Test setup failed: could not create tag.");
+            return tagResult.Value;
+        }
+    }
+
+    #endregion
 }

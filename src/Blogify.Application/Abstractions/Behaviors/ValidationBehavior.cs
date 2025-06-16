@@ -6,7 +6,7 @@ using ValidationException = Blogify.Application.Exceptions.ValidationException;
 
 namespace Blogify.Application.Abstractions.Behaviors;
 
-internal sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
+public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
     where TResponse : Result

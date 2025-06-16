@@ -1,6 +1,7 @@
 # Blogify API
 
-A modern, robust, and scalable backend API for a blogging platform. Built with **.NET 9**, following **Clean Architecture** principles, **Domain-Driven Design (DDD)**, and the **CQRS** pattern.
+A modern, robust, and scalable backend API for a blogging platform. Built with **.NET 9**, following **Clean
+Architecture** principles, **Domain-Driven Design (DDD)**, and the **CQRS** pattern.
 
 ---
 
@@ -26,19 +27,19 @@ A modern, robust, and scalable backend API for a blogging platform. Built with *
 
 ## 🛠️ Technology Stack
 
-| Area               | Technology / Library                          |
-|--------------------|-----------------------------------------------|
-| Backend Framework  | .NET 9 & ASP.NET Core                         |
-| Architecture       | Clean Architecture, DDD, CQRS                 |
-| Database           | PostgreSQL                                    |
-| ORM / Data Access  | Entity Framework Core 9, Dapper               |
-| Authentication     | Keycloak (OAuth 2.0 / OIDC)                   |
-| Caching            | Redis (via IDistributedCache)                 |
-| Testing            | xUnit, NSubstitute, Shouldly, Testcontainers  |
-| Logging            | Serilog, Seq                                  |
-| API & Docs         | REST, OpenAPI (Swagger), Asp.Versioning.Mvc   |
-| Validation         | FluentValidation                              |
-| Scheduling         | Quartz.NET                                    |
+| Area              | Technology / Library                         |
+|-------------------|----------------------------------------------|
+| Backend Framework | .NET 9 & ASP.NET Core                        |
+| Architecture      | Clean Architecture, DDD, CQRS                |
+| Database          | PostgreSQL                                   |
+| ORM / Data Access | Entity Framework Core 9, Dapper              |
+| Authentication    | Keycloak (OAuth 2.0 / OIDC)                  |
+| Caching           | Redis (via IDistributedCache)                |
+| Testing           | xUnit, NSubstitute, Shouldly, Testcontainers |
+| Logging           | Serilog, Seq                                 |
+| API & Docs        | REST, OpenAPI (Swagger), Asp.Versioning.Mvc  |
+| Validation        | FluentValidation                             |
+| Scheduling        | Quartz.NET                                   |
 
 ---
 

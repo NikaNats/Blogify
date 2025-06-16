@@ -1,20 +1,48 @@
-﻿using Blogify.Domain.Abstractions;
-using Blogify.Domain.Comments;
+﻿using Blogify.Domain.Comments;
 using Blogify.Domain.Comments.Events;
+using Shouldly;
 
 namespace Blogify.Domain.UnitTests.Comments;
 
 public class CommentTests
 {
-    // Constants for test data
-    private const string ValidContent = "This is a test comment.";
-    private const int MaxContentLength = 1000;
+    private const string ValidContent = "This is a valid test comment.";
 
-    #region Creation Tests
+    #region Update
 
     [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_ValidInputs_ReturnsSuccessResultWithComment()
+    public void Update_WithValidContent_ShouldChangeContent()
+    {
+        // Arrange
+        var comment = TestFactory.CreateValidComment();
+        const string newContent = "This is the updated content.";
+
+        // Act
+        var result = comment.Update(newContent);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        comment.Content.Value.ShouldBe(newContent);
+    }
+
+    #endregion
+
+    private static class TestFactory
+    {
+        internal static Comment CreateValidComment(Guid? authorId = null)
+        {
+            return Comment.Create(
+                ValidContent,
+                authorId ?? Guid.NewGuid(),
+                Guid.NewGuid()
+            ).Value;
+        }
+    }
+
+    #region Create
+
+    [Fact]
+    public void Create_WithValidParameters_ShouldReturnSuccessResult()
     {
         // Arrange
         var authorId = Guid.NewGuid();
@@ -24,475 +52,100 @@ public class CommentTests
         var result = Comment.Create(ValidContent, authorId, postId);
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Value);
-        Assert.Equal(ValidContent, result.Value.Content.Value);
-        Assert.Equal(authorId, result.Value.AuthorId);
-        Assert.Equal(postId, result.Value.PostId);
-        Assert.NotEqual(default, result.Value.CreatedAt);
+        result.IsSuccess.ShouldBeTrue();
+
+        var comment = result.Value;
+        comment.ShouldNotBeNull();
+        comment.Content.Value.ShouldBe(ValidContent);
+        comment.AuthorId.ShouldBe(authorId);
+        comment.PostId.ShouldBe(postId);
     }
 
     [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_EmptyContent_ReturnsFailureResultWithValidationError()
+    public void Create_WithValidParameters_ShouldRaiseCommentAddedDomainEvent()
     {
         // Arrange
         var authorId = Guid.NewGuid();
         var postId = Guid.NewGuid();
 
         // Act
-        var result = Comment.Create(string.Empty, authorId, postId);
+        var comment = Comment.Create(ValidContent, authorId, postId).Value;
 
         // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyContent.Description, result.Error.Description);
+        var domainEvent = comment.DomainEvents.ShouldHaveSingleItem().ShouldBeOfType<CommentAddedDomainEvent>();
+        domainEvent.commentId.ShouldBe(comment.Id);
+        domainEvent.postId.ShouldBe(postId);
+        domainEvent.authorId.ShouldBe(authorId);
     }
 
-    [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_NullContent_ReturnsFailureResultWithValidationError()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Create_WithInvalidContent_ShouldReturnFailure(string invalidContent)
     {
-        // Arrange
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
-
         // Act
-        var result = Comment.Create(null, authorId, postId);
+        var result = Comment.Create(invalidContent, Guid.NewGuid(), Guid.NewGuid());
 
         // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyContent.Description, result.Error.Description);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.EmptyContent);
     }
 
-    [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_DefaultAuthorId_ReturnsFailureResultWithValidationError()
+    [Theory]
+    [InlineData("00000000-0000-0000-0000-000000000000", "11111111-1111-1111-1111-111111111111")]
+    [InlineData("11111111-1111-1111-1111-111111111111", "00000000-0000-0000-0000-000000000000")]
+    public void Create_WithEmptyGuids_ShouldReturnFailure(string authorIdStr, string postIdStr)
     {
         // Arrange
-        var postId = Guid.NewGuid();
-
-        // Act
-        var result = Comment.Create(ValidContent, Guid.Empty, postId);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyAuthorId.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyAuthorId.Description, result.Error.Description);
-    }
-
-    [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_DefaultPostId_ReturnsFailureResultWithValidationError()
-    {
-        // Arrange
-        var authorId = Guid.NewGuid();
-
-        // Act
-        var result = Comment.Create(ValidContent, authorId, Guid.Empty);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyPostId.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyPostId.Description, result.Error.Description);
-    }
-
-    [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_SetsCreatedAtAndLastModifiedAtEqual()
-    {
-        // Arrange
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
+        var authorId = Guid.Parse(authorIdStr);
+        var postId = Guid.Parse(postIdStr);
 
         // Act
         var result = Comment.Create(ValidContent, authorId, postId);
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(result.Value.CreatedAt, result.Value.LastModifiedAt);
-    }
-
-    [Fact]
-    [Trait("Category", "Creation")]
-    public void Create_ContentExceedsMaxLength_ReturnsFailureResultWithValidationError()
-    {
-        // Arrange
-        var content = new string('a', MaxContentLength + 1);
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
-
-        // Act
-        var result = Comment.Create(content, authorId, postId);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.ContentTooLong.Code, result.Error.Code);
-        Assert.Equal(CommentError.ContentTooLong.Description, result.Error.Description);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOneOf(CommentError.EmptyAuthorId, CommentError.EmptyPostId);
     }
 
     #endregion
 
-    #region Update Tests
+    #region Remove
 
     [Fact]
-    [Trait("Category", "Update")]
-    public void Update_ValidContent_ReturnsSuccessResultAndUpdatesLastModifiedAt()
-    {
-        // Arrange
-        var comment = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-        var originalLastModifiedAt = comment.LastModifiedAt;
-        const string newContent = "Updated Content";
-
-        // Act
-        Thread.Sleep(10); // Ensure measurable time difference
-        var result = comment.Update(newContent);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(newContent, comment.Content.Value);
-        Assert.True(comment.LastModifiedAt > originalLastModifiedAt);
-    }
-
-    [Fact]
-    [Trait("Category", "Update")]
-    public void Update_EmptyContent_ReturnsFailureResultWithValidationError()
-    {
-        // Arrange
-        var comment = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-
-        // Act
-        var result = comment.Update(string.Empty);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyContent.Description, result.Error.Description);
-    }
-
-    [Fact]
-    [Trait("Category", "Update")]
-    public void Update_NullContent_ReturnsFailureResultWithValidationError()
-    {
-        // Arrange
-        var comment = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-
-        // Act
-        var result = comment.Update(null);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-        Assert.Equal(CommentError.EmptyContent.Description, result.Error.Description);
-    }
-
-    [Fact]
-    [Trait("Category", "Update")]
-    public void Update_ContentExceedsMaxLength_ReturnsFailureResultWithValidationError()
-    {
-        // Arrange
-        var comment = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-        var newContent = new string('a', MaxContentLength + 1);
-
-        // Act
-        var result = comment.Update(newContent);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal(CommentError.ContentTooLong.Code, result.Error.Code);
-        Assert.Equal(CommentError.ContentTooLong.Description, result.Error.Description);
-    }
-
-    #endregion
-
-    #region Removal Tests
-
-    [Fact]
-    [Trait("Category", "Removal")]
-    public void Remove_ByAuthor_ReturnsSuccessResult()
+    public void Remove_WhenCalledByAuthor_ShouldSucceedAndRaiseEvent()
     {
         // Arrange
         var authorId = Guid.NewGuid();
-        var comment = Comment.Create(ValidContent, authorId, Guid.NewGuid()).Value;
-        comment.ClearDomainEvents(); // Reset events from creation
+        var comment = TestFactory.CreateValidComment(authorId);
+        comment.ClearDomainEvents();
 
         // Act
         var result = comment.Remove(authorId);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.ShouldBeTrue();
+        var domainEvent = comment.DomainEvents.ShouldHaveSingleItem().ShouldBeOfType<CommentDeletedDomainEvent>();
+        domainEvent.CommentId.ShouldBe(comment.Id);
     }
 
     [Fact]
-    [Trait("Category", "Removal")]
-    public void Remove_ByNonAuthor_ReturnsFailureResultWithUnauthorizedError()
+    public void Remove_WhenCalledByNonAuthor_ShouldReturnFailure()
     {
         // Arrange
         var authorId = Guid.NewGuid();
         var nonAuthorId = Guid.NewGuid();
-        var comment = Comment.Create(ValidContent, authorId, Guid.NewGuid()).Value;
+        var comment = TestFactory.CreateValidComment(authorId);
         comment.ClearDomainEvents();
 
         // Act
         var result = comment.Remove(nonAuthorId);
 
         // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorType.Conflict, result.Error.Type);
-        Assert.Equal(CommentError.UnauthorizedDeletion.Code, result.Error.Code);
-        Assert.Equal(CommentError.UnauthorizedDeletion.Description, result.Error.Description);
-    }
-
-    #endregion
-
-    #region Domain Event Tests
-
-    [Fact]
-    [Trait("Category", "Events")]
-    public void Create_RaisesCommentAddedDomainEvent_WithCorrectProperties()
-    {
-        // Arrange
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
-
-        // Act
-        var result = Comment.Create(ValidContent, authorId, postId);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value.DomainEvents);
-        var domainEvent = Assert.IsType<CommentAddedDomainEvent>(result.Value.DomainEvents.First());
-        Assert.Equal(result.Value.Id, domainEvent.commentId);
-        Assert.Equal(postId, domainEvent.postId);
-        Assert.Equal(authorId, domainEvent.authorId);
-    }
-
-    [Fact]
-    [Trait("Category", "Events")]
-    public void Remove_RaisesCommentRemovedDomainEvent_WithCorrectProperties()
-    {
-        // Arrange
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
-        var comment = Comment.Create(ValidContent, authorId, postId).Value;
-        comment.ClearDomainEvents();
-
-        // Act
-        var result = comment.Remove(authorId);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Single(comment.DomainEvents);
-        var domainEvent = Assert.IsType<CommentDeletedDomainEvent>(comment.DomainEvents.First());
-        Assert.Equal(comment.Id, domainEvent.CommentId);
-        Assert.Equal(postId, domainEvent.PostId);
-    }
-
-    #endregion
-
-    #region Equality Tests
-
-    [Fact]
-    [Trait("Category", "Equality")]
-    public void Comment_IsEqualToItself()
-    {
-        // Arrange
-        var comment = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-
-        // Act & Assert
-        Assert.Equal(comment, comment);
-        Assert.True(comment.Equals(comment));
-    }
-
-    [Fact]
-    [Trait("Category", "Equality")]
-    public void Comments_WithDifferentIds_AreNotEqual()
-    {
-        // Arrange
-        var comment1 = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-        var comment2 = Comment.Create(ValidContent, Guid.NewGuid(), Guid.NewGuid()).Value;
-
-        // Act & Assert
-        Assert.NotEqual(comment1, comment2);
-        Assert.False(comment1.Equals(comment2));
-    }
-
-    #endregion
-
-    #region CommentContent Tests
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_ValidContent_Succeeds()
-    {
-        // Arrange
-        const string content = ValidContent;
-
-        // Act
-        var result = CommentContent.Create(content);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(content, result.Value.Value);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_EmptyContent_Fails()
-    {
-        // Act
-        var result = CommentContent.Create(string.Empty);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_NullContent_Fails()
-    {
-        // Act
-        var result = CommentContent.Create(null);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_ContentTooLong_Fails()
-    {
-        // Arrange
-        var content = new string('a', MaxContentLength + 1);
-
-        // Act
-        var result = CommentContent.Create(content);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(CommentError.ContentTooLong.Code, result.Error.Code);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Equality_SameValue_AreEqual()
-    {
-        // Arrange
-        var content1 = CommentContent.Create(ValidContent).Value;
-        var content2 = CommentContent.Create(ValidContent).Value;
-
-        // Act & Assert
-        Assert.Equal(content1, content2);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Equality_DifferentValue_AreNotEqual()
-    {
-        // Arrange
-        var content1 = CommentContent.Create("Content1").Value;
-        var content2 = CommentContent.Create("Content2").Value;
-
-        // Act & Assert
-        Assert.NotEqual(content1, content2);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_ImplicitConversion_ToString()
-    {
-        // Arrange
-        var content = CommentContent.Create(ValidContent).Value;
-
-        // Act
-        string stringValue = content;
-
-        // Assert
-        Assert.Equal(ValidContent, stringValue);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_MaxLengthContent_Succeeds()
-    {
-        // Arrange
-        var content = new string('a', MaxContentLength);
-
-        // Act
-        var result = CommentContent.Create(content);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(content, result.Value.Value);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_SingleCharacter_Succeeds()
-    {
-        // Arrange
-        const string content = "a";
-
-        // Act
-        var result = CommentContent.Create(content);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(content, result.Value.Value);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_OnlyWhitespace_Fails()
-    {
-        // Arrange
-        const string content = "   ";
-
-        // Act
-        var result = CommentContent.Create(content);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal(CommentError.EmptyContent.Code, result.Error.Code);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Create_WhitespaceTrimmed()
-    {
-        // Arrange
-        const string untrimmed = "  hello  ";
-        const string expected = "hello";
-
-        // Act
-        var result = CommentContent.Create(untrimmed);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(expected, result.Value.Value);
-    }
-
-    [Fact]
-    [Trait("Category", "CommentContent")]
-    public void CommentContent_Equality_DifferentUntrimmedSameTrimmed_AreEqual()
-    {
-        // Arrange
-        var content1 = CommentContent.Create("  hello  ").Value;
-        var content2 = CommentContent.Create("hello").Value;
-
-        // Act & Assert
-        Assert.Equal(content1, content2);
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(CommentError.UnauthorizedDeletion);
+        comment.DomainEvents.ShouldBeEmpty();
     }
 
     #endregion

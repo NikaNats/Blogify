@@ -3,9 +3,9 @@ using Blogify.Domain.Users.Events;
 
 namespace Blogify.Domain.Users;
 
-public sealed class User : Entity
+public sealed class User : AuditableEntity
 {
-    private readonly List<Role> _roles = new();
+    private readonly List<Role> _roles = [];
 
     private User(Guid id, FirstName firstName, LastName lastName, Email email)
         : base(id)
@@ -20,11 +20,8 @@ public sealed class User : Entity
     }
 
     public FirstName FirstName { get; private set; }
-
     public LastName LastName { get; private set; }
-
     public Email Email { get; private set; }
-
     public string IdentityId { get; private set; } = string.Empty;
 
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();

@@ -5,6 +5,10 @@ namespace Blogify.Domain.UnitTests.Users;
 
 internal static class UserData
 {
+    public const string IdentityId = "auth0|123456";
+
+    public const string SecondIdentityId = "auth0|789012";
+
     // Predefined roles
     public static readonly Role Registered = Role.Registered;
     public static readonly Role Administrator = Role.Administrator;
@@ -17,8 +21,6 @@ internal static class UserData
 
     // Test-specific data
     public static readonly Email NewEmail = Email.Create("new.email@example.com").Value;
-    public static readonly string IdentityId = "auth0|123456";
-    public static readonly string SecondIdentityId = "auth0|789012";
 
     // Invalid test data
     public static readonly Result<Email>[] InvalidEmails =

@@ -1,120 +1,132 @@
-﻿using Blogify.Application.Posts.GetPostsByCategoryId;
+﻿using System.Linq.Expressions;
+using Blogify.Application.Posts.GetPostsByTagId;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Shouldly;
 
 namespace Blogify.Application.UnitTests.Posts.GetPostsByTagId;
 
-public class GetPostsByCategoryIdQueryHandlerTests
+public class GetPostsByTagIdQueryHandlerTests
 {
-    private readonly GetPostsByCategoryIdQueryHandler _handler;
-    private readonly IPostRepository _postRepository = Substitute.For<IPostRepository>();
+    private readonly ICategoryRepository _categoryRepositoryMock;
 
-    public GetPostsByCategoryIdQueryHandlerTests()
+    // --- CHANGED: Added all required repository mocks ---
+    private readonly GetPostsByTagIdQueryHandler _handler;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly ITagRepository _tagRepositoryMock;
+
+    public GetPostsByTagIdQueryHandlerTests()
     {
-        _handler = new GetPostsByCategoryIdQueryHandler(_postRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+        _tagRepositoryMock = Substitute.For<ITagRepository>();
+
+        // --- CHANGED: Inject all dependencies into the handler ---
+        _handler = new GetPostsByTagIdQueryHandler(
+            _postRepositoryMock,
+            _categoryRepositoryMock,
+            _tagRepositoryMock);
     }
 
     [Fact]
-    public async Task Handle_PostsExistForCategory_ReturnsProperlyMappedResponse()
+    public async Task Handle_WhenPostsExistForTag_ShouldReturnProperlyMappedResponse()
     {
         // Arrange
-        var categoryId = Guid.NewGuid();
-        var authorId = Guid.NewGuid();
+        var tag = TestFactory.CreateTag();
+        var category = TestFactory.CreateCategory();
+        var post = TestFactory.CreatePost();
 
-        var category = Category.Create("Technology", "Tech content").Value;
-        var tag = Tag.Create("ASP.NET").Value;
-        var post = CreatePublishedPost(authorId);
+        // --- FIXED: Correctly establish the unidirectional relationship ---
+        post.AddTag(tag);
+        post.AssignToCategory(category);
 
-        // Establish proper bidirectional relationships
-        category.AddPost(post);
-        post.AddCategory(category); // Add this line
+        var query = new GetPostsByTagIdQuery(tag.Id);
 
-        tag.AddPost(post);
-        post.AddTag(tag); // Add this line
-
-        post.AddComment("Great post!", authorId);
-
-        _postRepository.GetByCategoryIdAsync(categoryId, Arg.Any<CancellationToken>())
-            .Returns(new List<Post> { post });
+        // --- FIXED: Mock the actual methods called by the handler ---
+        _tagRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Tag, bool>>>()).Returns(true);
+        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Post> { post });
+        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
+        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
 
         // Act
-        var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
+        var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldHaveSingleItem();
+        var response = result.Value.Single();
 
-        var response = result.Value[0];
-        response.Categories.ShouldContain(c => c.Id == category.Id);
-        response.Tags.ShouldContain(t => t.Id == tag.Id);
+        response.Id.ShouldBe(post.Id);
+        response.Tags.ShouldHaveSingleItem().Id.ShouldBe(tag.Id);
+        response.Categories.ShouldHaveSingleItem().Id.ShouldBe(category.Id);
     }
 
     [Fact]
-    public async Task Handle_EmptyResult_ReturnsEmptyList()
+    public async Task Handle_WhenTagDoesNotExist_ShouldReturnEmptyList()
     {
         // Arrange
-        var categoryId = Guid.NewGuid();
-        _postRepository.GetByCategoryIdAsync(categoryId, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Post>());
+        var query = new GetPostsByTagIdQuery(Guid.NewGuid());
+        _tagRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Tag, bool>>>()).Returns(false);
 
         // Act
-        var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
+        await _postRepositoryMock.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenTagExistsButHasNoPosts_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var tag = TestFactory.CreateTag();
+        var query = new GetPostsByTagIdQuery(tag.Id);
+
+        _tagRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Tag, bool>>>()).Returns(true);
+        // Return a post that is NOT associated with the tag
+        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(new List<Post> { TestFactory.CreatePost() });
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBeEmpty();
     }
 
-    [Fact]
-    public async Task Handle_RepositoryFailure_ReturnsFailureResult()
+    #region TestFactory
+
+    private static class TestFactory
     {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var exception = new Exception("Database failure");
+        internal static Post CreatePost()
+        {
+            var result = Post.Create(
+                "Test Post",
+                new string('a', 101),
+                "An excerpt.",
+                Guid.NewGuid());
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
 
-        _postRepository.GetByCategoryIdAsync(categoryId, Arg.Any<CancellationToken>())
-            .ThrowsAsync(exception);
+        internal static Tag CreateTag()
+        {
+            var result = Tag.Create("Test Tag");
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
 
-        // Act
-        var result = await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), CancellationToken.None);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.Code.ShouldBe("Posts.RetrievalFailed");
-        result.Error.Description.ShouldContain(categoryId.ToString());
-        // result.Error.Code.ShouldBe(exception); // Unclear test, leave it as-is for now
+        internal static Category CreateCategory()
+        {
+            var result = Category.Create("Test Category", "A description");
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
     }
 
-    [Fact]
-    public async Task Handle_ValidRequest_InvokesRepositoryWithCorrectParameters()
-    {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var cancellationToken = new CancellationTokenSource().Token;
-
-        // Act
-        await _handler.Handle(new GetPostsByCategoryIdQuery(categoryId), cancellationToken);
-
-        // Assert
-        await _postRepository.Received(1)
-            .GetByCategoryIdAsync(categoryId, cancellationToken);
-    }
-
-    private Post CreatePublishedPost(Guid authorId)
-    {
-        var title = PostTitle.Create("Test Title").Value;
-        var content = PostContent.Create(new string('a', 100)).Value;
-        var excerpt = PostExcerpt.Create("Test Excerpt").Value;
-
-        var postResult = Post.Create(title, content, excerpt, authorId);
-        postResult.IsSuccess.ShouldBeTrue("Test data setup failed");
-
-        var post = postResult.Value;
-        post.Publish();
-        return post;
-    }
+    #endregion
 }

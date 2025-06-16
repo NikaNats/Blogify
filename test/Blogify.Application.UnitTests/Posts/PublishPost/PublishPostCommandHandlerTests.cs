@@ -23,9 +23,9 @@ public class PublishPostCommandHandlerTests
     private static Post CreateTestPost(PublicationStatus initialStatus = PublicationStatus.Draft)
     {
         var postResult = Post.Create(
-            PostTitle.Create("Test Post").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("An excerpt.").Value,
+            "Test Post",
+            new string('a', 100),
+            "An excerpt.",
             Guid.NewGuid());
 
         if (postResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create post.");
@@ -40,7 +40,7 @@ public class PublishPostCommandHandlerTests
     public async Task Handle_WhenPostIsDraft_ShouldPublishPostAndSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost(PublicationStatus.Draft);
+        var post = CreateTestPost();
         var command = new PublishPostCommand(post.Id);
 
         _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())

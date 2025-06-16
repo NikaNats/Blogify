@@ -10,8 +10,5 @@ internal sealed class AddCommentToPostCommandValidator : AbstractValidator<AddCo
         RuleFor(x => x.Content)
             .NotEmpty().WithMessage(CommentError.EmptyContent.Description)
             .MaximumLength(500).WithMessage(CommentError.ContentTooLong.Description);
-
-        RuleFor(x => x.AuthorId)
-            .NotEmpty().WithMessage(CommentError.EmptyAuthorId.Description);
     }
 }

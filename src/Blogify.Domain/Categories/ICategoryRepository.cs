@@ -12,6 +12,5 @@ public interface ICategoryRepository
     Task<bool> ExistsAsync(Expression<Func<Category, bool>> predicate, CancellationToken cancellationToken = default);
 
     // Specific methods for Category
-    Task<IReadOnlyList<Category>> GetAllWithPostsCountAsync(CancellationToken cancellationToken = default);
     Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken);
 }

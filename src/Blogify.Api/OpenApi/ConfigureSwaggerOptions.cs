@@ -39,10 +39,7 @@ internal sealed class ConfigureSwaggerOptions(IApiVersionDescriptionProvider pro
             }
         };
 
-        if (apiVersionDescription.IsDeprecated)
-        {
-            info.Description += " This API version has been deprecated.";
-        }
+        if (apiVersionDescription.IsDeprecated) info.Description += " This API version has been deprecated.";
 
         return info;
     }

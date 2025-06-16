@@ -4,28 +4,23 @@ using Blogify.Domain.Categories;
 
 namespace Blogify.Application.Categories.CreateCategory;
 
-internal sealed class CreateCategoryCommandHandler(ICategoryRepository categoryRepository)
+internal sealed class CreateCategoryCommandHandler(ICategoryRepository categoryRepository, IUnitOfWork unitOfWork)
     : ICommandHandler<CreateCategoryCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCategoryCommand request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var existingCategory = await categoryRepository.GetByNameAsync(request.Name, cancellationToken);
-            if (existingCategory != null) return Result.Failure<Guid>(CategoryError.NameAlreadyExists);
+        var existingCategory = await categoryRepository.GetByNameAsync(request.Name, cancellationToken);
+        if (existingCategory != null) return Result.Failure<Guid>(CategoryError.NameAlreadyExists);
 
-            var categoryResult = Category.Create(request.Name, request.Description);
-            if (categoryResult.IsFailure)
-                return Result.Failure<Guid>(categoryResult.Error);
+        var categoryResult = Category.Create(request.Name, request.Description);
+        if (categoryResult.IsFailure)
+            return Result.Failure<Guid>(categoryResult.Error);
 
-            var category = categoryResult.Value;
-            await categoryRepository.AddAsync(category, cancellationToken);
+        var category = categoryResult.Value;
+        await categoryRepository.AddAsync(category, cancellationToken);
 
-            return Result.Success(category.Id);
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure<Guid>(CategoryError.UnexpectedError);
-        }
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(category.Id);
     }
 }

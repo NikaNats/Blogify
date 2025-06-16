@@ -69,31 +69,26 @@ if (app.Environment.IsDevelopment())
     {
         Log.Error(ex, "An error occurred while applying migrations.");
     }
-    
+
     app.MapScalarApiReference();
-    
+
     app.MapOpenApi();
-    
+
     var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
         foreach (var description in provider.ApiVersionDescriptions)
-        {
             options.SwaggerEndpoint(
                 $"/swagger/{description.GroupName}/swagger.json",
                 description.GroupName.ToUpperInvariant());
-        }
     });
-    
+
     // REMARK: Uncomment if you want to seed initial data.
     // await app.SeedDataAsync();
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHsts();
-}
+if (!app.Environment.IsDevelopment()) app.UseHsts();
 
 app.UseCustomExceptionHandler();
 

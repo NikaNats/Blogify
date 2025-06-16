@@ -26,40 +26,19 @@ public class RemoveTagFromPostCommandHandlerTests
             _unitOfWorkMock);
     }
 
-    // Helper to create a valid Post for tests.
-    private static Post CreateTestPost()
-    {
-        var postResult = Post.Create(
-            PostTitle.Create("Test Post").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("An excerpt.").Value,
-            Guid.NewGuid());
-        if (postResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create post.");
-        return postResult.Value;
-    }
-
-    // Helper to create a valid Tag for tests.
-    private static Tag CreateTestTag()
-    {
-        var tagResult = Tag.Create("TestTag");
-        if (tagResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create tag.");
-        return tagResult.Value;
-    }
-
     [Fact]
     public async Task Handle_WhenPostAndTagExist_ShouldRemoveTagAndSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost();
-        var tag = CreateTestTag();
+        var post = TestFactory.CreatePost();
+        var tag = TestFactory.CreateTag();
         post.AddTag(tag); // Ensure the tag is on the post initially
+        post.ClearDomainEvents(); // Isolate the 'remove' action
 
         var command = new RemoveTagFromPostCommand(post.Id, tag.Id);
 
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns(tag);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -67,10 +46,10 @@ public class RemoveTagFromPostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        // Verify the tag was removed from the in-memory collection.
-        post.Tags.ShouldNotContain(t => t.Id == tag.Id);
+        // --- FIXED: Assert on the correct ID-based collection ---
+        post.TagIds.ShouldNotContain(tag.Id);
 
-        // Verify the transaction was committed to persist this change.
+        // Verify the transaction was committed because a domain event was raised.
         await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -79,9 +58,7 @@ public class RemoveTagFromPostCommandHandlerTests
     {
         // Arrange
         var command = new RemoveTagFromPostCommand(Guid.NewGuid(), Guid.NewGuid());
-
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns((Post?)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -96,13 +73,10 @@ public class RemoveTagFromPostCommandHandlerTests
     public async Task Handle_WhenTagNotFound_ShouldReturnFailure()
     {
         // Arrange
-        var post = CreateTestPost();
+        var post = TestFactory.CreatePost();
         var command = new RemoveTagFromPostCommand(post.Id, Guid.NewGuid());
-
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns((Tag?)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns((Tag?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -114,17 +88,15 @@ public class RemoveTagFromPostCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenTagIsNotOnPost_ShouldReturnSuccessAndNotSaveChanges()
+    public async Task Handle_WhenTagIsNotOnPost_ShouldSucceedAndNotSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost(); // Post has no tags
-        var tag = CreateTestTag();
+        var post = TestFactory.CreatePost(); // Post has no tags
+        var tag = TestFactory.CreateTag();
         var command = new RemoveTagFromPostCommand(post.Id, tag.Id);
 
-        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
-            .Returns(post);
-        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>())
-            .Returns(tag);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _tagRepositoryMock.GetByIdAsync(command.TagId, Arg.Any<CancellationToken>()).Returns(tag);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -133,7 +105,32 @@ public class RemoveTagFromPostCommandHandlerTests
         result.IsSuccess.ShouldBeTrue();
 
         // The domain logic is idempotent. Removing a non-existent tag is a success,
-        // but it doesn't change state, so we should not commit a transaction.
+        // but it doesn't raise a domain event, so the handler should not commit a transaction.
         await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    #region TestFactory
+
+    private static class TestFactory
+    {
+        internal static Post CreatePost()
+        {
+            var postResult = Post.Create(
+                "Test Post",
+                new string('a', 101),
+                "An excerpt.",
+                Guid.NewGuid());
+            if (postResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create post.");
+            return postResult.Value;
+        }
+
+        internal static Tag CreateTag()
+        {
+            var tagResult = Tag.Create("TestTag");
+            if (tagResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create tag.");
+            return tagResult.Value;
+        }
+    }
+
+    #endregion
 }

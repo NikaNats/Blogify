@@ -72,7 +72,7 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while deleting identity {IdentityId}", identityId);
+            logger.LogError(ex, "An Error occurred while deleting identity {IdentityId}", identityId);
             throw;
         }
     }

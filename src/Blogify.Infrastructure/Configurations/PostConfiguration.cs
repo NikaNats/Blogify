@@ -1,6 +1,4 @@
-﻿using Blogify.Domain.Categories;
-using Blogify.Domain.Posts;
-using Blogify.Domain.Tags;
+﻿using Blogify.Domain.Posts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -94,41 +92,50 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasForeignKey(c => c.PostId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(p => p.Tags)
-            .WithMany(t => t.Posts)
-            .UsingEntity<Dictionary<string, object>>(
-                "posttags",
-                j => j.HasOne<Tag>()
-                    .WithMany()
-                    .HasForeignKey("tag_id") // Match the database column name
-                    .OnDelete(DeleteBehavior.Cascade),
-                j => j.HasOne<Post>()
-                    .WithMany()
-                    .HasForeignKey("post_id") // Match the database column name
-                    .OnDelete(DeleteBehavior.Cascade),
-                j =>
-                {
-                    j.ToTable("posttags", "blog"); // Ensure the schema matches the database
-                    j.HasKey("post_id", "tag_id"); // Define the composite primary key
-                });
+        builder.Metadata.FindNavigation(nameof(Post.Comments))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasMany(p => p.Categories)
-            .WithMany(c => c.Posts)
-            .UsingEntity<Dictionary<string, object>>(
-                "postcategories",
-                j => j.HasOne<Category>()
-                    .WithMany()
-                    .HasForeignKey("category_id") // Match the database column name
-                    .OnDelete(DeleteBehavior.Cascade),
-                j => j.HasOne<Post>()
-                    .WithMany()
-                    .HasForeignKey("post_id") // Match the database column name
-                    .OnDelete(DeleteBehavior.Cascade),
-                j =>
-                {
-                    j.ToTable("postcategories", "blog"); // Ensure the schema matches the database
-                    j.HasKey("post_id", "category_id"); // Define the composite primary key
-                });
+        //builder.HasMany(p => p.Tags)
+        //    .WithMany(t => t.Posts)
+        //    .UsingEntity<Dictionary<string, object>>(
+        //        "posttags",
+        //        j => j.HasOne<Tag>()
+        //            .WithMany()
+        //            .HasForeignKey("tag_id") // Match the database column name
+        //            .OnDelete(DeleteBehavior.Cascade),
+        //        j => j.HasOne<Post>()
+        //            .WithMany()
+        //            .HasForeignKey("post_id") // Match the database column name
+        //            .OnDelete(DeleteBehavior.Cascade),
+        //        j =>
+        //        {
+        //            j.ToTable("posttags", "blog"); // Ensure the schema matches the database
+        //            j.HasKey("post_id", "tag_id"); // Define the composite primary key
+        //        });
+
+        //builder.HasMany(p => p.Categories)
+        //    .WithMany(c => c.Posts)
+        //    .UsingEntity<Dictionary<string, object>>(
+        //        "postcategories",
+        //        j => j.HasOne<Category>()
+        //            .WithMany()
+        //            .HasForeignKey("category_id") // Match the database column name
+        //            .OnDelete(DeleteBehavior.Cascade),
+        //        j => j.HasOne<Post>()
+        //            .WithMany()
+        //            .HasForeignKey("post_id") // Match the database column name
+        //            .OnDelete(DeleteBehavior.Cascade),
+        //        j =>
+        //        {
+        //            j.ToTable("postcategories", "blog"); // Ensure the schema matches the database
+        //            j.HasKey("post_id", "category_id"); // Define the composite primary key
+        //        });
+
+        builder.Property(p => p.CategoryIds)
+            .HasColumnName("category_ids"); // Store as a JSON array or other provider-specific format
+
+        builder.Property(p => p.TagIds)
+            .HasColumnName("tag_ids");
     }
 
     private static void ConfigureIndexes(EntityTypeBuilder<Post> builder)

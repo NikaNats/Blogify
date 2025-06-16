@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Blogify.Application.Comments.CreateComment;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 using NSubstitute;
@@ -12,12 +13,14 @@ public class CreateCommentCommandHandlerTests
     private readonly ICommentRepository _commentRepository;
     private readonly CreateCommentCommandHandler _handler;
     private readonly IPostRepository _postRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CreateCommentCommandHandlerTests()
     {
         _commentRepository = Substitute.For<ICommentRepository>();
-        _postRepository = Substitute.For<IPostRepository>(); // Initialize post repository
-        _handler = new CreateCommentCommandHandler(_commentRepository, _postRepository);
+        _postRepository = Substitute.For<IPostRepository>();
+        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _handler = new CreateCommentCommandHandler(_commentRepository, _postRepository, _unitOfWork);
     }
 
     [Fact]

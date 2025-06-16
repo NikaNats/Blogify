@@ -1,5 +1,4 @@
 ﻿using Blogify.Application.Categories.GetCategoryById;
-using Blogify.Application.Exceptions;
 using Blogify.Domain.Categories;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -9,7 +8,6 @@ namespace Blogify.Application.UnitTests.Categories.GetById;
 
 public class GetCategoryByIdQueryHandlerTests
 {
-    private static readonly GetCategoryByIdQuery Command = new(Guid.NewGuid());
     private readonly ICategoryRepository _categoryRepositoryMock;
     private readonly GetCategoryByIdQueryHandler _handler;
 
@@ -20,169 +18,77 @@ public class GetCategoryByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Should_ReturnFailure_WhenCategoryIsNull()
+    public async Task Handle_WhenCategoryExists_ShouldReturnSuccessWithCorrectData()
     {
         // Arrange
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
+        var category = TestFactory.CreateCategory();
+        var query = new GetCategoryByIdQuery(category.Id);
+
+        _categoryRepositoryMock.GetByIdAsync(query.Id, Arg.Any<CancellationToken>())
+            .Returns(category);
+
+        // Act
+        var result = await _handler.Handle(query, default);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        var response = result.Value;
+        response.ShouldNotBeNull();
+        response.Id.ShouldBe(category.Id);
+        response.Name.ShouldBe(category.Name.Value);
+        response.Description.ShouldBe(category.Description.Value);
+        response.CreatedAt.ShouldBe(category.CreatedAt);
+        response.UpdatedAt.ShouldBe(category.LastModifiedAt);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCategoryIsNotFound_ShouldReturnNotFoundFailure()
+    {
+        // Arrange
+        var query = new GetCategoryByIdQuery(Guid.NewGuid());
+        _categoryRepositoryMock.GetByIdAsync(query.Id, Arg.Any<CancellationToken>())
             .Returns((Category?)null);
 
         // Act
-        var result = await _handler.Handle(Command, default);
+        var result = await _handler.Handle(query, default);
 
         // Assert
+        result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(CategoryError.NotFound);
     }
 
     [Fact]
-    public async Task Handle_Should_ReturnFailure_WhenRepositoryThrows()
+    public async Task Handle_WhenRepositoryThrowsException_ShouldPropagateException()
     {
         // Arrange
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("Repository failed"));
+        var query = new GetCategoryByIdQuery(Guid.NewGuid());
+        var expectedException = new Exception("Database connection failed");
 
-        // Act
-        var result = await _handler.Handle(Command, default);
+        _categoryRepositoryMock.GetByIdAsync(query.Id, Arg.Any<CancellationToken>())
+            .ThrowsAsync(expectedException);
 
-        // Assert
-        result.Error.ShouldBe(CategoryError.UnexpectedError);
+        // Act & Assert
+        // We assert that calling the handler will throw the exact exception we configured the mock to throw.
+        // This proves the handler is not catching it, allowing the pipeline to do so.
+        var exception = await Assert.ThrowsAsync<Exception>(() => _handler.Handle(query, default));
+
+        exception.ShouldBe(expectedException);
     }
 
-    [Fact]
-    public async Task Handle_Should_ReturnSuccess_WhenCategoryExists()
+    #region TestFactory
+
+    private static class TestFactory
     {
-        // Arrange
-        var category = Category.Create("TestCategory", "Test Description").Value;
+        internal static Category CreateCategory()
+        {
+            var result = Category.Create(
+                "Test Category",
+                "A description for testing purposes.");
 
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        var result = await _handler.Handle(Command, default);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldNotBeNull();
-        result.Value.Id.ShouldBe(category.Id);
-        result.Value.Name.ShouldBe("TestCategory");
-        result.Value.Description.ShouldBe("Test Description");
+            result.IsSuccess.ShouldBeTrue("Test setup failed: could not create a valid Category.");
+            return result.Value;
+        }
     }
 
-    [Fact]
-    public async Task Handle_Should_CallRepository_WhenCategoryExists()
-    {
-        // Arrange
-        var category = Category.Create("TestCategory", "Test Description").Value;
-
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        await _handler.Handle(Command, default);
-
-        // Assert
-        await _categoryRepositoryMock.Received(1).GetByIdAsync(Command.Id, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_Should_ReturnFailure_WhenIdIsInvalid()
-    {
-        // Arrange
-        var invalidCommand = new GetCategoryByIdQuery(Guid.Empty);
-
-        // Act
-        var result = await _handler.Handle(invalidCommand, default);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldBe(CategoryError.NotFound); // Or a specific validation error
-    }
-
-    [Fact]
-    public async Task Handle_Should_MapCategoryToResponseCorrectly()
-    {
-        // Arrange
-        var category = Category.Create("TestCategory", "Test Description").Value;
-
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        var result = await _handler.Handle(Command, default);
-
-        // Assert
-        result.Value.ShouldNotBeNull();
-        result.Value.Id.ShouldBe(category.Id);
-        result.Value.Name.ShouldBe("TestCategory");
-        result.Value.Description.ShouldBe("Test Description");
-        result.Value.CreatedAt.ShouldBe(category.CreatedAt);
-        result.Value.UpdatedAt.ShouldBe(category.LastModifiedAt);
-    }
-
-    [Fact]
-    public async Task Handle_Should_ReturnFailure_WhenConcurrencyExceptionOccurs()
-    {
-        // Arrange
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .ThrowsAsync(new ConcurrencyException("Concurrency issue", new Exception()));
-
-        // Act
-        var result = await _handler.Handle(Command, default);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldBe(CategoryError.UnexpectedError); // Or a specific concurrency error
-    }
-
-    [Fact]
-    public async Task Handle_Should_ReturnSuccess_WhenCategoryNameIsMaxLength()
-    {
-        // Arrange
-        var maxLengthName = new string('a', 100); // Assuming max length is 100
-        var category = Category.Create(maxLengthName, "Test Description").Value;
-
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        var result = await _handler.Handle(Command, default);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.Name.ShouldBe(maxLengthName);
-    }
-
-    [Fact]
-    public async Task Handle_Should_CallRepositoryOnce_WhenInvokedMultipleTimes()
-    {
-        // Arrange
-        var category = Category.Create("TestCategory", "Test Description").Value;
-
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        await _handler.Handle(Command, default);
-        await _handler.Handle(Command, default);
-
-        // Assert
-        await _categoryRepositoryMock.Received(2).GetByIdAsync(Command.Id, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_Should_ReturnSuccess_WhenCategoryIsLargeOrComplex()
-    {
-        // Arrange
-        var category = Category.Create("TestCategory", "Test Description").Value;
-        // Add complex data to the category if applicable
-
-        _categoryRepositoryMock.GetByIdAsync(Command.Id, Arg.Any<CancellationToken>())
-            .Returns(category);
-
-        // Act
-        var result = await _handler.Handle(Command, default);
-
-        // Assert
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldNotBeNull();
-    }
+    #endregion
 }

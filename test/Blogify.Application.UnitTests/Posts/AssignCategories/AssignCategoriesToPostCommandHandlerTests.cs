@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.AssignCategoriesToPost;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
 using NSubstitute;
@@ -8,23 +9,28 @@ namespace Blogify.Application.UnitTests.Posts.AssignCategories;
 
 public class AssignCategoriesToPostCommandHandlerTests
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly ICategoryRepository _categoryRepositoryMock;
     private readonly AssignCategoriesToPostCommandHandler _handler;
-    private readonly IPostRepository _postRepository;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly IUnitOfWork _unitOfWorkMock;
 
     public AssignCategoriesToPostCommandHandlerTests()
     {
-        _postRepository = Substitute.For<IPostRepository>();
-        _categoryRepository = Substitute.For<ICategoryRepository>();
-        _handler = new AssignCategoriesToPostCommandHandler(_postRepository, _categoryRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>();
+        _handler = new AssignCategoriesToPostCommandHandler(
+            _postRepositoryMock,
+            _categoryRepositoryMock,
+            _unitOfWorkMock);
     }
 
     [Fact]
-    public async Task Handle_PostNotFound_ReturnsNotFoundFailure()
+    public async Task Handle_WhenPostNotFound_ShouldReturnNotFoundFailure()
     {
         // Arrange
-        var command = new AssignCategoriesToPostCommand(Guid.NewGuid(), new List<Guid> { Guid.NewGuid() });
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post)null);
+        var command = new AssignCategoriesToPostCommand(Guid.NewGuid(), [Guid.NewGuid()]);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -32,17 +38,24 @@ public class AssignCategoriesToPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(PostErrors.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_CategoryNotFound_ReturnsCategoryNotFoundFailure()
+    public async Task Handle_WhenACategoryIsNotFound_ShouldReturnCategoryNotFoundFailure()
     {
         // Arrange
-        var post = CreateDraftPost();
-        var command = new AssignCategoriesToPostCommand(post.Id, new List<Guid> { Guid.NewGuid() });
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _categoryRepository.GetByIdAsync(command.CategoryIds[0], Arg.Any<CancellationToken>()).Returns((Category)null);
+        var post = TestFactory.CreatePost();
+        var validCategory = TestFactory.CreateCategory();
+        var invalidCategoryId = Guid.NewGuid();
+        var command = new AssignCategoriesToPostCommand(post.Id, [validCategory.Id, invalidCategoryId]);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+
+        // --- FIXED: Mock the GetByIdAsync calls precisely ---
+        _categoryRepositoryMock.GetByIdAsync(validCategory.Id, Arg.Any<CancellationToken>()).Returns(validCategory);
+        _categoryRepositoryMock.GetByIdAsync(invalidCategoryId, Arg.Any<CancellationToken>())
+            .Returns((Category?)null); // This category is not found
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -50,42 +63,59 @@ public class AssignCategoriesToPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(CategoryError.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ValidCategories_AssignsCategoriesAndUpdatesPost()
+    public async Task Handle_WithValidCategories_ShouldAssignCategoryIdsAndSaveChanges()
     {
         // Arrange
-        var category1 = CreateCategory();
-        var category2 = CreateCategory();
-        var post = CreateDraftPost();
-        var command = new AssignCategoriesToPostCommand(post.Id, new List<Guid> { category1.Id, category2.Id });
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _categoryRepository.GetByIdAsync(category1.Id, Arg.Any<CancellationToken>()).Returns(category1);
-        _categoryRepository.GetByIdAsync(category2.Id, Arg.Any<CancellationToken>()).Returns(category2);
+        var category1 = TestFactory.CreateCategory();
+        var category2 = TestFactory.CreateCategory();
+        var post = TestFactory.CreatePost();
+        var command = new AssignCategoriesToPostCommand(post.Id, [category1.Id, category2.Id]);
+
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _categoryRepositoryMock.GetByIdAsync(category1.Id, Arg.Any<CancellationToken>()).Returns(category1);
+        _categoryRepositoryMock.GetByIdAsync(category2.Id, Arg.Any<CancellationToken>()).Returns(category2);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        post.Categories.ShouldContain(c => c.Id == category1.Id);
-        post.Categories.ShouldContain(c => c.Id == category2.Id);
-        await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
+        post.CategoryIds.ShouldContain(category1.Id);
+        post.CategoryIds.ShouldContain(category2.Id);
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    private Post CreateDraftPost()
+    #region TestFactory
+
+    private static class TestFactory
     {
-        var title = PostTitle.Create("Test Post").Value;
-        var content = PostContent.Create(new string('a', 100)).Value;
-        var excerpt = PostExcerpt.Create("Test Excerpt").Value;
-        return Post.Create(title, content, excerpt, Guid.NewGuid()).Value;
+        internal static Post CreatePost()
+        {
+            var result = Post.Create(
+                "Test Post",
+                new string('a', 101),
+                "Test Excerpt",
+                Guid.NewGuid());
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
+
+        internal static Category CreateCategory()
+        {
+            var nameResult = CategoryName.Create("TestCategory" + Guid.NewGuid());
+            nameResult.IsSuccess.ShouldBeTrue();
+            var descriptionResult = CategoryDescription.Create("Description");
+            descriptionResult.IsSuccess.ShouldBeTrue();
+
+            var result = Category.Create(nameResult.Value.Value, descriptionResult.Value.Value);
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
     }
 
-    private Category CreateCategory()
-    {
-        return Category.Create(CategoryName.Create("TestCategory").Value.Value,
-            CategoryDescription.Create("Description").Value.Value).Value;
-    }
+    #endregion
 }

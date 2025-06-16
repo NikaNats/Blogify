@@ -66,5 +66,5 @@ public static class CommentError
 
     public static readonly Error OperationFailed = Error.Failure(
         $"{Prefix}.OperationFailed",
-        "The comment operation failed due to a technical error.");
+        "The comment operation failed due to a technical Error.");
 }

@@ -22,9 +22,9 @@ public class UpdatePostCommandHandlerTests
     private static Post CreateTestPost(PublicationStatus initialStatus = PublicationStatus.Draft)
     {
         var postResult = Post.Create(
-            PostTitle.Create("Initial Title").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("Initial excerpt.").Value,
+            "Initial Title",
+            new string('a', 100),
+            "Initial excerpt.",
             Guid.NewGuid());
 
         postResult.IsSuccess.ShouldBeTrue($"Test setup failed: {postResult.Error.Description}");
@@ -40,24 +40,17 @@ public class UpdatePostCommandHandlerTests
         return post;
     }
 
+    // --- FIX: This helper now creates the command with primitive strings. ---
     private static UpdatePostCommand CreateValidCommand(Guid postId)
     {
-        // FIX: The string for PostContent.Create is now guaranteed to meet the MinLength(100) rule.
         const string validContent =
             "This is a piece of updated content that is definitely, positively, and absolutely longer than the one hundred character minimum requirement for a post.";
 
-        var titleResult = PostTitle.Create("Updated Title");
-        var contentResult = PostContent.Create(validContent);
-        var excerptResult = PostExcerpt.Create("Updated excerpt.");
-
-        if (titleResult.IsFailure || contentResult.IsFailure || excerptResult.IsFailure)
-            throw new InvalidOperationException("Failed to create valid command inputs for test setup.");
-
         return new UpdatePostCommand(
             postId,
-            titleResult.Value,
-            contentResult.Value,
-            excerptResult.Value
+            "Updated Title",
+            validContent,
+            "Updated excerpt."
         );
     }
 
@@ -77,8 +70,9 @@ public class UpdatePostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        post.Title.Value.ShouldBe(command.Title.Value);
-        post.Content.Value.ShouldBe(command.Content.Value);
+        // --- FIX: The assertion now compares the primitive string values. ---
+        post.Title.Value.ShouldBe(command.Title);
+        post.Content.Value.ShouldBe(command.Content);
 
         await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

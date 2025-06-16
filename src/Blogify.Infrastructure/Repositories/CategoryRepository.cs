@@ -39,11 +39,6 @@ internal sealed class CategoryRepository(ApplicationDbContext dbContext) : ICate
         return await dbContext.Set<Category>().AnyAsync(predicate, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Category>> GetAllWithPostsCountAsync(CancellationToken cancellationToken = default)
-    {
-        return await dbContext.Set<Category>().AsNoTracking().Include(c => c.Posts).ToListAsync(cancellationToken);
-    }
-
     public async Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken)
     {
         return await dbContext.Set<Category>().FirstOrDefaultAsync(c => c.Name.Value == name, cancellationToken);

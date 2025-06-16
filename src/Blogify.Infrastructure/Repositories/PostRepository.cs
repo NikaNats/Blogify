@@ -8,21 +8,25 @@ internal sealed class PostRepository(ApplicationDbContext dbContext) : IPostRepo
 {
     public async Task<Post?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Set<Post>()
-            .Include(p => p.Categories)
-            .Include(p => p.Tags)
-            .Include(p => p.Comments)
+        // We apply includes here because when you fetch a single Post for a command,
+        // you often need its full state, including composed entities like comments.
+        return await ApplyIncludes(dbContext.Set<Post>())
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Post>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.Set<Post>().AsNoTracking().ToListAsync(cancellationToken);
+        // For GetAll, we typically don't include child collections to keep the query light.
+        // The query handler can decide if it needs more data.
+        return await dbContext.Set<Post>()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(Post entity, CancellationToken cancellationToken = default)
+    public Task AddAsync(Post entity, CancellationToken cancellationToken = default)
     {
-        await dbContext.Set<Post>().AddAsync(entity, cancellationToken);
+        dbContext.Set<Post>().Add(entity);
+        return Task.CompletedTask;
     }
 
     public Task UpdateAsync(Post entity, CancellationToken cancellationToken = default)
@@ -46,32 +50,40 @@ internal sealed class PostRepository(ApplicationDbContext dbContext) : IPostRepo
     public async Task<IReadOnlyList<Post>> GetByAuthorIdAsync(Guid authorId,
         CancellationToken cancellationToken = default)
     {
+        // This query is now simpler as it doesn't need includes for Category/Tag.
         return await dbContext.Set<Post>()
             .AsNoTracking()
-            .Include(p => p.Categories)
-            .Include(p => p.Tags)
             .Where(post => post.AuthorId == authorId)
             .ToListAsync(cancellationToken);
     }
 
+    // --- FIXED: Filtering logic for Category and Tag ---
+
     public async Task<IReadOnlyList<Post>> GetByCategoryIdAsync(Guid categoryId,
         CancellationToken cancellationToken = default)
     {
+        // CORRECT: We now query the primitive collection of IDs.
+        // EF Core is capable of translating `.Contains()` on a collection of primitives
+        // into an efficient SQL query (often using `JSON_VALUE` or array functions).
         return await dbContext.Set<Post>()
             .AsNoTracking()
-            .Include(p => p.Tags)
-            .Include(p => p.Categories)
-            .Where(post => post.Categories.Any(c => c.Id == categoryId))
+            .Where(post => post.CategoryIds.Contains(categoryId))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Post>> GetByTagIdAsync(Guid tagId, CancellationToken cancellationToken = default)
     {
+        // CORRECT: The logic is identical for tags.
         return await dbContext.Set<Post>()
             .AsNoTracking()
-            .Include(p => p.Categories)
-            .Include(p => p.Tags)
-            .Where(post => post.Tags.Any(tag => tag.Id == tagId))
+            .Where(post => post.TagIds.Contains(tagId))
             .ToListAsync(cancellationToken);
+    }
+
+    // A private helper to apply includes consistently.
+    // Note: We only include Comments, as Category/Tag are no longer navigation properties.
+    private static IQueryable<Post> ApplyIncludes(IQueryable<Post> query)
+    {
+        return query.Include(p => p.Comments);
     }
 }

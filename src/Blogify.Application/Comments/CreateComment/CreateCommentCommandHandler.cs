@@ -5,21 +5,26 @@ using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Comments.CreateComment;
 
-internal sealed class CreateCommentCommandHandler(ICommentRepository commentRepository, IPostRepository postRepository)
+internal sealed class CreateCommentCommandHandler(
+    ICommentRepository commentRepository,
+    IPostRepository postRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<CreateCommentCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         var postExists = await postRepository.ExistsAsync(p => p.Id == request.PostId, cancellationToken);
         if (!postExists) return Result.Failure<Guid>(PostErrors.NotFound);
-        
+
         var commentResult = Comment.Create(request.Content, request.AuthorId, request.PostId);
         if (commentResult.IsFailure)
             return Result.Failure<Guid>(commentResult.Error);
 
         await commentRepository.AddAsync(commentResult.Value, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(commentResult.Value.Id);
     }

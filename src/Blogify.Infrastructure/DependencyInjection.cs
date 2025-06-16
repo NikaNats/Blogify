@@ -16,6 +16,7 @@ using Blogify.Infrastructure.Caching;
 using Blogify.Infrastructure.Clock;
 using Blogify.Infrastructure.Data;
 using Blogify.Infrastructure.Email;
+using Blogify.Infrastructure.Interceptors;
 using Blogify.Infrastructure.Outbox;
 using Blogify.Infrastructure.Repositories;
 using Dapper;
@@ -65,8 +66,12 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Database") ??
                                throw new ArgumentNullException(nameof(configuration));
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+        services.AddScoped<AuditableEntitySaveChangesInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            options.UseNpgsql(connectionString)
+                .AddInterceptors(sp.GetRequiredService<AuditableEntitySaveChangesInterceptor>())
+                .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IUserRepository, UserRepository>();
 
@@ -110,12 +115,7 @@ public static class DependencyInjection
             })
             .AddHttpMessageHandler<AdminAuthorizationDelegatingHandler>();
 
-        services.AddHttpClient<IJwtService, JwtService>((serviceProvider, httpClient) =>
-        {
-            var keycloakOptions = serviceProvider.GetRequiredService<IOptions<KeycloakOptions>>().Value;
-
-            httpClient.BaseAddress = new Uri(keycloakOptions.TokenUrl);
-        });
+        services.AddTransient<IJwtService, JwtService>();
 
         services.AddHttpContextAccessor();
 

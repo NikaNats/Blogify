@@ -6,13 +6,14 @@ namespace Blogify.Infrastructure.Authorization;
 
 internal sealed class AuthorizationService(ApplicationDbContext dbContext, ICacheService cacheService)
 {
-    public async Task<UserRolesResponse> GetRolesForUserAsync(string identityId)
+    public async Task<UserRolesResponse?> GetRolesForUserAsync(string identityId) // Return nullable
     {
         var cacheKey = $"auth:roles-{identityId}";
         var cachedRoles = await cacheService.GetAsync<UserRolesResponse>(cacheKey);
 
         if (cachedRoles is not null) return cachedRoles;
 
+        // --- FIX: Use FirstOrDefaultAsync and handle the null case ---
         var roles = await dbContext.Set<User>()
             .Where(u => u.IdentityId == identityId)
             .Select(u => new UserRolesResponse
@@ -20,11 +21,11 @@ internal sealed class AuthorizationService(ApplicationDbContext dbContext, ICach
                 UserId = u.Id,
                 Roles = u.Roles.ToList()
             })
-            .FirstAsync();
+            .FirstOrDefaultAsync(); // Changed from FirstAsync()
 
-        await cacheService.SetAsync(cacheKey, roles);
+        if (roles is not null) await cacheService.SetAsync(cacheKey, roles);
 
-        return roles;
+        return roles; // Return the potentially null response
     }
 
     public async Task<HashSet<string>> GetPermissionsForUserAsync(string identityId)

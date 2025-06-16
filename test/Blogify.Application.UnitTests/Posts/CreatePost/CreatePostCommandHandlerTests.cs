@@ -1,10 +1,12 @@
-﻿using Blogify.Application.Exceptions;
+﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Exceptions;
 using Blogify.Application.Posts.CreatePost;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Shouldly;
+// <-- Add this using
 
 namespace Blogify.Application.UnitTests.Posts.CreatePost;
 
@@ -13,20 +15,28 @@ public class CreatePostCommandHandlerTests
     private readonly CreatePostCommandHandler _handler;
     private readonly IPostRepository _postRepositoryMock;
     private readonly IUnitOfWork _unitOfWorkMock;
+    private readonly IUserContext _userContextMock; // <-- FIX: Add the mock
 
     public CreatePostCommandHandlerTests()
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new CreatePostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
+        _userContextMock = Substitute.For<IUserContext>(); // <-- FIX: Instantiate the mock
+
+        _handler = new CreatePostCommandHandler(
+            _postRepositoryMock,
+            _unitOfWorkMock,
+            _userContextMock); // <-- FIX: Inject the new dependency
     }
 
+    // --- FIX: The helper no longer needs the AuthorId parameter. ---
     private static CreatePostCommand CreateValidCommand()
     {
-        var title = PostTitle.Create("Valid Title").Value;
-        var content = PostContent.Create(new string('a', 100)).Value;
-        var excerpt = PostExcerpt.Create("Valid Excerpt").Value;
-        return new CreatePostCommand(title, content, excerpt, Guid.NewGuid());
+        return new CreatePostCommand(
+            "Valid Title",
+            new string('a', 100), // Valid content that meets length requirement
+            "Valid Excerpt"
+        );
     }
 
     [Fact]
@@ -34,6 +44,10 @@ public class CreatePostCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
+        var authenticatedUserId = Guid.NewGuid();
+
+        // --- FIX: Simulate an authenticated user. ---
+        _userContextMock.UserId.Returns(authenticatedUserId);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -41,7 +55,12 @@ public class CreatePostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBe(Guid.Empty);
-        await _postRepositoryMock.Received(1).AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+
+        // --- FIX: Verify the post was added with the correct, secure AuthorId. ---
+        await _postRepositoryMock.Received(1).AddAsync(
+            Arg.Is<Post>(p => p.AuthorId == authenticatedUserId),
+            Arg.Any<CancellationToken>());
+
         await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -49,20 +68,18 @@ public class CreatePostCommandHandlerTests
     public async Task Handle_WhenDomainCreationFails_ShouldReturnFailureAndNotSaveChanges()
     {
         // Arrange
-        // FIX: Construct the command with a value that will cause Post.Create to fail,
-        // such as a null title. This correctly simulates invalid data being passed to the handler.
+        // --- FIX: Use the new, simpler command constructor. ---
         var commandWithInvalidData = new CreatePostCommand(
-            null, // This will cause Post.Create to return a failure Result.
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("Valid Excerpt").Value,
-            Guid.NewGuid());
+            "", // This will cause PostTitle.Create() inside the handler to fail.
+            new string('a', 100),
+            "Valid Excerpt");
 
         // Act
         var result = await _handler.Handle(commandWithInvalidData, CancellationToken.None);
 
         // Assert
         result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldBe(PostErrors.TitleNull);
+        result.Error.ShouldBe(PostErrors.TitleEmpty);
 
         await _postRepositoryMock.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
         await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -73,14 +90,17 @@ public class CreatePostCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
+        var authenticatedUserId = Guid.NewGuid();
         var concurrencyException = new ConcurrencyException("Concurrency conflict.", new Exception());
 
-        // We still configure the mock to throw the exception...
+        // Simulate authenticated user
+        _userContextMock.UserId.Returns(authenticatedUserId);
+
+        // Configure mock to throw on save
         _unitOfWorkMock.SaveChangesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(concurrencyException);
 
         // Act
-        // ...but now we expect the handler to CATCH it and return a failed Result.
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert

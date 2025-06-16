@@ -53,8 +53,10 @@ public sealed class CommentsController(ISender sender) : ApiControllerBase(sende
     public async Task<IActionResult> UpdateComment(Guid id, [FromBody] UpdateCommentRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateCommentCommand(id, request.CommentId, request.Content);
+        var command = new UpdateCommentCommand(id, request.Content);
+
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 }

@@ -4,9 +4,10 @@ namespace Blogify.Domain.Users;
 
 public static class UserErrors
 {
-    public static readonly Error InvalidCredentials = Error.Failure(
+    public static readonly Error InvalidCredentials = new(
         "User.InvalidCredentials",
-        "The provided credentials were invalid");
+        "The provided credentials were invalid",
+        ErrorType.AuthenticationFailed);
 
     public static readonly Error InvalidFirstName = Error.Validation(
         "User.InvalidFirstName",

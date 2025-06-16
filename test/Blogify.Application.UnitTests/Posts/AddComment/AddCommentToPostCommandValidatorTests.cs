@@ -12,7 +12,8 @@ public class AddCommentToPostCommandValidatorTests
     public void Validate_EmptyContent_ReturnsValidationError()
     {
         // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "", Guid.NewGuid());
+        // --- FIX: Use the new constructor which does not include AuthorId. ---
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "");
 
         // Act
         var result = _validator.TestValidate(command);
@@ -26,7 +27,8 @@ public class AddCommentToPostCommandValidatorTests
     public void Validate_ContentExceedsMaxLength_ReturnsValidationError()
     {
         // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), new string('a', 501), Guid.NewGuid());
+        // --- FIX: Use the new constructor. ---
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), new string('a', 501));
 
         // Act
         var result = _validator.TestValidate(command);
@@ -37,24 +39,11 @@ public class AddCommentToPostCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_EmptyAuthorId_ReturnsValidationError()
-    {
-        // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.Empty);
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage(CommentError.EmptyAuthorId.Description);
-    }
-
-    [Fact]
     public void Validate_ValidCommand_PassesValidation()
     {
         // Arrange
-        var command = new AddCommentToPostCommand(Guid.NewGuid(), "Valid content", Guid.NewGuid());
+        // --- FIX: Use the new constructor. ---
+        var command = new AddCommentToPostCommand(Guid.NewGuid(), "This is a valid comment.");
 
         // Act
         var result = _validator.TestValidate(command);

@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Asp.Versioning;
+﻿using Asp.Versioning;
 using Blogify.Application.Posts.AddCommentToPost;
 using Blogify.Application.Posts.AddTagToPost;
 using Blogify.Application.Posts.ArchivePost;
@@ -32,68 +31,83 @@ public class PostsController(ISender sender) : ApiControllerBase(sender)
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    // In: Blogify.Api.Controllers.Posts/PostsController.cs
     [HttpPost]
-    public async Task<IActionResult> CreatePost(CreatePostRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreatePost(
+        [FromBody] CreatePostRequest request,
+        CancellationToken cancellationToken)
     {
-        var command = new CreatePostCommand(request.Title, request.Content, request.Excerpt, request.AuthorId);
+        var command = new CreatePostCommand(
+            request.Title,
+            request.Content,
+            request.Excerpt);
+
         var result = await Sender.Send(command, cancellationToken);
+
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetPost), new { id = result.Value }, result.Value)
             : HandleFailure(result.Error);
     }
 
-    [HttpPost("{postId}/comments")]
-    public async Task<IActionResult> AddCommentToPost(Guid postId, AddCommentToPostRequest request,
+    [HttpPost("{postId:guid}/comments")]
+    public async Task<IActionResult> AddCommentToPost(Guid postId, [FromBody] AddCommentToPostRequest request,
         CancellationToken cancellationToken)
     {
-        var authorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (authorIdClaim is null || !Guid.TryParse(authorIdClaim, out var authorIdGuid))
-            return Unauthorized("User not authenticated or invalid user id.");
+        var command = new AddCommentToPostCommand(postId, request.Content);
 
-        var command = new AddCommentToPostCommand(postId, request.Content, authorIdGuid);
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
-    [HttpPost("{id}/tags")]
-    public async Task<IActionResult> AddTagToPost(Guid id, AddTagToPostRequest request,
+    [HttpPost("{id:guid}/tags")]
+    public async Task<IActionResult> AddTagToPost(Guid id, [FromBody] AddTagToPostRequest request,
         CancellationToken cancellationToken)
     {
         var command = new AddTagToPostCommand(id, request.TagId);
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
-    [HttpDelete("{postId}/tags/{tagId}")]
+    [HttpDelete("{postId:guid}/tags/{tagId:guid}")]
     public async Task<IActionResult> RemoveTagFromPost(Guid postId, Guid tagId, CancellationToken cancellationToken)
     {
         var command = new RemoveTagFromPostCommand(postId, tagId);
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
-    // Additional endpoints refactored for brevity...
-
-    [HttpPut("{id}/archive")]
+    [HttpPut("{id:guid}/archive")]
     public async Task<IActionResult> ArchivePost(Guid id, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new ArchivePostCommand(id), cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
-    [HttpPut("{id}/publish")]
+    [HttpPut("{id:guid}/publish")]
     public async Task<IActionResult> PublishPost(Guid id, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new PublishPostCommand(id), cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePost(Guid id, UpdatePostRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdatePost(Guid id, [FromBody] UpdatePostRequest request,
+        CancellationToken cancellationToken)
     {
-        var command = new UpdatePostCommand(id, request.Title, request.Content, request.Excerpt);
+        var command = new UpdatePostCommand(
+            id,
+            request.Title,
+            request.Content,
+            request.Excerpt);
+
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
     [HttpGet]

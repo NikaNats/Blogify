@@ -5,7 +5,7 @@ using Serilog.Context;
 
 namespace Blogify.Application.Abstractions.Behaviors;
 
-internal sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
+public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IBaseRequest
     where TResponse : Result

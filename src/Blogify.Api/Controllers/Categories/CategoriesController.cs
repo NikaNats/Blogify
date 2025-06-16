@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using Blogify.Application.Categories.AddPostToCategoryCommand;
 using Blogify.Application.Categories.CreateCategory;
 using Blogify.Application.Categories.DeleteCategory;
 using Blogify.Application.Categories.GetAllCategories;
@@ -62,16 +61,5 @@ public sealed class CategoriesController(ISender sender) : ApiControllerBase(sen
         var command = new DeleteCategoryCommand(id);
         var result = await Sender.Send(command, cancellationToken);
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
-    }
-
-    [HttpPost("{categoryId:guid}/posts/{postId:guid}")]
-    public async Task<IActionResult> AddPostToCategory(
-        Guid categoryId,
-        Guid postId,
-        CancellationToken cancellationToken)
-    {
-        var command = new AddPostToCategoryCommand(categoryId, postId);
-        var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
     }
 }

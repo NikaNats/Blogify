@@ -25,7 +25,7 @@ internal sealed class UpdateCommentCommandHandler(
         if (updateResult.IsFailure) return Result.Failure<Unit>(updateResult.Error);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        
+
         return Result.Success(Unit.Value);
     }
 }

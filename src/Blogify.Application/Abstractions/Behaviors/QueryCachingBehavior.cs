@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Blogify.Application.Abstractions.Behaviors;
 
-internal sealed class QueryCachingBehavior<TRequest, TResponse>(
+public sealed class QueryCachingBehavior<TRequest, TResponse>(
     ICacheService cacheService,
     ILogger<QueryCachingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>

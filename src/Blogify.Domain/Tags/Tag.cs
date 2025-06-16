@@ -1,31 +1,25 @@
 ﻿using Blogify.Domain.Abstractions;
-using Blogify.Domain.Posts;
 using Blogify.Domain.Tags.Events;
 
 namespace Blogify.Domain.Tags;
 
-public sealed class Tag : Entity
+/// <summary>
+///     Represents the Tag aggregate root. A Tag is an independent entity
+///     used for labeling posts. It does not own or manage the posts associated with it.
+/// </summary>
+public sealed class Tag : AuditableEntity
 {
-    private readonly List<Post> _posts = new();
-    private TagName _name;
-
-    private Tag(Guid id, TagName name)
-        : base(id)
+    private Tag(Guid id, TagName name) : base(id)
     {
-        _name = name;
+        Name = name;
     }
 
+    // Private constructor for EF Core.
     private Tag()
     {
     }
 
-    public TagName Name
-    {
-        get => _name;
-        private set => SetProperty(ref _name, value);
-    }
-
-    public IReadOnlyCollection<Post> Posts => _posts.AsReadOnly();
+    public TagName Name { get; private set; }
 
     public static Result<Tag> Create(string name)
     {
@@ -44,31 +38,11 @@ public sealed class Tag : Entity
         if (nameResult.IsFailure)
             return Result.Failure(nameResult.Error);
 
+        // Only update if the name is different.
+        if (Name.Equals(nameResult.Value)) return Result.Success();
+
         Name = nameResult.Value;
-        return Result.Success();
-    }
-
-    public Result AddPost(Post post)
-    {
-        if (post == null)
-            return Result.Failure(TagErrors.PostNull);
-        if (_posts.Contains(post))
-            return Result.Failure(TagErrors.PostDuplicate);
-
-        _posts.Add(post);
-        UpdateModificationTimestamp();
-        return Result.Success();
-    }
-
-    public Result RemovePost(Post post)
-    {
-        if (post == null)
-            return Result.Failure(TagErrors.PostNull);
-
-        if (!_posts.Remove(post))
-            return Result.Failure(TagErrors.PostNotFound);
-
-        UpdateModificationTimestamp();
+        // Optionally raise a TagNameUpdatedDomainEvent here if needed.
         return Result.Success();
     }
 }

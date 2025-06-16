@@ -23,9 +23,9 @@ public class ArchivePostCommandHandlerTests
     private static Post CreateTestPost(PublicationStatus initialStatus = PublicationStatus.Draft)
     {
         var postResult = Post.Create(
-            PostTitle.Create("Valid Title").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("Valid excerpt.").Value,
+            "Valid Title",
+            new string('a', 100),
+            "Valid excerpt.",
             Guid.NewGuid());
 
         // A setup helper should ensure success, not assert.
@@ -44,7 +44,7 @@ public class ArchivePostCommandHandlerTests
     public async Task Handle_WhenPostExistsAsDraft_ShouldArchivePostAndSaveChanges()
     {
         // Arrange
-        var post = CreateTestPost(PublicationStatus.Draft);
+        var post = CreateTestPost();
         var command = new ArchivePostCommand(post.Id);
 
         _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())

@@ -11,24 +11,16 @@ internal sealed class GetCategoryByIdQueryHandler(ICategoryRepository categoryRe
         GetCategoryByIdQuery request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var category = await categoryRepository.GetByIdAsync(request.Id, cancellationToken);
-            if (category is null) return Result.Failure<CategoryByIdResponse>(CategoryError.NotFound);
+        var category = await categoryRepository.GetByIdAsync(request.Id, cancellationToken);
+        if (category is null) return Result.Failure<CategoryByIdResponse>(CategoryError.NotFound);
 
-            var response = new CategoryByIdResponse(
-                category.Id,
-                category.Name.Value,
-                category.Description.Value,
-                category.CreatedAt,
-                category.LastModifiedAt);
+        var response = new CategoryByIdResponse(
+            category.Id,
+            category.Name.Value,
+            category.Description.Value,
+            category.CreatedAt,
+            category.LastModifiedAt);
 
-            return Result.Success(response);
-        }
-        catch (Exception ex)
-        {
-            // Log the exception if necessary
-            return Result.Failure<CategoryByIdResponse>(CategoryError.UnexpectedError);
-        }
+        return Result.Success(response);
     }
 }

@@ -23,7 +23,7 @@ internal sealed class RemoveTagFromPostCommandHandler(
         var removeTagResult = post.RemoveTag(tag);
         if (removeTagResult.IsFailure)
             return removeTagResult;
-        
+
         if (post.DomainEvents.Any(e => e is PostUntaggedDomainEvent))
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

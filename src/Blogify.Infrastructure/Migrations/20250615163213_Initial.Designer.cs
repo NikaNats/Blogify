@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Blogify.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250111212620_Initial")]
+    [Migration("20250615163213_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Blogify.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -37,10 +37,18 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnName("created_at")
                         .HasComment("The timestamp when the category was created.");
 
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at")
                         .HasComment("The timestamp when the category was last modified.");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_modified_by");
 
                     b.HasKey("Id")
                         .HasName("pk_categories");
@@ -65,10 +73,18 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnName("created_at")
                         .HasComment("The timestamp when the comment was created.");
 
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at")
                         .HasComment("The timestamp when the comment was last modified.");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_modified_by");
 
                     b.Property<Guid>("PostId")
                         .HasColumnType("uuid")
@@ -99,15 +115,28 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnName("author_id")
                         .HasComment("The ID of the author who created the post.");
 
+                    b.PrimitiveCollection<Guid[]>("CategoryIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("category_ids");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasComment("The timestamp when the post was created.");
 
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at")
                         .HasComment("The timestamp when the post was last modified.");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_modified_by");
 
                     b.Property<DateTimeOffset?>("PublishedAt")
                         .HasColumnType("timestamp with time zone")
@@ -120,6 +149,11 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status")
                         .HasComment("The current status of the post (e.g., Draft, Published, Archived).");
+
+                    b.PrimitiveCollection<Guid[]>("TagIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("tag_ids");
 
                     b.HasKey("Id")
                         .HasName("pk_posts");
@@ -142,10 +176,18 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnName("created_at")
                         .HasComment("The timestamp when the tag was created.");
 
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at")
                         .HasComment("The timestamp when the tag was last modified.");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_modified_by");
 
                     b.HasKey("Id")
                         .HasName("pk_tags");
@@ -240,6 +282,14 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(400)
@@ -260,6 +310,10 @@ namespace Blogify.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_modified_by");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -335,44 +389,6 @@ namespace Blogify.Infrastructure.Migrations
                     b.ToTable("role_user", (string)null);
                 });
 
-            modelBuilder.Entity("postcategories", b =>
-                {
-                    b.Property<Guid>("post_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("post_id");
-
-                    b.Property<Guid>("category_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("category_id");
-
-                    b.HasKey("post_id", "category_id")
-                        .HasName("pk_postcategories");
-
-                    b.HasIndex("category_id")
-                        .HasDatabaseName("ix_postcategories_category_id");
-
-                    b.ToTable("postcategories", "blog");
-                });
-
-            modelBuilder.Entity("posttags", b =>
-                {
-                    b.Property<Guid>("post_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("post_id");
-
-                    b.Property<Guid>("tag_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tag_id");
-
-                    b.HasKey("post_id", "tag_id")
-                        .HasName("pk_posttags");
-
-                    b.HasIndex("tag_id")
-                        .HasDatabaseName("ix_posttags_tag_id");
-
-                    b.ToTable("posttags", "blog");
-                });
-
             modelBuilder.Entity("Blogify.Domain.Categories.Category", b =>
                 {
                     b.OwnsOne("Blogify.Domain.Categories.CategoryDescription", "Description", b1 =>
@@ -437,7 +453,7 @@ namespace Blogify.Infrastructure.Migrations
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_comments_posts_post_id");
+                        .HasConstraintName("fk_comments_post_post_id");
 
                     b.OwnsOne("Blogify.Domain.Comments.CommentContent", "Content", b1 =>
                         {
@@ -626,41 +642,7 @@ namespace Blogify.Infrastructure.Migrations
                         .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_role_user_users_users_id");
-                });
-
-            modelBuilder.Entity("postcategories", b =>
-                {
-                    b.HasOne("Blogify.Domain.Categories.Category", null)
-                        .WithMany()
-                        .HasForeignKey("category_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_postcategories_categories_category_id");
-
-                    b.HasOne("Blogify.Domain.Posts.Post", null)
-                        .WithMany()
-                        .HasForeignKey("post_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_postcategories_posts_post_id");
-                });
-
-            modelBuilder.Entity("posttags", b =>
-                {
-                    b.HasOne("Blogify.Domain.Posts.Post", null)
-                        .WithMany()
-                        .HasForeignKey("post_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_posttags_posts_post_id");
-
-                    b.HasOne("Blogify.Domain.Tags.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("tag_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_posttags_tags_tag_id");
+                        .HasConstraintName("fk_role_user_user_users_id");
                 });
 
             modelBuilder.Entity("Blogify.Domain.Posts.Post", b =>

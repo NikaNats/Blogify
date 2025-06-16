@@ -7,22 +7,17 @@ namespace Blogify.FunctionalTests.Infrastructure;
 ///     Provides a clean and direct way to seed test data into the database for functional tests.
 ///     This bypasses the API, ensuring tests are fast, reliable, and independent of the application's business logic.
 /// </summary>
-public class BlogifyTestSeeder
+public class BlogifyTestSeeder(ISqlConnectionFactory sqlConnectionFactory)
 {
-    private readonly ISqlConnectionFactory _sqlConnectionFactory;
-
-    public BlogifyTestSeeder(ISqlConnectionFactory sqlConnectionFactory)
-    {
-        _sqlConnectionFactory = sqlConnectionFactory;
-    }
-
     public async Task<Guid> SeedPostAsync(Guid? authorId = null, string status = "Published")
     {
-        using var connection = _sqlConnectionFactory.CreateConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         var postId = Guid.NewGuid();
+        var categoryId = await SeedCategoryAsync(); // Seed a category
+        var tagId = await SeedTagAsync(); // Seed a tag
         const string sql = """
-                           INSERT INTO posts (id, title, content, excerpt, slug, author_id, created_at, published_at, status)
-                           VALUES (@Id, @Title, @Content, @Excerpt, @Slug, @AuthorId, @CreatedAt, @PublishedAt, @Status)
+                           INSERT INTO posts (id, title, content, excerpt, slug, author_id, created_at, published_at, status, category_ids, tag_ids)
+                           VALUES (@Id, @Title, @Content, @Excerpt, @Slug, @AuthorId, @CreatedAt, @PublishedAt, @Status, @CategoryIds, @TagIds)
                            """;
 
         await connection.ExecuteAsync(sql, new
@@ -36,7 +31,9 @@ public class BlogifyTestSeeder
             AuthorId = authorId ?? Guid.NewGuid(),
             CreatedAt = DateTimeOffset.UtcNow,
             PublishedAt = status == "Published" ? DateTimeOffset.UtcNow : (DateTimeOffset?)null,
-            Status = status
+            Status = status,
+            CategoryIds = new[] { categoryId }, // Use the seeded category ID
+            TagIds = new[] { tagId } // Use the seeded tag ID
         });
 
         return postId;
@@ -45,7 +42,7 @@ public class BlogifyTestSeeder
     public async Task<Guid> SeedCommentAsync(Guid postId, Guid? authorId = null,
         string content = "Default test comment")
     {
-        using var connection = _sqlConnectionFactory.CreateConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         var commentId = Guid.NewGuid();
         const string sql = """
                            INSERT INTO comments (id, content_value, author_id, post_id, created_at)
@@ -66,7 +63,7 @@ public class BlogifyTestSeeder
 
     public async Task<Guid> SeedCategoryAsync(string? name = null, string? description = null)
     {
-        using var connection = _sqlConnectionFactory.CreateConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         var categoryId = Guid.NewGuid();
         const string sql = """
                            INSERT INTO categories (id, name, description, created_at)
@@ -82,5 +79,24 @@ public class BlogifyTestSeeder
         });
 
         return categoryId;
+    }
+
+    public async Task<Guid> SeedTagAsync(string? name = null)
+    {
+        using var connection = sqlConnectionFactory.CreateConnection();
+        var tagId = Guid.NewGuid();
+        const string sql = """
+                           INSERT INTO tags (id, name, created_at)
+                           VALUES (@Id, @Name, @CreatedAt)
+                           """;
+
+        await connection.ExecuteAsync(sql, new
+        {
+            Id = tagId,
+            Name = name ?? $"Test Tag {tagId}",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        return tagId;
     }
 }

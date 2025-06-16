@@ -12,9 +12,6 @@ namespace Blogify.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.EnsureSchema(
-                name: "blog");
-
             migrationBuilder.CreateTable(
                 name: "categories",
                 columns: table => new
@@ -23,7 +20,9 @@ namespace Blogify.Infrastructure.Migrations
                     name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "The name of the category. Must be unique."),
                     description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "A detailed description of the category."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "The timestamp when the category was created."),
-                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the category was last modified.")
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the category was last modified."),
+                    last_modified_by = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -68,11 +67,15 @@ namespace Blogify.Infrastructure.Migrations
                     content = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: false, comment: "The content of the post."),
                     excerpt = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "A short excerpt summarizing the post."),
                     slug = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "The URL-friendly slug for the post."),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "The current status of the post (e.g., Draft, Published, Archived)."),
                     author_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "The ID of the author who created the post."),
                     published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the post was published."),
-                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "The current status of the post (e.g., Draft, Published, Archived)."),
+                    category_ids = table.Column<Guid[]>(type: "uuid[]", nullable: false),
+                    tag_ids = table.Column<Guid[]>(type: "uuid[]", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "The timestamp when the post was created."),
-                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the post was last modified.")
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the post was last modified."),
+                    last_modified_by = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -99,7 +102,9 @@ namespace Blogify.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "The timestamp when the tag was created."),
-                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the tag was last modified.")
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the tag was last modified."),
+                    last_modified_by = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -115,7 +120,10 @@ namespace Blogify.Infrastructure.Migrations
                     last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     email = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: false),
                     identity_id = table.Column<string>(type: "text", nullable: false),
-                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    last_modified_by = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -131,38 +139,15 @@ namespace Blogify.Infrastructure.Migrations
                     author_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "The ID of the author who created the comment."),
                     post_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "The ID of the post to which the comment belongs."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "The timestamp when the comment was created."),
-                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the comment was last modified.")
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    last_modified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "The timestamp when the comment was last modified."),
+                    last_modified_by = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_comments", x => x.id);
                     table.ForeignKey(
-                        name: "fk_comments_posts_post_id",
-                        column: x => x.post_id,
-                        principalTable: "posts",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "postcategories",
-                schema: "blog",
-                columns: table => new
-                {
-                    post_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    category_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_postcategories", x => new { x.post_id, x.category_id });
-                    table.ForeignKey(
-                        name: "fk_postcategories_categories_category_id",
-                        column: x => x.category_id,
-                        principalTable: "categories",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_postcategories_posts_post_id",
+                        name: "fk_comments_post_post_id",
                         column: x => x.post_id,
                         principalTable: "posts",
                         principalColumn: "id",
@@ -194,31 +179,6 @@ namespace Blogify.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "posttags",
-                schema: "blog",
-                columns: table => new
-                {
-                    post_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tag_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_posttags", x => new { x.post_id, x.tag_id });
-                    table.ForeignKey(
-                        name: "fk_posttags_posts_post_id",
-                        column: x => x.post_id,
-                        principalTable: "posts",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_posttags_tags_tag_id",
-                        column: x => x.tag_id,
-                        principalTable: "tags",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "role_user",
                 columns: table => new
                 {
@@ -235,7 +195,7 @@ namespace Blogify.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_role_user_users_users_id",
+                        name: "fk_role_user_user_users_id",
                         column: x => x.users_id,
                         principalTable: "users",
                         principalColumn: "id",
@@ -274,21 +234,9 @@ namespace Blogify.Infrastructure.Migrations
                 column: "post_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_postcategories_category_id",
-                schema: "blog",
-                table: "postcategories",
-                column: "category_id");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_posts_author_id",
                 table: "posts",
                 column: "author_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_posttags_tag_id",
-                schema: "blog",
-                table: "posttags",
-                column: "tag_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_role_permissions_permission_id",
@@ -317,18 +265,13 @@ namespace Blogify.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "categories");
+
+            migrationBuilder.DropTable(
                 name: "comments");
 
             migrationBuilder.DropTable(
                 name: "outbox_messages");
-
-            migrationBuilder.DropTable(
-                name: "postcategories",
-                schema: "blog");
-
-            migrationBuilder.DropTable(
-                name: "posttags",
-                schema: "blog");
 
             migrationBuilder.DropTable(
                 name: "role_permissions");
@@ -337,13 +280,10 @@ namespace Blogify.Infrastructure.Migrations
                 name: "role_user");
 
             migrationBuilder.DropTable(
-                name: "categories");
+                name: "tags");
 
             migrationBuilder.DropTable(
                 name: "posts");
-
-            migrationBuilder.DropTable(
-                name: "tags");
 
             migrationBuilder.DropTable(
                 name: "permissions");

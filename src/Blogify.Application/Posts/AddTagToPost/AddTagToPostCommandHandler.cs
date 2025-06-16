@@ -23,7 +23,7 @@ internal sealed class AddTagToPostCommandHandler(
 
         var addTagResult = post.AddTag(tag);
         if (addTagResult.IsFailure) return addTagResult;
-        
+
         var eventCountAfter = post.DomainEvents.Count;
 
         if (eventCountAfter > eventCountBefore)

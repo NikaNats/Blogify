@@ -1,49 +1,31 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Blogify.Domain.Abstractions;
+﻿namespace Blogify.Domain.Abstractions;
 
 public abstract class Entity : IEquatable<Entity>
 {
     private readonly List<IDomainEvent> _domainEvents = [];
-    private readonly HashSet<string> _modifiedProperties = [];
 
     protected Entity(Guid id)
     {
         Id = id;
-        CreatedAt = DateTimeOffset.UtcNow;
-        LastModifiedAt = CreatedAt;
     }
 
-    protected Entity() : this(Guid.NewGuid())
+    protected Entity()
     {
     }
 
-    public Guid Id { get; }
-
-    public DateTimeOffset CreatedAt { get; }
-
-    public DateTimeOffset? LastModifiedAt { get; private set; }
+    public Guid Id { get; init; }
 
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    public IReadOnlyCollection<string> ModifiedProperties => _modifiedProperties;
-
-
     public bool Equals(Entity? other)
     {
-        if (other is null)
-            return false;
+        if (other is null) return false;
 
-        if (ReferenceEquals(this, other))
-            return true;
+        if (ReferenceEquals(this, other)) return true;
 
-        return Id == other.Id;
-    }
+        if (other.GetType() != GetType()) return false;
 
-    protected void RaiseDomainEvent(IDomainEvent domainEvent)
-    {
-        ArgumentNullException.ThrowIfNull(domainEvent);
-        _domainEvents.Add(domainEvent);
+        return other.Id == Id;
     }
 
     public void ClearDomainEvents()
@@ -51,35 +33,9 @@ public abstract class Entity : IEquatable<Entity>
         _domainEvents.Clear();
     }
 
-    /// <summary>
-    ///     Sets a property value, tracks the modified property name, and updates the modification timestamp.
-    /// </summary>
-    protected void SetProperty<T>(
-        ref T field,
-        T value,
-        [CallerMemberName] string? propertyName = null)
+    protected void RaiseDomainEvent(IDomainEvent domainEvent)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
-
-        if (EqualityComparer<T>.Default.Equals(field, value)) return;
-
-        field = value;
-        _modifiedProperties.Add(propertyName);
-        LastModifiedAt = DateTimeOffset.UtcNow;
-    }
-
-    public void ResetChangeTracking()
-    {
-        _modifiedProperties.Clear();
-    }
-
-    /// <summary>
-    ///     Updates the modification timestamp without tracking property changes.
-    ///     This should only be used by infrastructure code.
-    /// </summary>
-    internal void UpdateModificationTimestamp()
-    {
-        LastModifiedAt = DateTimeOffset.UtcNow;
+        _domainEvents.Add(domainEvent);
     }
 
     public override bool Equals(object? obj)
@@ -92,18 +48,24 @@ public abstract class Entity : IEquatable<Entity>
         return Id.GetHashCode();
     }
 
+    public override string ToString()
+    {
+        return $"{GetType().Name} [Id={Id}]";
+    }
+
     public static bool operator ==(Entity? left, Entity? right)
     {
-        return left?.Equals(right) ?? right is null;
+        if (left is null && right is null)
+            return true;
+
+        if (left is null || right is null)
+            return false;
+
+        return left.Equals(right);
     }
 
     public static bool operator !=(Entity? left, Entity? right)
     {
         return !(left == right);
-    }
-
-    public override string ToString()
-    {
-        return $"{GetType().Name} [Id={Id}]";
     }
 }

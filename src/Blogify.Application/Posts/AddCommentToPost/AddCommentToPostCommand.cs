@@ -2,4 +2,4 @@
 
 namespace Blogify.Application.Posts.AddCommentToPost;
 
-public sealed record AddCommentToPostCommand(Guid PostId, string Content, Guid AuthorId) : ICommand;
+public sealed record AddCommentToPostCommand(Guid PostId, string Content) : ICommand;

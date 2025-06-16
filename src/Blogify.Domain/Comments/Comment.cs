@@ -3,14 +3,13 @@ using Blogify.Domain.Comments.Events;
 
 namespace Blogify.Domain.Comments;
 
-public sealed class Comment : Entity
+public sealed class Comment : AuditableEntity
 {
-    private CommentContent _content;
-
     private Comment(Guid id, CommentContent content, Guid authorId, Guid postId)
         : base(id)
     {
-        _content = content;
+        // CHANGED: Direct assignment to auto-property.
+        Content = content;
         AuthorId = authorId;
         PostId = postId;
 
@@ -19,13 +18,10 @@ public sealed class Comment : Entity
 
     private Comment()
     {
+        // Required for ORM
     }
 
-    public CommentContent Content
-    {
-        get => _content;
-        private set => SetProperty(ref _content, value);
-    }
+    public CommentContent Content { get; private set; }
 
     public Guid AuthorId { get; }
     public Guid PostId { get; }

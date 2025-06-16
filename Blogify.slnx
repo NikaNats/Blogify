@@ -1,67 +1,67 @@
 ﻿<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Folder Name="/src/">
-    <Project Path="src\Blogify.Api\Blogify.Api.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
+    <Configurations>
+        <Platform Name="Any CPU"/>
+        <Platform Name="x64"/>
+        <Platform Name="x86"/>
+    </Configurations>
+    <Folder Name="/src/">
+        <Project Path="src\Blogify.Api\Blogify.Api.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="src\Blogify.Application\Blogify.Application.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="src\Blogify.Domain\Blogify.Domain.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="src\Blogify.Infrastructure\Blogify.Infrastructure.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+    </Folder>
+    <Folder Name="/test/">
+        <Project Path="test\Blogify.Application.UnitTests\Blogify.Application.UnitTests.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="test\Blogify.ArchitectureTests\Blogify.ArchitectureTests.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="test\Blogify.Domain.UnitTests\Blogify.Domain.UnitTests.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+        <Project Path="test\Blogify.FunctionalTests\Blogify.FunctionalTests.csproj" Type="Classic C#">
+            <Configuration Solution="Debug|x64" Project="Debug|Any CPU"/>
+            <Configuration Solution="Debug|x86" Project="Debug|Any CPU"/>
+            <Configuration Solution="Release|x64" Project="Release|Any CPU"/>
+            <Configuration Solution="Release|x86" Project="Release|Any CPU"/>
+        </Project>
+    </Folder>
+    <Project Path="docker-compose\docker-compose.dcproj">
+        <Configuration Solution="Debug|Any CPU" Project="Debug|Any CPU|NoBuild"/>
+        <Configuration Solution="Debug|x64" Project="Debug|Any CPU|NoBuild"/>
+        <Configuration Solution="Debug|x86" Project="Debug|Any CPU|NoBuild"/>
+        <Configuration Solution="Release|Any CPU" Project="Release|Any CPU|NoBuild"/>
+        <Configuration Solution="Release|x64" Project="Release|Any CPU|NoBuild"/>
+        <Configuration Solution="Release|x86" Project="Release|Any CPU|NoBuild"/>
     </Project>
-    <Project Path="src\Blogify.Application\Blogify.Application.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-    <Project Path="src\Blogify.Domain\Blogify.Domain.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-    <Project Path="src\Blogify.Infrastructure\Blogify.Infrastructure.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-  </Folder>
-  <Folder Name="/test/">
-    <Project Path="test\Blogify.Application.UnitTests\Blogify.Application.UnitTests.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-    <Project Path="test\Blogify.ArchitectureTests\Blogify.ArchitectureTests.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-    <Project Path="test\Blogify.Domain.UnitTests\Blogify.Domain.UnitTests.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-    <Project Path="test\Blogify.FunctionalTests\Blogify.FunctionalTests.csproj" Type="Classic C#">
-      <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
-      <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
-      <Configuration Solution="Release|x64" Project="Release|Any CPU" />
-      <Configuration Solution="Release|x86" Project="Release|Any CPU" />
-    </Project>
-  </Folder>
-  <Project Path="docker-compose\docker-compose.dcproj">
-    <Configuration Solution="Debug|Any CPU" Project="Debug|Any CPU|NoBuild" />
-    <Configuration Solution="Debug|x64" Project="Debug|Any CPU|NoBuild" />
-    <Configuration Solution="Debug|x86" Project="Debug|Any CPU|NoBuild" />
-    <Configuration Solution="Release|Any CPU" Project="Release|Any CPU|NoBuild" />
-    <Configuration Solution="Release|x64" Project="Release|Any CPU|NoBuild" />
-    <Configuration Solution="Release|x86" Project="Release|Any CPU|NoBuild" />
-  </Project>
 </Solution>

@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Posts.RemoveCategoryFromPost;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
 using NSubstitute;
@@ -8,23 +9,31 @@ namespace Blogify.Application.UnitTests.Posts.RemoveCategory;
 
 public class RemoveCategoryFromPostCommandHandlerTests
 {
-    private readonly ICategoryRepository _categoryRepository;
+    // --- CHANGED: Added IUnitOfWork mock ---
+    private readonly ICategoryRepository _categoryRepositoryMock;
     private readonly RemoveCategoryFromPostCommandHandler _handler;
-    private readonly IPostRepository _postRepository;
+    private readonly IPostRepository _postRepositoryMock;
+    private readonly IUnitOfWork _unitOfWorkMock;
 
     public RemoveCategoryFromPostCommandHandlerTests()
     {
-        _postRepository = Substitute.For<IPostRepository>();
-        _categoryRepository = Substitute.For<ICategoryRepository>();
-        _handler = new RemoveCategoryFromPostCommandHandler(_postRepository, _categoryRepository);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+        _unitOfWorkMock = Substitute.For<IUnitOfWork>(); // Mock it
+
+        // --- CHANGED: Inject all required dependencies ---
+        _handler = new RemoveCategoryFromPostCommandHandler(
+            _postRepositoryMock,
+            _categoryRepositoryMock,
+            _unitOfWorkMock);
     }
 
     [Fact]
-    public async Task Handle_PostNotFound_ReturnsNotFoundFailure()
+    public async Task Handle_WhenPostNotFound_ShouldReturnFailure()
     {
         // Arrange
         var command = new RemoveCategoryFromPostCommand(Guid.NewGuid(), Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns((Post?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -32,17 +41,17 @@ public class RemoveCategoryFromPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(PostErrors.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_CategoryNotFound_ReturnsCategoryNotFoundFailure()
+    public async Task Handle_WhenCategoryNotFound_ShouldReturnFailure()
     {
         // Arrange
-        var post = CreateDraftPost();
+        var post = TestFactory.CreatePost();
         var command = new RemoveCategoryFromPostCommand(post.Id, Guid.NewGuid());
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _categoryRepository.GetByIdAsync(command.CategoryId, Arg.Any<CancellationToken>()).Returns((Category)null);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _categoryRepositoryMock.GetByIdAsync(command.CategoryId, Arg.Any<CancellationToken>()).Returns((Category?)null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -50,40 +59,70 @@ public class RemoveCategoryFromPostCommandHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(CategoryError.NotFound);
-        await _postRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ValidCategory_RemovesCategoryAndUpdatesPost()
+    public async Task Handle_WhenCategoryIsAssigned_ShouldRemoveCategoryAndSaveChanges()
     {
         // Arrange
-        var category = CreateCategory();
-        var post = CreateDraftPost();
-        post.AddCategory(category);
+        var category = TestFactory.CreateCategory();
+        var post = TestFactory.CreatePost();
+
+        // --- FIXED: Use the correct method for setup ---
+        post.AssignToCategory(category);
+        post.ClearDomainEvents(); // Isolate the 'remove' action
+
         var command = new RemoveCategoryFromPostCommand(post.Id, category.Id);
-        _postRepository.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _categoryRepository.GetByIdAsync(command.CategoryId, Arg.Any<CancellationToken>()).Returns(category);
+        _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
+        _categoryRepositoryMock.GetByIdAsync(command.CategoryId, Arg.Any<CancellationToken>()).Returns(category);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        post.Categories.ShouldNotContain(c => c.Id == category.Id);
-        await _postRepository.Received(1).UpdateAsync(post, Arg.Any<CancellationToken>());
+
+        // --- FIXED: Assert on the correct ID-based collection ---
+        post.CategoryIds.ShouldNotContain(category.Id);
+
+        // --- FIXED: Assert that the transaction was committed ---
+        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    private Post CreateDraftPost()
+    #region TestFactory
+
+    private static class TestFactory
     {
-        var title = PostTitle.Create("Test Post").Value;
-        var content = PostContent.Create(new string('a', 100)).Value;
-        var excerpt = PostExcerpt.Create("Test Excerpt").Value;
-        return Post.Create(title, content, excerpt, Guid.NewGuid()).Value;
+        internal static Post CreatePost()
+        {
+            var result = Post.Create(
+                "Test Post",
+                new string('a', 101),
+                "Test Excerpt",
+                Guid.NewGuid());
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
+
+        internal static Category CreateCategory()
+        {
+            var nameResult = CategoryName.Create("TestCategory");
+            var descriptionResult = CategoryDescription.Create("Description");
+
+            // Ensure both results are successful before proceeding
+            nameResult.IsSuccess.ShouldBeTrue();
+            descriptionResult.IsSuccess.ShouldBeTrue();
+
+            var result = Category.Create(
+                nameResult.Value.Value, // Extract the string value from CategoryName
+                descriptionResult.Value.Value // Extract the string value from CategoryDescription
+            );
+
+            result.IsSuccess.ShouldBeTrue();
+            return result.Value;
+        }
     }
 
-    private Category CreateCategory()
-    {
-        return Category.Create(CategoryName.Create("TestCategory").Value.Value,
-            CategoryDescription.Create("Description").Value.Value).Value;
-    }
+    #endregion
 }

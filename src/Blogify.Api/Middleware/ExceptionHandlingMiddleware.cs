@@ -24,7 +24,7 @@ internal sealed class ExceptionHandlingMiddleware(
             await context.Response.WriteAsJsonAsync(problemDetails);
         }
     }
-    
+
     private static ProblemDetails CreateProblemDetails(Exception exception, HttpContext context)
     {
         return exception switch

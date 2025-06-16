@@ -24,9 +24,9 @@ public class DeletePostCommandHandlerTests
     private static Post CreateTestPost()
     {
         var postResult = Post.Create(
-            PostTitle.Create("Test Post").Value,
-            PostContent.Create(new string('a', 100)).Value,
-            PostExcerpt.Create("An excerpt.").Value,
+            "Test Post",
+            new string('a', 100),
+            "An excerpt.",
             Guid.NewGuid());
         if (postResult.IsFailure) throw new InvalidOperationException("Test setup failed: could not create post.");
         return postResult.Value;

@@ -12,75 +12,54 @@ public class CreatePostCommandValidatorTests
     public void Validate_ValidCommand_ShouldNotHaveValidationErrors()
     {
         // Arrange
-        var validContent = new string('a', 100); // Meets minimum length
+        // --- FIX: Use the new constructor without AuthorId. ---
         var command = new CreatePostCommand(
-            PostTitle.Create("Valid Title").Value,
-            PostContent.Create(validContent).Value,
-            PostExcerpt.Create("Valid Excerpt").Value,
-            Guid.NewGuid());
+            "Valid Title",
+            new string('a', 100), // Meets minimum length
+            "Valid Excerpt");
 
         // Act & Assert
         _validator.TestValidate(command).ShouldNotHaveAnyValidationErrors();
     }
 
-    [Fact]
-    public void Validate_NullTitle_ShouldHaveValidationError()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_InvalidTitle_ShouldHaveValidationError(string invalidTitle)
     {
         // Arrange
-        var validContent = new string('a', 100);
+        // --- FIX: Use the new constructor. ---
         var command = new CreatePostCommand(
-            null!,
-            PostContent.Create(validContent).Value,
-            PostExcerpt.Create("Valid Excerpt").Value,
-            Guid.NewGuid());
+            invalidTitle,
+            new string('a', 100),
+            "Valid Excerpt");
 
         // Act & Assert
         _validator.TestValidate(command)
             .ShouldHaveValidationErrorFor(x => x.Title)
-            .WithErrorMessage("Post title cannot be null.");
+            .WithErrorMessage(PostErrors.TitleEmpty.Description);
     }
 
+    // --- FIX: This entire test is removed as AuthorId is no longer on the command. ---
+    // [Fact]
+    // public void Validate_EmptyAuthorId_ShouldHaveValidationError()
+    // {
+    // }
+
     [Fact]
-    public void Validate_EmptyAuthorId_ShouldHaveValidationError()
+    public void Validate_ShortContent_ShouldHaveValidationError()
     {
         // Arrange
-        var validContent = new string('a', 100);
+        // --- FIX: Use the new constructor. ---
         var command = new CreatePostCommand(
-            PostTitle.Create("Valid Title").Value,
-            PostContent.Create(validContent).Value,
-            PostExcerpt.Create("Valid Excerpt").Value,
-            Guid.Empty);
+            "Valid Title",
+            "Too short", // Content does not meet minimum length
+            "Valid Excerpt");
 
         // Act & Assert
         _validator.TestValidate(command)
-            .ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage("AuthorId cannot be empty.");
+            .ShouldHaveValidationErrorFor(x => x.Content)
+            .WithErrorMessage(PostErrors.ContentTooShort.Description);
     }
-
-    // [Fact]
-    // public void Validate_EmptyCategoryId_ShouldHaveValidationError()
-    // {
-    //     // Arrange
-    //     var titleResult = PostTitle.Create("Valid Title");
-    //     var contentResult = PostContent.Create("Valid Content");
-    //     var excerptResult = PostExcerpt.Create("Valid Excerpt");
-    //
-    //     // Ensure the creation was successful
-    //     titleResult.IsSuccess.Should().BeTrue("Title creation should succeed with valid input.");
-    //     contentResult.IsSuccess.Should().BeTrue("Content creation should succeed with valid input.");
-    //     excerptResult.IsSuccess.Should().BeTrue("Excerpt creation should succeed with valid input.");
-    //
-    //     var command = new CreatePostCommand(
-    //         titleResult.Value,
-    //         contentResult.Value,
-    //         excerptResult.Value,
-    //         Guid.NewGuid());
-    //
-    //     // Act
-    //     var result = _validator.TestValidate(command);
-    //
-    //     // Assert
-    //     result.ShouldHaveValidationErrorFor(x => x.CategoryId)
-    //         .WithErrorMessage("CategoryId cannot be empty.");
-    // }
 }

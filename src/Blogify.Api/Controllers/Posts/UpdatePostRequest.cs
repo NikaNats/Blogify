@@ -1,8 +1,6 @@
-﻿using Blogify.Domain.Posts;
-
-namespace Blogify.Api.Controllers.Posts;
+﻿namespace Blogify.Api.Controllers.Posts;
 
 public sealed record UpdatePostRequest(
-    PostTitle Title,
-    PostContent Content,
-    PostExcerpt Excerpt);
+    string Title,
+    string Content,
+    string Excerpt);

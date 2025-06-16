@@ -7,7 +7,6 @@ using Blogify.Application.Categories.GetAllCategories;
 using Blogify.FunctionalTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-// For response DTO
 
 namespace Blogify.FunctionalTests.Categories;
 

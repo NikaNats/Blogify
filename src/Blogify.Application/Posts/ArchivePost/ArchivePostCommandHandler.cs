@@ -18,7 +18,7 @@ internal sealed class ArchivePostCommandHandler(
         var archiveResult = post.Archive();
         if (archiveResult.IsFailure)
             return archiveResult;
-        
+
         if (post.DomainEvents.Any(e => e is PostArchivedDomainEvent))
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -138,9 +138,9 @@ internal static class SeedDataExtensions
         Faker faker, List<Guid> userIds)
     {
         var posts = GenerateEntities(faker, DefaultNumberOfPosts, () => Post.Create(
-            PostTitle.Create(faker.Lorem.Sentence(5)).Value,
-            PostContent.Create(faker.Lorem.Paragraphs()).Value,
-            PostExcerpt.Create(faker.Lorem.Sentence(10)).Value,
+            faker.Lorem.Sentence(5),
+            faker.Lorem.Paragraphs(),
+            faker.Lorem.Sentence(10),
             faker.PickRandom(userIds)
         ).Value);
 

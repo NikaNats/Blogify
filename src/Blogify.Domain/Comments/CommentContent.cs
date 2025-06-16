@@ -6,9 +6,19 @@ public class CommentContent : ValueObject
 {
     internal const int MinLength = 1;
     internal const int MaxLength = 1000;
-    private CommentContent(string value) { Value = value.Trim(); }
+
+    private CommentContent(string value)
+    {
+        Value = value.Trim();
+    }
+
     public string Value { get; }
-    public static implicit operator string(CommentContent content) => content.Value;
+
+    public static implicit operator string(CommentContent content)
+    {
+        return content.Value;
+    }
+
     public static Result<CommentContent> Create(string value)
     {
         var trimmed = value?.Trim() ?? string.Empty;
@@ -20,5 +30,9 @@ public class CommentContent : ValueObject
             _ => Result.Success(new CommentContent(trimmed))
         };
     }
-    protected override IEnumerable<object> GetAtomicValues() { yield return Value; }
+
+    protected override IEnumerable<object> GetAtomicValues()
+    {
+        yield return Value;
+    }
 }
