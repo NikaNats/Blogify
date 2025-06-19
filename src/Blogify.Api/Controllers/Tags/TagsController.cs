@@ -14,8 +14,9 @@ namespace Blogify.Api.Controllers.Tags;
 public sealed class TagsController(ISender sender) : ApiControllerBase(sender)
 {
     [HttpPost]
-    public async Task<IActionResult> CreateTag([FromBody] CreateTagCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateTag([FromBody] CreateTagRequest request, CancellationToken cancellationToken)
     {
+        var command = new CreateTagCommand(request.Name);
         var result = await Sender.Send(command, cancellationToken);
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetTagById), new { id = result.Value }, result.Value)
@@ -47,9 +48,10 @@ public sealed class TagsController(ISender sender) : ApiControllerBase(sender)
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateTag(Guid id, [FromBody] UpdateTagCommand command,
+    public async Task<IActionResult> UpdateTag(Guid id, [FromBody] UpdateTagRequest request,
         CancellationToken cancellationToken)
     {
+        var command = new UpdateTagCommand(id, request.Name);
         var result = await Sender.Send(command, cancellationToken);
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }

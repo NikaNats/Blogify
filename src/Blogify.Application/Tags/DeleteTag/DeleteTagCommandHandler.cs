@@ -4,17 +4,17 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.DeleteTag;
 
-internal sealed class DeleteTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<DeleteTagCommand>
+internal sealed class DeleteTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork)
+    : ICommandHandler<DeleteTagCommand>
 {
     public async Task<Result> Handle(DeleteTagCommand request, CancellationToken cancellationToken)
     {
-        // Retrieve the tag by ID
         var tag = await tagRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (tag is null)
-            return Result.Failure(TagErrors.NotFound);
+        if (tag is null) return Result.Failure(TagErrors.NotFound);
 
-        // Delete the tag
         await tagRepository.DeleteAsync(tag.Id, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

@@ -12,7 +12,7 @@ public class CreateCommentCommandValidatorTests
     public void Validate_ValidCommand_ShouldNotHaveValidationErrors()
     {
         // Arrange
-        var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.NewGuid());
+        var command = new CreateCommentCommand(Guid.NewGuid(), "This is valid content");
 
         // Act & Assert
         _validator.TestValidate(command).ShouldNotHaveAnyValidationErrors();
@@ -22,7 +22,7 @@ public class CreateCommentCommandValidatorTests
     public void Validate_EmptyContent_ShouldHaveValidationError()
     {
         // Arrange
-        var command = new CreateCommentCommand("", Guid.NewGuid(), Guid.NewGuid());
+        var command = new CreateCommentCommand(Guid.NewGuid(), "");
 
         // Act & Assert
         _validator.TestValidate(command)
@@ -35,7 +35,7 @@ public class CreateCommentCommandValidatorTests
     {
         // Arrange
         var longContent = new string('a', 1001);
-        var command = new CreateCommentCommand(longContent, Guid.NewGuid(), Guid.NewGuid());
+        var command = new CreateCommentCommand(Guid.NewGuid(), longContent);
 
         // Act & Assert
         _validator.TestValidate(command)
@@ -44,22 +44,10 @@ public class CreateCommentCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_EmptyAuthorId_ShouldHaveValidationError()
-    {
-        // Arrange
-        var command = new CreateCommentCommand("Valid content", Guid.Empty, Guid.NewGuid());
-
-        // Act & Assert
-        _validator.TestValidate(command)
-            .ShouldHaveValidationErrorFor(x => x.AuthorId)
-            .WithErrorMessage(CommentError.EmptyAuthorId.Description);
-    }
-
-    [Fact]
     public void Validate_EmptyPostId_ShouldHaveValidationError()
     {
         // Arrange
-        var command = new CreateCommentCommand("Valid content", Guid.NewGuid(), Guid.Empty);
+        var command = new CreateCommentCommand(Guid.Empty, "This is valid content");
 
         // Act & Assert
         _validator.TestValidate(command)

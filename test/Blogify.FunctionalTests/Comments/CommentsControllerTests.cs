@@ -5,7 +5,6 @@ using Blogify.Api.Controllers.Comments;
 using Blogify.Application.Comments;
 using Blogify.FunctionalTests.Infrastructure;
 using Shouldly;
-// --- FIX: Import the actual DTOs from the API project ---
 
 namespace Blogify.FunctionalTests.Comments;
 
@@ -30,10 +29,6 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    // Note: The 'CreateComment' related tests are not shown here but would also need
-    // to be updated to use the new secure command structure (without AuthorId in the DTO).
-    // This fix focuses specifically on the failing Update tests.
-
     [Fact]
     public async Task GetCommentById_WhenCommentExists_ShouldReturnOkAndComment()
     {
@@ -55,13 +50,11 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         var postId = await _seeder.SeedPostAsync();
         var commentId = await _seeder.SeedCommentAsync(postId, AuthenticatedUserId);
 
-        // --- FIX: Use the simplified, correct DTO from the API project ---
         var request = new UpdateCommentRequest("This content was successfully updated by the author.");
 
         // Act
         var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{commentId}", request);
 
-        // --- FIX: The test now correctly expects 204 NoContent ---
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Assert (optional but good): verify the change was actually made
@@ -77,7 +70,6 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         var postId = await _seeder.SeedPostAsync();
         var otherAuthorsCommentId = await _seeder.SeedCommentAsync(postId, Guid.NewGuid());
 
-        // --- FIX: Use the simplified, correct DTO ---
         var request = new UpdateCommentRequest("This update should fail due to authorization.");
 
         // Act
@@ -86,12 +78,6 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
-
-    // --- FIX: This test is now obsolete and has been removed. ---
-    // The application logic no longer supports a mismatch between route and body IDs,
-    // so testing for it is no longer necessary.
-    // [Fact]
-    // public async Task UpdateComment_WhenRouteIdAndBodyIdMismatch_ShouldReturnBadRequestWithProblemDetails() { ... }
 
     [Fact]
     public async Task DeleteComment_WhenUserIsAuthor_ShouldReturnNoContent()

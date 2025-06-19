@@ -4,24 +4,24 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.UpdateTag;
 
-internal sealed class UpdateTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<UpdateTagCommand>
+internal sealed class UpdateTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork)
+    : ICommandHandler<UpdateTagCommand>
 {
     public async Task<Result> Handle(UpdateTagCommand request, CancellationToken cancellationToken)
     {
-        // Retrieve the tag by ID
         var tag = await tagRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (tag is null)
-            return Result.Failure(TagErrors.NotFound);
+        if (tag is null) return Result.Failure(TagErrors.NotFound);
 
-        // Update the tag's name
+        var existingTagWithSameName = await tagRepository.GetByNameAsync(request.Name, cancellationToken);
+        if (existingTagWithSameName is not null && existingTagWithSameName.Id != tag.Id)
+            return Result.Failure(TagErrors.DuplicateName);
+
         var nameResult = TagName.Create(request.Name);
-        if (nameResult.IsFailure)
-            return Result.Failure(nameResult.Error);
+        if (nameResult.IsFailure) return Result.Failure(nameResult.Error);
 
         tag.UpdateName(nameResult.Value.Value);
 
-        // Save the changes
-        await tagRepository.UpdateAsync(tag, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

@@ -5,7 +5,6 @@ using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 using NSubstitute;
 using Shouldly;
-// Add this using
 
 namespace Blogify.Application.UnitTests.Posts.AddComment;
 
@@ -15,20 +14,20 @@ public class AddCommentToPostCommandHandlerTests
     private readonly AddCommentToPostCommandHandler _handler;
     private readonly IPostRepository _postRepositoryMock;
     private readonly IUnitOfWork _unitOfWorkMock;
-    private readonly IUserContext _userContextMock; // --- FIX: Add mock for IUserContext ---
+    private readonly IUserContext _userContextMock;
 
     public AddCommentToPostCommandHandlerTests()
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _commentRepositoryMock = Substitute.For<ICommentRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _userContextMock = Substitute.For<IUserContext>(); // --- FIX: Instantiate the mock ---
+        _userContextMock = Substitute.For<IUserContext>();
 
         _handler = new AddCommentToPostCommandHandler(
             _postRepositoryMock,
             _commentRepositoryMock,
             _unitOfWorkMock,
-            _userContextMock); // --- FIX: Inject the new dependency ---
+            _userContextMock);
     }
 
     // Helper to create a valid Post entity for tests, simplifying Arrange blocks.
@@ -55,13 +54,11 @@ public class AddCommentToPostCommandHandlerTests
         var post = CreateTestPost(true);
         var authenticatedUserId = Guid.NewGuid();
 
-        // --- FIX: Create the command without the authorId ---
         var command = new AddCommentToPostCommand(post.Id, "This is a valid comment.");
 
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
             .Returns(post);
 
-        // --- FIX: Simulate an authenticated user ---
         _userContextMock.UserId.Returns(authenticatedUserId);
 
         // Act
@@ -70,7 +67,6 @@ public class AddCommentToPostCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        // Verify a new comment was added to the repository with the correct author ID from the context
         await _commentRepositoryMock.Received(1).AddAsync(
             Arg.Is<Comment>(c => c.AuthorId == authenticatedUserId),
             Arg.Any<CancellationToken>());
@@ -82,9 +78,7 @@ public class AddCommentToPostCommandHandlerTests
     public async Task Handle_WhenPostIsNotPublished_ShouldReturnFailure()
     {
         // Arrange
-        var post = CreateTestPost(); // Post is a draft
-
-        // --- FIX: Create the command without the authorId ---
+        var post = CreateTestPost();
         var command = new AddCommentToPostCommand(post.Id, "This comment should be rejected.");
 
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
@@ -104,7 +98,6 @@ public class AddCommentToPostCommandHandlerTests
     public async Task Handle_WhenPostNotFound_ShouldReturnFailure()
     {
         // Arrange
-        // --- FIX: Create the command without the authorId ---
         var command = new AddCommentToPostCommand(Guid.NewGuid(), "This comment will fail.");
 
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
@@ -124,13 +117,11 @@ public class AddCommentToPostCommandHandlerTests
     {
         // Arrange
         var post = CreateTestPost(true);
-        // --- FIX: Create the command without the authorId ---
         var command = new AddCommentToPostCommand(post.Id, ""); // Invalid empty content
 
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>())
             .Returns(post);
 
-        // Simulate a user context, although it won't be used if the domain logic fails first
         _userContextMock.UserId.Returns(Guid.NewGuid());
 
         // Act

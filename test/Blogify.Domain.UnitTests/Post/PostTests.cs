@@ -249,7 +249,7 @@ public static class PostTests
         public void AddComment_WhenNotPublished_Should_ReturnFailure()
         {
             // Arrange
-            var post = TestFactory.CreateValidPost(PublicationStatus.Draft);
+            var post = TestFactory.CreateValidPost();
 
             // Act
             var result = post.AddComment("This comment should fail.", Guid.NewGuid());

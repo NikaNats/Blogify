@@ -14,7 +14,8 @@ public class DeleteTagCommandHandlerTests
     public DeleteTagCommandHandlerTests()
     {
         _tagRepository = Substitute.For<ITagRepository>();
-        _handler = new DeleteTagCommandHandler(_tagRepository);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        _handler = new DeleteTagCommandHandler(_tagRepository, unitOfWork);
     }
 
     [Fact]
@@ -27,9 +28,6 @@ public class DeleteTagCommandHandlerTests
         // Create a tag instance that we can control.
         var existingTag = Tag.Create("Test Tag").Value;
 
-        // --- THE FIX ---
-        // Use reflection to set the private Id property to match the Id in our command.
-        // This ensures our mock behaves like a real repository.
         typeof(Entity).GetProperty(nameof(Entity.Id))!
             .SetValue(existingTag, tagId);
 
@@ -42,8 +40,6 @@ public class DeleteTagCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
-        // This verification will now pass because the Id from the mocked tag object
-        // matches the tagId from the command.
         await _tagRepository.Received(1).DeleteAsync(tagId, Arg.Any<CancellationToken>());
     }
 

@@ -16,10 +16,13 @@ namespace Blogify.Api.Controllers.Comments;
 public sealed class CommentsController(ISender sender) : ApiControllerBase(sender)
 {
     [HttpPost]
-    public async Task<IActionResult> CreateComment([FromBody] CreateCommentCommand command,
+    public async Task<IActionResult> CreateComment([FromBody] CreateCommentRequest request,
         CancellationToken cancellationToken)
     {
+        var command = new CreateCommentCommand(request.PostId, request.Content);
+
         var result = await Sender.Send(command, cancellationToken);
+
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetCommentById), new { id = result.Value }, result.Value)
             : HandleFailure(result.Error);

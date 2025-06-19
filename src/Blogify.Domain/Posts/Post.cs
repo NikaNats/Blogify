@@ -151,15 +151,9 @@ public sealed class Post : AuditableEntity
         return Result.Success();
     }
 
-    /// <summary>
-    ///     Archives the post, moving it to an archived state. This prevents further modifications or publishing.
-    ///     This action is idempotent; archiving an already-archived post will succeed without change.
-    /// </summary>
-    /// <returns>A success result.</returns>
     public Result Archive()
     {
         if (Status == PublicationStatus.Archived)
-            // The post is already in the desired state. Succeed without doing anything.
             return Result.Success();
 
         Status = PublicationStatus.Archived;
@@ -184,7 +178,7 @@ public sealed class Post : AuditableEntity
 
         if (_categoryIds.Remove(category.Id)) RaiseDomainEvent(new PostCategoryRemovedDomainEvent(Id, category.Id));
 
-        return Result.Success(); // Idempotent: If it's not there, the state is already correct.
+        return Result.Success();
     }
 
     public Result AddTag(Tag tag)
@@ -226,7 +220,7 @@ public sealed class Post : AuditableEntity
         return Status != PublicationStatus.Archived;
     }
 
-    private bool CanReceiveComments()
+    public bool CanReceiveComments()
     {
         return Status == PublicationStatus.Published;
     }

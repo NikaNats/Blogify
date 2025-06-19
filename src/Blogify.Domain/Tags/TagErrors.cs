@@ -9,7 +9,7 @@ public static class TagErrors
         "Post cannot be null."
     );
 
-    public static readonly Error DuplicateName = Error.Validation(
+    public static readonly Error DuplicateName = Error.Conflict(
         "Tag.DuplicateName",
         "A tag with the same name already exists.");
 
