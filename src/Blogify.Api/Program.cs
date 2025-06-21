@@ -5,26 +5,40 @@ using Blogify.Application;
 using Blogify.Infrastructure;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
+using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration));
 
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("DefaultCorsPolicy", policy =>
     {
         policy.AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Optimal);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Optimal);
 
 builder.Services.AddOpenApi(options =>
 {
@@ -54,10 +68,23 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddSwaggerGen();
 builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
-
 var app = builder.Build();
+
+app.UseCustomExceptionHandler();
+
+if (!app.Environment.IsDevelopment()) app.UseHsts();
+
+//app.UseHttpsRedirection();
+app.UseResponseCompression();
+
+app.UseSerilogRequestLogging();
+app.UseRequestContextLogging();
+
+app.UseRouting();
+app.UseCors("DefaultCorsPolicy");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -71,7 +98,6 @@ if (app.Environment.IsDevelopment())
     }
 
     app.MapScalarApiReference();
-
     app.MapOpenApi();
 
     var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
@@ -87,21 +113,6 @@ if (app.Environment.IsDevelopment())
     // REMARK: Uncomment if you want to seed initial data.
     // await app.SeedDataAsync();
 }
-
-if (!app.Environment.IsDevelopment()) app.UseHsts();
-
-app.UseCustomExceptionHandler();
-
-app.UseSerilogRequestLogging();
-
-app.UseRequestContextLogging();
-
-app.UseCors("AllowAll");
-
-// app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 
