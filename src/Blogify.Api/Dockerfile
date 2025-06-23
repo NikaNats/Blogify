@@ -4,21 +4,21 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER $APP_UID
 WORKDIR /app
-EXPOSE 5000
-EXPOSE 5001
+EXPOSE 8080
+EXPOSE 8081
 
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Blogify.Api/Blogify.Api.csproj", "Blogify.Api/"]
-COPY ["Blogify.Application/Blogify.Application.csproj", "Blogify.Application/"]
-COPY ["Blogify.Domain/Blogify.Domain.csproj", "Blogify.Domain/"]
-COPY ["Blogify.Infrastructure/Blogify.Infrastructure.csproj", "Blogify.Infrastructure/"]
-RUN dotnet restore "./Blogify.Api/Blogify.Api.csproj"
+COPY ["src/Blogify.Api/Blogify.Api.csproj", "src/Blogify.Api/"]
+COPY ["src/Blogify.Application/Blogify.Application.csproj", "src/Blogify.Application/"]
+COPY ["src/Blogify.Domain/Blogify.Domain.csproj", "src/Blogify.Domain/"]
+COPY ["src/Blogify.Infrastructure/Blogify.Infrastructure.csproj", "src/Blogify.Infrastructure/"]
+RUN dotnet restore "./src/Blogify.Api/Blogify.Api.csproj"
 COPY . .
-WORKDIR "/src/Blogify.Api"
+WORKDIR "/src/src/Blogify.Api"
 RUN dotnet build "./Blogify.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage

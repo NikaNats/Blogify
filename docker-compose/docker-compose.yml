@@ -1,9 +1,8 @@
 services:
   blogify.api:
-    image: blogify/api:${API_VERSION:-latest}
     build:
-      context: ../src/Blogify.Api
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: src/Blogify.Api/Dockerfile
     depends_on:
       blogify-db:
         condition: service_healthy
@@ -17,12 +16,16 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 5000
       # ASPNETCORE_HTTPS_PORTS: 5001
+      # OpenTelemetry Configuration
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://blogify-aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     ports:
       - "5000:5000"
-      # - "5001:5001"
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
       interval: 30s
@@ -115,6 +118,20 @@ services:
     networks:
       - blogify-network
 
+  blogify-aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    user: "0:0" 
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
+    ports:
+      - "18888:18888"
+      - "18889:18889" # OTLP/gRPC
+    volumes:
+      - aspire-dashboard-data:/home/app/.aspnet/DataProtection-Keys
+    restart: unless-stopped
+    networks:
+      - blogify-network
+
 volumes:
   blogify-db-data:
     driver: local
@@ -124,6 +141,8 @@ volumes:
     driver: local
   blogify-seq-data:
     driver: local
+  aspire-dashboard-data:
+      driver: local
 
 networks:
   blogify-network:

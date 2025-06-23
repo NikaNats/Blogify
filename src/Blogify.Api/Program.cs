@@ -1,4 +1,6 @@
+using System.IO.Compression;
 using Asp.Versioning.ApiExplorer;
+using Blogify.Api.Controllers;
 using Blogify.Api.Extensions;
 using Blogify.Api.OpenApi;
 using Blogify.Application;
@@ -9,12 +11,10 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
-using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ReadFrom.Configuration(context.Configuration));
+builder.AddOpenTelemetryMonitoring("Blogify.Api", ApiVersions.V1.ToString());
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
