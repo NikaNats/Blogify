@@ -27,23 +27,22 @@ internal abstract class Repository<TEntity>(ApplicationDbContext dbContext)
         ArgumentNullException.ThrowIfNull(entity);
 
         await _dbSet.AddAsync(entity, cancellationToken);
-        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public virtual async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public virtual Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
         _dbSet.Update(entity);
-        await DbContext.SaveChangesAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 
-    public virtual async Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public virtual Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
         _dbSet.Remove(entity);
-        await DbContext.SaveChangesAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate,

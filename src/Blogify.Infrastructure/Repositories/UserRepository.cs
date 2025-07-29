@@ -12,7 +12,6 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) : Repositor
         foreach (var role in user.Roles) DbContext.Attach(role);
 
         await DbContext.AddAsync(user, cancellationToken);
-        await DbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
