@@ -35,15 +35,19 @@ internal sealed class AuthorizationService(ApplicationDbContext dbContext, ICach
 
         if (cachedPermissions is not null) return cachedPermissions;
 
-        var permissions = await dbContext.Set<User>()
+        // Make resilient: if user record is missing locally, return empty set (no permissions)
+        var permissionNames = await dbContext.Set<User>()
             .Where(u => u.IdentityId == identityId)
-            .SelectMany(u => u.Roles.Select(r => r.Permissions))
-            .FirstAsync();
+            .Select(u => u.Roles
+                .SelectMany(r => r.Permissions)
+                .Select(p => p.Name)
+                .ToHashSet())
+            .FirstOrDefaultAsync();
 
-        var permissionsSet = permissions.Select(p => p.Name).ToHashSet();
+        permissionNames ??= new HashSet<string>();
 
-        await cacheService.SetAsync(cacheKey, permissionsSet);
+        await cacheService.SetAsync(cacheKey, permissionNames);
 
-        return permissionsSet;
+        return permissionNames;
     }
 }

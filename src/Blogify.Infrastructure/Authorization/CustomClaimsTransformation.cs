@@ -22,12 +22,16 @@ internal sealed class CustomClaimsTransformation(IServiceProvider serviceProvide
         var identityId = principal.GetIdentityId();
 
         var userRoles = await authorizationService.GetRolesForUserAsync(identityId);
+        // If the user does not (yet) exist in the local database, treat them as having no local roles.
+        if (userRoles is null)
+            return principal; // Gracefully continue without adding local claims
 
         var claimsIdentity = new ClaimsIdentity();
 
         claimsIdentity.AddClaim(new Claim(JwtRegisteredClaimNames.Sub, userRoles.UserId.ToString()));
 
-        foreach (var role in userRoles.Roles) claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, role.Name));
+        foreach (var role in userRoles.Roles)
+            claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, role.Name));
 
         principal.AddIdentity(claimsIdentity);
 

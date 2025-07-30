@@ -9,13 +9,11 @@ internal sealed class UserContext(IHttpContextAccessor httpContextAccessor) : IU
         httpContextAccessor
             .HttpContext?
             .User
-            .GetUserId() ??
-        throw new ApplicationException("User context is unavailable");
+            .GetUserId() ?? Guid.Empty; // Return Guid.Empty if unavailable; handlers can interpret as anonymous
 
     public string IdentityId =>
         httpContextAccessor
             .HttpContext?
             .User
-            .GetIdentityId() ??
-        throw new ApplicationException("User context is unavailable");
+            .GetIdentityId() ?? string.Empty; // Empty string signals absence without throwing
 }
