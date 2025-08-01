@@ -1,9 +1,10 @@
-﻿using Blogify.Application.Abstractions.Clock;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
+using Blogify.Application.Abstractions.Clock;
 using Blogify.Application.Exceptions;
 using Blogify.Domain.Abstractions;
 using Blogify.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 
 namespace Blogify.Infrastructure;
 
@@ -12,9 +13,11 @@ public sealed class ApplicationDbContext(
     IDateTimeProvider dateTimeProvider)
     : DbContext(options), IUnitOfWork
 {
-    private static readonly JsonSerializerSettings JsonSerializerSettings = new()
+    private static readonly JsonSerializerOptions DomainEventSerializerOptions = new(JsonSerializerDefaults.Web)
     {
-        TypeNameHandling = TypeNameHandling.All
+        // JsonDerivedType attributes on IDomainEvent enable safe polymorphism.
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+        WriteIndented = false
     };
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -57,7 +60,7 @@ public sealed class ApplicationDbContext(
                 Guid.NewGuid(),
                 dateTimeProvider.UtcNow,
                 domainEvent.GetType().Name,
-                JsonConvert.SerializeObject(domainEvent, JsonSerializerSettings)))
+                JsonSerializer.Serialize(domainEvent, typeof(IDomainEvent), DomainEventSerializerOptions)))
             .ToList();
 
         AddRange(outboxMessages);

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.Json;
 using Blogify.Application.Abstractions.Clock;
 using Blogify.Application.Abstractions.Data;
 using Blogify.Domain.Abstractions;
@@ -6,7 +7,6 @@ using Dapper;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Quartz;
 
 namespace Blogify.Infrastructure.Outbox;
@@ -20,10 +20,7 @@ internal sealed class ProcessOutboxMessagesJob(
     ILogger<ProcessOutboxMessagesJob> logger)
     : IJob
 {
-    private static readonly JsonSerializerSettings JsonSerializerSettings = new()
-    {
-        TypeNameHandling = TypeNameHandling.All
-    };
+    private static readonly JsonSerializerOptions DomainEventSerializerOptions = new();
 
     private readonly OutboxOptions _outboxOptions = outboxOptions.Value;
 
@@ -42,9 +39,12 @@ internal sealed class ProcessOutboxMessagesJob(
 
             try
             {
-                var domainEvent = JsonConvert.DeserializeObject<IDomainEvent>(
-                    outboxMessage.Content,
-                    JsonSerializerSettings)!;
+                var domainEvent = JsonSerializer.Deserialize<IDomainEvent>(outboxMessage.Content, DomainEventSerializerOptions);
+
+                if (domainEvent is null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize domain event.");
+                }
 
                 await publisher.Publish(domainEvent, context.CancellationToken);
             }
@@ -71,7 +71,7 @@ internal sealed class ProcessOutboxMessagesJob(
         IDbTransaction transaction)
     {
         var sql = $"""
-                   SELECT id, content
+                   SELECT id, type, content
                    FROM outbox_messages
                    WHERE processed_on_utc IS NULL
                    ORDER BY occurred_on_utc
@@ -109,5 +109,5 @@ internal sealed class ProcessOutboxMessagesJob(
             transaction);
     }
 
-    internal sealed record OutboxMessageResponse(Guid Id, string Content);
+    internal sealed record OutboxMessageResponse(Guid Id, string Type, string Content);
 }
