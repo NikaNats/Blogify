@@ -70,11 +70,41 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
 var app = builder.Build();
 
+// Apply DB migrations on startup if enabled (with retry for container orchestration race conditions)
+var migrateOpt = builder.Configuration.GetSection("Database");
+if (migrateOpt.GetValue<bool>("MigrateOnStartup"))
+{
+    var maxRetries = migrateOpt.GetValue<int?>("MigrationMaxRetries") ?? 5;
+    var baseDelay = TimeSpan.FromSeconds(migrateOpt.GetValue<int?>("MigrationBaseDelaySeconds") ?? 2);
+    var attempt = 0;
+    while (true)
+    {
+        try
+        {
+            app.ApplyMigrations();
+            Log.Information("Database migrations applied successfully on startup (attempt {Attempt})", attempt + 1);
+            break;
+        }
+        catch (Exception ex)
+        {
+            attempt++;
+            if (attempt >= maxRetries)
+            {
+                Log.Error(ex, "Failed to apply database migrations after {Attempts} attempts", attempt);
+                break; // Fail silently; app may still start (or you can rethrow)
+            }
+            var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
+            Log.Warning(ex, "Migration attempt {Attempt} failed. Retrying in {Delay}...", attempt, delay);
+            await Task.Delay(delay);
+        }
+    }
+}
+
 app.UseCustomExceptionHandler();
 
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 
-//app.UseHttpsRedirection();
+// HTTPS redirection intentionally disabled in dev compose (reverse proxy/TLS termination can be added in front)
 app.UseResponseCompression();
 
 app.UseSerilogRequestLogging();
@@ -88,15 +118,6 @@ app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
-    try
-    {
-        app.ApplyMigrations();
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while applying migrations.");
-    }
-
     app.MapScalarApiReference();
     app.MapOpenApi();
 
@@ -104,14 +125,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        foreach (var description in provider.ApiVersionDescriptions)
-            options.SwaggerEndpoint(
-                $"/swagger/{description.GroupName}/swagger.json",
-                description.GroupName.ToUpperInvariant());
+        provider.ApiVersionDescriptions
+            .Select(d => d.GroupName)
+            .ToList()
+            .ForEach(g => options.SwaggerEndpoint($"/swagger/{g}/swagger.json", g.ToUpperInvariant()));
     });
-
-    // REMARK: Uncomment if you want to seed initial data.
-    // await app.SeedDataAsync();
 }
 
 app.MapControllers();
@@ -121,9 +139,6 @@ app.MapHealthChecks("health", new HealthCheckOptions
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
-app.Run();
+await app.RunAsync();
 
-namespace Blogify.Api
-{
-    public class Program;
-}
+public partial class Program { }

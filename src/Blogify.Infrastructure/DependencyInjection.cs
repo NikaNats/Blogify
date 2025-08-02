@@ -177,5 +177,8 @@ public static class DependencyInjection
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         services.ConfigureOptions<ProcessOutboxMessagesJobSetup>();
+
+    // Outbox data access abstraction (enables unit tests without a real DB)
+    services.AddTransient<IOutboxDataAccess, DapperOutboxDataAccess>();
     }
 }

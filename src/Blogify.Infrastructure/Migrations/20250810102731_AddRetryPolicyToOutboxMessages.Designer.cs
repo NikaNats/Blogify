@@ -3,6 +3,7 @@ using System;
 using Blogify.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Blogify.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250810102731_AddRetryPolicyToOutboxMessages")]
+    partial class AddRetryPolicyToOutboxMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,14 +355,6 @@ namespace Blogify.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("error");
 
-                    b.Property<string>("LockedBy")
-                        .HasColumnType("text")
-                        .HasColumnName("locked_by");
-
-                    b.Property<DateTime?>("LockedUntilUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until_utc");
-
                     b.Property<DateTime?>("NextRetryUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_retry_utc");
@@ -379,9 +374,6 @@ namespace Blogify.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_outbox_messages");
-
-                    b.HasIndex("LockedUntilUtc", "ProcessedOnUtc")
-                        .HasDatabaseName("ix_outbox_messages_locked_until_utc_processed_on_utc");
 
                     b.HasIndex("ProcessedOnUtc", "NextRetryUtc", "Attempts")
                         .HasDatabaseName("ix_outbox_messages_processed_on_utc_next_retry_utc_attempts");

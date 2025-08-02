@@ -1,9 +1,6 @@
-﻿using System.Data;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Blogify.Application.Abstractions.Clock;
-using Blogify.Application.Abstractions.Data;
 using Blogify.Domain.Abstractions;
-using Dapper;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,101 +10,63 @@ namespace Blogify.Infrastructure.Outbox;
 
 [DisallowConcurrentExecution]
 internal sealed class ProcessOutboxMessagesJob(
-    ISqlConnectionFactory sqlConnectionFactory,
+    IOutboxDataAccess dataAccess,
     IPublisher publisher,
     IDateTimeProvider dateTimeProvider,
     IOptions<OutboxOptions> outboxOptions,
-    ILogger<ProcessOutboxMessagesJob> logger)
-    : IJob
+    ILogger<ProcessOutboxMessagesJob> logger) : IJob
 {
     private static readonly JsonSerializerOptions DomainEventSerializerOptions = new();
-
     private readonly OutboxOptions _outboxOptions = outboxOptions.Value;
+    private const int MaxRetryAttempts = 5;
 
     public async Task Execute(IJobExecutionContext context)
     {
         logger.LogInformation("Beginning to process outbox messages");
 
-        using var connection = sqlConnectionFactory.CreateConnection();
-        using var transaction = connection.BeginTransaction();
+    var workerId = Environment.MachineName + "-" + Guid.NewGuid().ToString("N").Substring(0, 6);
+    var lockDuration = TimeSpan.FromMinutes(2); // configurable future option
+    var outboxMessages = await dataAccess.ClaimPendingAsync(_outboxOptions.BatchSize, dateTimeProvider.UtcNow, MaxRetryAttempts, lockDuration, workerId, context.CancellationToken);
 
-        var outboxMessages = await GetOutboxMessagesAsync(connection, transaction);
-
-        foreach (var outboxMessage in outboxMessages)
-        {
+    foreach (var message in outboxMessages)
+    {
             Exception? exception = null;
-
             try
             {
-                var domainEvent = JsonSerializer.Deserialize<IDomainEvent>(outboxMessage.Content, DomainEventSerializerOptions);
-
+        var domainEvent = JsonSerializer.Deserialize<IDomainEvent>(message.Content, DomainEventSerializerOptions);
                 if (domainEvent is null)
                 {
-                    throw new InvalidOperationException("Failed to deserialize domain event.");
+                    throw new InvalidOperationException($"Failed to deserialize domain event {message.Id}");
                 }
-
                 await publisher.Publish(domainEvent, context.CancellationToken);
             }
-            catch (Exception caughtException)
+            catch (Exception ex)
             {
-                logger.LogError(
-                    caughtException,
-                    "Exception while processing outbox message {MessageId}",
-                    outboxMessage.Id);
-
-                exception = caughtException;
+                exception = ex;
+        logger.LogError(ex, "Exception while processing outbox message {MessageId} (Attempt {Attempt})", message.Id, message.Attempts + 1);
             }
-
-            await UpdateOutboxMessageAsync(connection, transaction, outboxMessage, exception);
+            await UpdateOutboxMessageAsync(message, exception, workerId, context.CancellationToken);
         }
-
-        transaction.Commit();
 
         logger.LogInformation("Completed processing outbox messages");
     }
 
-    private async Task<IReadOnlyList<OutboxMessageResponse>> GetOutboxMessagesAsync(
-        IDbConnection connection,
-        IDbTransaction transaction)
+    private async Task UpdateOutboxMessageAsync(OutboxMessageRecord message, Exception? exception, string workerId, CancellationToken ct)
     {
-        var sql = $"""
-                   SELECT id, type, content
-                   FROM outbox_messages
-                   WHERE processed_on_utc IS NULL
-                   ORDER BY occurred_on_utc
-                   LIMIT {_outboxOptions.BatchSize}
-                   FOR UPDATE
-                   """;
+        if (exception is null)
+        {
+            await dataAccess.MarkSuccessAsync(message.Id, dateTimeProvider.UtcNow, workerId, ct);
+            return;
+        }
 
-        var outboxMessages = await connection.QueryAsync<OutboxMessageResponse>(
-            sql,
-            transaction: transaction);
+        var newAttempts = message.Attempts + 1;
+        if (newAttempts >= MaxRetryAttempts)
+        {
+            await dataAccess.MarkPoisonAsync(message.Id, newAttempts, dateTimeProvider.UtcNow, $"Poison message after {newAttempts} attempts: {exception}", workerId, ct);
+            return;
+        }
 
-        return outboxMessages.ToList();
+        var nextRetryDelay = TimeSpan.FromSeconds(Math.Pow(2, newAttempts) * 10); // 10s,20s,40s,...
+    await dataAccess.MarkRetryAsync(message.Id, newAttempts, dateTimeProvider.UtcNow.Add(nextRetryDelay), exception.ToString(), workerId, ct);
     }
-
-    private async Task UpdateOutboxMessageAsync(
-        IDbConnection connection,
-        IDbTransaction transaction,
-        OutboxMessageResponse outboxMessage,
-        Exception? exception)
-    {
-        const string sql = @"
-            UPDATE outbox_messages
-            SET processed_on_utc = @ProcessedOnUtc,
-                error = @Error
-            WHERE id = @Id";
-
-        await connection.ExecuteAsync(
-            sql,
-            new
-            {
-                outboxMessage.Id,
-                ProcessedOnUtc = dateTimeProvider.UtcNow,
-                Error = exception?.ToString()
-            },
-            transaction);
-    }
-
-    internal sealed record OutboxMessageResponse(Guid Id, string Type, string Content);
 }
