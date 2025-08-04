@@ -1,5 +1,7 @@
 ﻿using Blogify.Api.Middleware;
 using Blogify.Infrastructure;
+using Blogify.Application.Users.RegisterUser; // for RegisterUserCommand masking
+using Blogify.Api.Controllers.Users; // for LogInUserRequest masking
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using OpenTelemetry.Metrics;
@@ -44,6 +46,21 @@ internal static class ApplicationBuilderExtensions
         {
             loggerConfig.ReadFrom.Configuration(context.Configuration);
 
+            // Mask sensitive data (PII / credentials) at destructuring time
+            loggerConfig
+                .Destructure.ByTransforming<RegisterUserCommand>(c => new
+                {
+                    c.Email,
+                    c.FirstName,
+                    c.LastName,
+                    Password = "*** MASKED ***"
+                })
+                .Destructure.ByTransforming<LogInUserRequest>(r => new
+                {
+                    r.Email,
+                    Password = "*** MASKED ***"
+                });
+
             loggerConfig.WriteTo.OpenTelemetry(options =>
             {
                 options.ResourceAttributes = resourceBuilder.Build().Attributes
@@ -57,9 +74,26 @@ internal static class ApplicationBuilderExtensions
                 tracing
                     .SetResourceBuilder(resourceBuilder)
                     .AddHttpClientInstrumentation()
-                    .AddAspNetCoreInstrumentation()
-                    .AddNpgsql()
-                    .AddOtlpExporter();
+                    .AddAspNetCoreInstrumentation(options =>
+                    {
+                        // Capture exceptions as span events for better diagnostics
+                        options.RecordException = true;
+                    })
+                    .AddNpgsql();
+
+                // Environment-based adaptive sampling:
+                // - Development: AlwaysOn for full fidelity debugging.
+                // - Non-development: 10% head-based, parent-based to preserve existing traces.
+                if (!builder.Environment.IsDevelopment())
+                {
+                    tracing.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(0.1)));
+                }
+                else
+                {
+                    tracing.SetSampler(new AlwaysOnSampler());
+                }
+
+                tracing.AddOtlpExporter();
             })
             .WithMetrics(metrics =>
             {
