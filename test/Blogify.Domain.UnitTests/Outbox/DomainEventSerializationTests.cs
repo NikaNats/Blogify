@@ -8,7 +8,8 @@ namespace Blogify.Domain.UnitTests.Outbox;
 
 public class DomainEventSerializationTests
 {
-    private readonly JsonSerializerOptions _options = new();
+    // Local options: domain tests should not depend on Infrastructure layer
+    private readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     [Fact]
     public void Serialize_And_Deserialize_Derived_Event_Preserves_Type()
