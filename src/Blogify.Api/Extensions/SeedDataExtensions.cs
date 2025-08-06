@@ -25,14 +25,12 @@ internal static class SeedDataExtensions
         var services = scope.ServiceProvider;
 
         var configuration = services.GetRequiredService<IConfiguration>();
-
         if (configuration.GetValue<bool>(DisableDataSeedingKey)) return;
 
         var sqlConnectionFactory = services.GetRequiredService<ISqlConnectionFactory>();
         using var connection = sqlConnectionFactory.CreateConnection();
 
         var faker = new Faker();
-
         await SeedDataInternalAsync(connection, faker);
     }
 
@@ -48,30 +46,71 @@ internal static class SeedDataExtensions
             var postIds = await SeedPostsAsync(connection, transaction, faker, userIds);
             await SeedCommentsAsync(connection, transaction, faker, postIds, userIds);
 
-            await SeedPostCategoriesAsync(connection, transaction, postIds, categoryIds, faker);
-            await SeedPostTagsAsync(connection, transaction, postIds, tagIds, faker);
+            // Build random associations (1-3 categories / tags per post) directly into array columns
+            var postCategoryRelations = postIds
+                .SelectMany(postId => categoryIds
+                    .OrderBy(_ => Guid.NewGuid())
+                    .Take(faker.Random.Int(1, 3))
+                    .Select(categoryId => new { post_id = postId, category_id = categoryId }))
+                .ToList();
+
+            var postTagRelations = postIds
+                .SelectMany(postId => tagIds
+                    .OrderBy(_ => Guid.NewGuid())
+                    .Take(faker.Random.Int(1, 3))
+                    .Select(tagId => new { post_id = postId, tag_id = tagId }))
+                .ToList();
+
+            // Use temporary tables then aggregate into uuid[] columns (category_ids, tag_ids)
+            if (postCategoryRelations.Count > 0)
+            {
+                await connection.ExecuteAsync("CREATE TEMP TABLE temp_post_categories (post_id UUID, category_id UUID);", transaction: transaction);
+                await connection.ExecuteAsync("INSERT INTO temp_post_categories (post_id, category_id) VALUES (@post_id, @category_id);", postCategoryRelations, transaction: transaction);
+                await connection.ExecuteAsync(@"UPDATE posts p
+SET category_ids = sub.category_ids
+FROM (
+    SELECT post_id, array_agg(category_id) AS category_ids
+    FROM temp_post_categories
+    GROUP BY post_id
+) sub
+WHERE p.id = sub.post_id;", transaction: transaction);
+                await connection.ExecuteAsync("DROP TABLE temp_post_categories;", transaction: transaction);
+            }
+
+            if (postTagRelations.Count > 0)
+            {
+                await connection.ExecuteAsync("CREATE TEMP TABLE temp_post_tags (post_id UUID, tag_id UUID);", transaction: transaction);
+                await connection.ExecuteAsync("INSERT INTO temp_post_tags (post_id, tag_id) VALUES (@post_id, @tag_id);", postTagRelations, transaction: transaction);
+                await connection.ExecuteAsync(@"UPDATE posts p
+SET tag_ids = sub.tag_ids
+FROM (
+    SELECT post_id, array_agg(tag_id) AS tag_ids
+    FROM temp_post_tags
+    GROUP BY post_id
+) sub
+WHERE p.id = sub.post_id;", transaction: transaction);
+                await connection.ExecuteAsync("DROP TABLE temp_post_tags;", transaction: transaction);
+            }
 
             transaction.Commit();
         }
         catch (Exception ex)
         {
             transaction.Rollback();
-            throw new ApplicationException("An error occurred while seeding data.", ex);
+            throw new InvalidOperationException("An error occurred while seeding data.", ex);
         }
     }
 
-    private static async Task<List<Guid>> SeedCategoriesAsync(IDbConnection connection, IDbTransaction transaction,
-        Faker faker)
+    private static async Task<List<Guid>> SeedCategoriesAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
     {
-        var categories = GenerateEntities(faker, DefaultNumberOfCategories, () => Category.Create(
+    var categories = GenerateEntities(DefaultNumberOfCategories, () => Category.Create(
             faker.Commerce.Department(),
             faker.Commerce.ProductDescription()
         ).Value);
 
-        const string sql = @"
-    INSERT INTO categories (id, name, description, created_at, last_modified_at)
-    VALUES (@Id, @Name, @Description, @CreatedAt, @LastModifiedAt)
-    ON CONFLICT (id) DO NOTHING;";
+        const string sql = @"INSERT INTO categories (id, name, description, created_at, last_modified_at)
+VALUES (@Id, @Name, @Description, @CreatedAt, @LastModifiedAt)
+ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, categories.Select(c => new
         {
@@ -85,17 +124,15 @@ internal static class SeedDataExtensions
         return categories.Select(c => c.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedTagsAsync(IDbConnection connection, IDbTransaction transaction,
-        Faker faker)
+    private static async Task<List<Guid>> SeedTagsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
     {
-        var tags = GenerateEntities(faker, DefaultNumberOfTags, () => Tag.Create(
+    var tags = GenerateEntities(DefaultNumberOfTags, () => Tag.Create(
             faker.Lorem.Word()
         ).Value);
 
-        const string sql = @"
-    INSERT INTO tags (id, name, created_at, last_modified_at)
-    VALUES (@Id, @Name, @CreatedAt, @LastModifiedAt)
-    ON CONFLICT (id) DO NOTHING;";
+        const string sql = @"INSERT INTO tags (id, name, created_at, last_modified_at)
+VALUES (@Id, @Name, @CreatedAt, @LastModifiedAt)
+ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, tags.Select(t => new
         {
@@ -108,19 +145,17 @@ internal static class SeedDataExtensions
         return tags.Select(t => t.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedUsersAsync(IDbConnection connection, IDbTransaction transaction,
-        Faker faker)
+    private static async Task<List<Guid>> SeedUsersAsync(IDbConnection connection, IDbTransaction transaction, Faker faker)
     {
-        var users = GenerateEntities(faker, DefaultNumberOfUsers, () => User.Create(
+    var users = GenerateEntities(DefaultNumberOfUsers, () => User.Create(
             FirstName.Create(faker.Name.FirstName()).Value,
             LastName.Create(faker.Name.LastName()).Value,
             Email.Create(faker.Internet.Email()).Value
         ).Value);
 
-        const string sql = @"
-        INSERT INTO users (id, first_name, last_name, email, identity_id)
-        VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId)
-        ON CONFLICT (identity_id) DO NOTHING;";
+        const string sql = @"INSERT INTO users (id, first_name, last_name, email, identity_id)
+VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId)
+ON CONFLICT (identity_id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, users.Select(u => new
         {
@@ -134,20 +169,19 @@ internal static class SeedDataExtensions
         return users.Select(u => u.Id).ToList();
     }
 
-    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction,
-        Faker faker, List<Guid> userIds)
+    private static async Task<List<Guid>> SeedPostsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> userIds)
     {
-        var posts = GenerateEntities(faker, DefaultNumberOfPosts, () => Post.Create(
+    var posts = GenerateEntities(DefaultNumberOfPosts, () => Post.Create(
             faker.Lorem.Sentence(5),
             faker.Lorem.Paragraphs(),
             faker.Lorem.Sentence(10),
             faker.PickRandom(userIds)
         ).Value);
 
-        const string sql = @"
-        INSERT INTO posts (id, title, content, excerpt, slug, author_id, created_at, last_modified_at, published_at, status)
-        VALUES (@Id, @Title, @Content, @Excerpt, @Slug, @AuthorId, @CreatedAt, @LastModifiedAt, @PublishedAt, @Status)
-        ON CONFLICT (id) DO NOTHING;";
+        // Initialize category_ids and tag_ids as empty uuid[] arrays
+        const string sql = @"INSERT INTO posts (id, title, content, excerpt, slug, author_id, created_at, last_modified_at, published_at, status, category_ids, tag_ids)
+VALUES (@Id, @Title, @Content, @Excerpt, @Slug, @AuthorId, @CreatedAt, @LastModifiedAt, @PublishedAt, @Status, '{}'::uuid[], '{}'::uuid[])
+ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, posts.Select(p => new
         {
@@ -155,7 +189,7 @@ internal static class SeedDataExtensions
             Title = p.Title.Value,
             Content = p.Content.Value,
             Excerpt = p.Excerpt.Value,
-            Slug = p.Title.Value,
+            Slug = p.Slug.Value,
             p.AuthorId,
             p.CreatedAt,
             LastModifiedAt = (DateTime?)null,
@@ -166,24 +200,22 @@ internal static class SeedDataExtensions
         return posts.Select(p => p.Id).ToList();
     }
 
-    private static async Task SeedCommentsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker,
-        List<Guid> postIds, List<Guid> userIds)
+    private static async Task SeedCommentsAsync(IDbConnection connection, IDbTransaction transaction, Faker faker, List<Guid> postIds, List<Guid> userIds)
     {
-        var comments = GenerateEntities(faker, DefaultNumberOfComments, () => Comment.Create(
+    var comments = GenerateEntities(DefaultNumberOfComments, () => Comment.Create(
             faker.Lorem.Sentence(faker.Random.Int(5, 15)),
             faker.PickRandom(userIds),
             faker.PickRandom(postIds)
         ).Value);
 
-        const string sql = @"
-        INSERT INTO comments (id, content_value, author_id, post_id, created_at, last_modified_at)
-        VALUES (@Id, @Content, @AuthorId, @PostId, @CreatedAt, @LastModifiedAt)
-        ON CONFLICT (id) DO NOTHING;";
+        const string sql = @"INSERT INTO comments (id, content_value, author_id, post_id, created_at, last_modified_at)
+VALUES (@Id, @Content, @AuthorId, @PostId, @CreatedAt, @LastModifiedAt)
+ON CONFLICT (id) DO NOTHING;";
 
         await connection.ExecuteAsync(sql, comments.Select(c => new
         {
             c.Id,
-            Content = c.Content.Value, // Ensure this is a simple type (e.g., string)
+            Content = c.Content.Value,
             c.AuthorId,
             c.PostId,
             c.CreatedAt,
@@ -191,54 +223,6 @@ internal static class SeedDataExtensions
         }), transaction);
     }
 
-    private static async Task SeedPostCategoriesAsync(IDbConnection connection, IDbTransaction transaction,
-        List<Guid> postIds, List<Guid> categoryIds, Faker faker)
-    {
-        var postCategories = postIds
-            .SelectMany(postId => categoryIds
-                .OrderBy(_ => Guid.NewGuid())
-                .Take(faker.Random.Int(1, 3))
-                .Select(categoryId => new
-                {
-                    post_id = postId,
-                    category_id = categoryId
-                }))
-            .ToList();
-
-        const string sql = @"
-    INSERT INTO blog.postcategories (post_id, category_id)
-    VALUES (@post_id, @category_id)
-    ON CONFLICT (post_id, category_id) DO NOTHING;";
-
-        await connection.ExecuteAsync(sql, postCategories, transaction);
-    }
-
-    private static async Task SeedPostTagsAsync(IDbConnection connection, IDbTransaction transaction,
-        List<Guid> postIds, List<Guid> tagIds, Faker faker)
-    {
-        var postTags = postIds
-            .SelectMany(postId => tagIds
-                .OrderBy(_ => Guid.NewGuid()) // Randomize tag selection
-                .Take(faker.Random.Int(1, 3)) // Assign 1-3 tags per post
-                .Select(tagId => new
-                {
-                    post_id = postId,
-                    tag_id = tagId
-                }))
-            .ToList();
-
-        const string sql = @"
-    INSERT INTO blog.posttags (post_id, tag_id)
-    VALUES (@post_id, @tag_id)
-    ON CONFLICT (post_id, tag_id) DO NOTHING;";
-
-        await connection.ExecuteAsync(sql, postTags, transaction);
-    }
-
-    private static List<T> GenerateEntities<T>(Faker faker, int count, Func<T> entityGenerator)
-    {
-        return Enumerable.Range(1, count)
-            .Select(_ => entityGenerator())
-            .ToList();
-    }
+    private static List<T> GenerateEntities<T>(int count, Func<T> entityGenerator) =>
+        Enumerable.Range(1, count).Select(_ => entityGenerator()).ToList();
 }
