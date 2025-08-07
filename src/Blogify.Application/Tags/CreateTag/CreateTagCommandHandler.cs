@@ -4,7 +4,7 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.CreateTag;
 
-internal sealed class CreateTagCommandHandler(ITagRepository tagRepository) : ICommandHandler<CreateTagCommand, Guid>
+internal sealed class CreateTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork) : ICommandHandler<CreateTagCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateTagCommand request, CancellationToken cancellationToken)
     {
@@ -21,6 +21,9 @@ internal sealed class CreateTagCommandHandler(ITagRepository tagRepository) : IC
             return Result.Failure<Guid>(TagErrors.DuplicateName);
 
         await tagRepository.AddAsync(tag, cancellationToken);
+
+        // Save changes to the database
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(tag.Id);
     }
