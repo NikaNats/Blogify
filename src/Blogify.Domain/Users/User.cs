@@ -13,6 +13,7 @@ public sealed class User : AuditableEntity
         FirstName = firstName;
         LastName = lastName;
         Email = email;
+        Status = UserStatus.Pending;
     }
 
     private User()
@@ -22,7 +23,8 @@ public sealed class User : AuditableEntity
     public FirstName FirstName { get; private set; }
     public LastName LastName { get; private set; }
     public Email Email { get; private set; }
-    public string IdentityId { get; private set; } = string.Empty;
+    public string? IdentityId { get; private set; }
+    public UserStatus Status { get; private set; }
 
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
 
@@ -42,10 +44,27 @@ public sealed class User : AuditableEntity
         var user = new User(Guid.NewGuid(), firstName, lastName, emailResult.Value);
 
         user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id));
+        // Also raise a pending registration event so that the outbox processor can
+        // asynchronously provision the identity in the external auth provider.
+        // The password is supplied later from the command handler using ScheduleRegistration.
 
         user.AddRole(Role.Registered);
 
         return Result.Success(user);
+    }
+
+    /// <summary>
+    /// Schedules external identity registration by raising a domain event carrying the required data.
+    /// Password is included in the outbox payload; ensure outbox retention / encryption policies mitigate exposure.
+    /// </summary>
+    public void ScheduleRegistration(string password)
+    {
+        RaiseDomainEvent(new UserPendingRegistrationDomainEvent(
+            Id,
+            Email.Address,
+            FirstName.Value,
+            LastName.Value,
+            password));
     }
 
     public Result AddRole(Role role)
@@ -113,8 +132,19 @@ public sealed class User : AuditableEntity
         return Result.Success();
     }
 
-    public void SetIdentityId(string identityId)
+    public void Activate(string identityId)
     {
+        if (Status == UserStatus.Active)
+        {
+            if (IdentityId == null)
+            {
+                IdentityId = identityId; // fill missing
+            }
+            return; // already active
+        }
+
         IdentityId = identityId;
+        Status = UserStatus.Active;
+        RaiseDomainEvent(new UserActivatedDomainEvent(Id));
     }
 }

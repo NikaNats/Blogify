@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Tags.CreateTag;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Tags;
 using NSubstitute;
 using Shouldly;
@@ -9,11 +10,13 @@ public class CreateTagCommandHandlerTests
 {
     private readonly CreateTagCommandHandler _handler;
     private readonly ITagRepository _tagRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CreateTagCommandHandlerTests()
     {
         _tagRepository = Substitute.For<ITagRepository>();
-        _handler = new CreateTagCommandHandler(_tagRepository);
+        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _handler = new CreateTagCommandHandler(_tagRepository, _unitOfWork);
     }
 
     [Fact]

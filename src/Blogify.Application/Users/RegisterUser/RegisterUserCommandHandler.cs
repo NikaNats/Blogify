@@ -6,8 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Blogify.Application.Users.RegisterUser;
 
-internal sealed class RegisterUserCommandHandler(
-    IAuthenticationService authenticationService,
+public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     ILogger<RegisterUserCommandHandler> logger)
@@ -38,40 +37,14 @@ internal sealed class RegisterUserCommandHandler(
 
         var user = userResult.Value;
 
-        try
-        {
-            var identityId = await authenticationService.RegisterAsync(
-                user,
-                request.Password,
-                cancellationToken);
+    // Raise integration (pending registration) domain event containing required data for external provisioning
+    user.ScheduleRegistration(request.Password);
 
-            user.SetIdentityId(identityId);
+    await userRepository.AddAsync(user, cancellationToken);
+    await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            await userRepository.AddAsync(user, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+    logger.LogInformation("User {Email} queued for external identity provisioning (Pending)", request.Email);
 
-            return Result.Success(user.Id);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to register user {Email} in database after authentication", request.Email);
-
-            if (user.IdentityId != null)
-                try
-                {
-                    await authenticationService.DeleteIdentityAsync(user.IdentityId, cancellationToken);
-                    logger.LogInformation("Rolled back identity {IdentityId} due to persistence failure",
-                        user.IdentityId);
-                }
-                catch (Exception rollbackEx)
-                {
-                    logger.LogError(rollbackEx, "Failed to rollback identity {IdentityId} for user {Email}",
-                        user.IdentityId, request.Email);
-                    // Manual intervention may be required if rollback fails
-                }
-
-            return Result.Failure<Guid>(Error.Failure("User.Registration.Failed",
-                "Failed to register user due to an unexpected error."));
-        }
+    return Result.Success(user.Id);
     }
 }

@@ -28,7 +28,8 @@ public static class UserTests
             result.Value.FirstName.ShouldBe(firstName);
             result.Value.LastName.ShouldBe(lastName);
             result.Value.Email.Address.ShouldBe(email.Address);
-            result.Value.IdentityId.ShouldBeEmpty();
+            result.Value.IdentityId.ShouldBeNull();
+            result.Value.Status.ShouldBe(UserStatus.Pending);
             result.Value.Roles.ShouldContain(r => r == UserData.Registered, 1);
         }
 
@@ -175,7 +176,7 @@ public static class UserTests
             user.Roles.ShouldContain(newRole);
             var events = user.DomainEvents;
             events.Count.ShouldBe(1);
-            var roleEvent = events.First().ShouldBeOfType<RoleAssignedDomainEvent>();
+            var roleEvent = events[0].ShouldBeOfType<RoleAssignedDomainEvent>();
             roleEvent.UserId.ShouldBe(user.Id);
             roleEvent.RoleId.ShouldBe(newRole.Id);
         }
@@ -232,7 +233,7 @@ public static class UserTests
             result.IsSuccess.ShouldBeTrue();
             user.Email.Address.ShouldBe(newEmail.Address);
             user.DomainEvents.Count.ShouldBe(1);
-            var emailEvent = user.DomainEvents.First().ShouldBeOfType<EmailChangedDomainEvent>();
+            var emailEvent = user.DomainEvents[0].ShouldBeOfType<EmailChangedDomainEvent>();
             emailEvent.UserId.ShouldBe(user.Id);
             emailEvent.NewEmail.ShouldBe(newEmail.Address);
         }
@@ -287,52 +288,59 @@ public static class UserTests
         }
     }
 
-    public class SetIdentityIdMethod
+    public class ActivateMethod
     {
         [Fact]
-        public void SetIdentityId_WithValidId_ShouldUpdateIdentityId()
+        public void Activate_FromPending_ShouldSetIdentityIdStatusActiveAndRaiseEvent()
         {
             // Arrange
             var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
+            user.ClearDomainEvents();
             var identityId = UserData.IdentityId;
 
             // Act
-            user.SetIdentityId(identityId);
+            user.Activate(identityId);
 
             // Assert
             user.IdentityId.ShouldBe(identityId);
+            user.Status.ShouldBe(UserStatus.Active);
+            user.DomainEvents.Count.ShouldBe(1);
+            user.DomainEvents[0].ShouldBeOfType<UserActivatedDomainEvent>();
         }
 
         [Fact]
-        public void SetIdentityId_WithMultipleCalls_ShouldUpdateToLatestValue()
+        public void Activate_WhenAlreadyActive_ShouldNotRaiseDuplicateEvent()
         {
             // Arrange
             var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
-            var firstIdentityId = UserData.IdentityId;
-            var secondIdentityId = UserData.SecondIdentityId;
+            user.Activate(UserData.IdentityId);
+            user.ClearDomainEvents();
 
             // Act
-            user.SetIdentityId(firstIdentityId);
-            user.SetIdentityId(secondIdentityId);
+            user.Activate("another-id");
 
             // Assert
-            user.IdentityId.ShouldBe(secondIdentityId);
+            user.IdentityId.ShouldBe(UserData.IdentityId); // unchanged
+            user.Status.ShouldBe(UserStatus.Active);
+            user.DomainEvents.ShouldBeEmpty();
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        public void SetIdentityId_WithNullOrEmptyId_ShouldStillSetValue(int index)
+        [Fact]
+        public void Activate_WhenAlreadyActiveWithoutIdentity_ShouldFillIdentityWithoutEvent()
         {
             // Arrange
             var user = User.Create(UserData.DefaultFirstName, UserData.DefaultLastName, UserData.DefaultEmail).Value;
+            // Force active state without identity (edge case simulation)
+            typeof(User).GetProperty("Status")!.SetValue(user, UserStatus.Active);
+            user.ClearDomainEvents();
 
             // Act
-            user.SetIdentityId(UserData.InvalidNames[index]);
+            user.Activate(UserData.IdentityId);
 
             // Assert
-            user.IdentityId.ShouldBe(UserData.InvalidNames[index]);
+            user.IdentityId.ShouldBe(UserData.IdentityId);
+            user.Status.ShouldBe(UserStatus.Active);
+            user.DomainEvents.ShouldBeEmpty();
         }
     }
 
@@ -355,7 +363,7 @@ public static class UserTests
             user.FirstName.Value.ShouldBe("Jane");
             user.LastName.Value.ShouldBe("Smith");
             user.DomainEvents.Count.ShouldBe(1);
-            var nameEvent = user.DomainEvents.First().ShouldBeOfType<UserNameChangedDomainEvent>();
+            var nameEvent = user.DomainEvents[0].ShouldBeOfType<UserNameChangedDomainEvent>();
             nameEvent.Id.ShouldBe(user.Id);
             nameEvent.OldFirstName.ShouldBe("John");
             nameEvent.OldLastName.ShouldBe("Doe");
@@ -396,7 +404,7 @@ public static class UserTests
             user.FirstName.Value.ShouldBe("Jane");
             user.LastName.ShouldBe(UserData.DefaultLastName);
             user.DomainEvents.Count.ShouldBe(1);
-            var nameEvent = user.DomainEvents.First().ShouldBeOfType<UserNameChangedDomainEvent>();
+            var nameEvent = user.DomainEvents[0].ShouldBeOfType<UserNameChangedDomainEvent>();
             nameEvent.Id.ShouldBe(user.Id);
             nameEvent.OldFirstName.ShouldBe("John");
             nameEvent.FirstNameValue.ShouldBe("Jane");
@@ -479,8 +487,9 @@ public static class UserTests
             var result = Email.Create(longEmail);
 
             // Assert
+            var expected = UserErrors.EmailTooLong;
             result.IsFailure.ShouldBeTrue();
-            result.Error.ShouldBe(UserErrors.EmailTooLong);
+            result.Error.ShouldBe(expected);
         }
 
         [Fact]

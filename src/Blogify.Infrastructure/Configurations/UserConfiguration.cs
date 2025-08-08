@@ -25,7 +25,14 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion(email => email.Address, value => Domain.Users.Email.Create(value).Value);
 
         builder.HasIndex(user => user.Email).IsUnique();
+        builder.Property(user => user.IdentityId)
+            .HasColumnName("identity_id");
 
         builder.HasIndex(user => user.IdentityId).IsUnique();
+
+        builder.Property(user => user.Status)
+            .HasConversion<int>()
+            .HasColumnName("status")
+            .HasComment("The lifecycle status of the user (0=Pending,1=Active)");
     }
 }

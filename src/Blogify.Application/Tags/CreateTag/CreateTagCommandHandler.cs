@@ -4,7 +4,7 @@ using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.CreateTag;
 
-internal sealed class CreateTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork) : ICommandHandler<CreateTagCommand, Guid>
+public sealed class CreateTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork) : ICommandHandler<CreateTagCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateTagCommand request, CancellationToken cancellationToken)
     {
