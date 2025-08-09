@@ -23,9 +23,8 @@ internal sealed class GetPostsByCategoryIdQueryHandler(
         // First, ensure the category itself exists.
         var categoryExists = await categoryRepository.ExistsAsync(c => c.Id == request.CategoryId, cancellationToken);
         if (!categoryExists)
-            // We return an empty list because no posts can exist for a non-existent category.
-            // This is not a failure, but an empty result set.
-            return Result.Success(new List<PostResponse>());
+            // Primary resource (Category) does not exist => propagate NotFound failure for consistent API semantics.
+            return Result.Failure<List<PostResponse>>(CategoryError.NotFound);
 
         // NOTE: A more efficient repository method would be `GetPostsByCategoryIdAsync`.
         // We are simulating this with a Where clause on GetAllAsync for this example.

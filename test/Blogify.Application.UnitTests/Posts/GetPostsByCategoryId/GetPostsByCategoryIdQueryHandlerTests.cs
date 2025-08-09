@@ -60,7 +60,7 @@ public class GetPostsByCategoryIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenCategoryDoesNotExist_ShouldReturnEmptyList()
+    public async Task Handle_WhenCategoryDoesNotExist_ShouldReturnNotFoundFailure()
     {
         // Arrange
         var query = new GetPostsByCategoryIdQuery(Guid.NewGuid());
@@ -70,8 +70,8 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty("No posts should be returned for a non-existent category.");
+        result.IsSuccess.ShouldBeFalse();
+        result.Error.ShouldBe(CategoryError.NotFound);
         await _postRepositoryMock.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());
     }
 
