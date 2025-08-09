@@ -90,8 +90,9 @@ if (migrateOpt.GetValue<bool>("MigrateOnStartup"))
             attempt++;
             if (attempt >= maxRetries)
             {
-                Log.Error(ex, "Failed to apply database migrations after {Attempts} attempts", attempt);
-                break; // Fail silently; app may still start (or you can rethrow)
+                // Fail-fast: don't let the application start with an out-of-date / invalid schema
+                Log.Fatal(ex, "Failed to apply database migrations after {Attempts} attempts. Application is shutting down.", attempt);
+                throw; // Rethrow to abort startup
             }
             var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
             Log.Warning(ex, "Migration attempt {Attempt} failed. Retrying in {Delay}...", attempt, delay);
@@ -141,4 +142,8 @@ app.MapHealthChecks("health", new HealthCheckOptions
 
 await app.RunAsync();
 
-public partial class Program { }
+public partial class Program
+{
+    // Prevent external instantiation while keeping class non-static for WebApplicationFactory
+    protected Program() { }
+}
