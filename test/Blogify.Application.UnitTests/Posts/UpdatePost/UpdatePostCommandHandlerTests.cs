@@ -114,4 +114,28 @@ public class UpdatePostCommandHandlerTests
 
         await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task Handle_WhenUpdateMakesNoChanges_ShouldNotSaveChanges()
+    {
+        // Arrange
+        var post = CreateTestPost();
+        var command = new UpdatePostCommand(
+            post.Id,
+            post.Title.Value, // same title
+            post.Content.Value, // same content
+            post.Excerpt.Value // same excerpt
+        );
+
+        _postRepositoryMock.GetByIdAsync(command.Id, Arg.Any<CancellationToken>())
+            .Returns(post);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        post.DomainEvents.ShouldBeEmpty();
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }

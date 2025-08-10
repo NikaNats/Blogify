@@ -1,6 +1,8 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
+using Blogify.Domain.Posts.Events;
+using System.Linq;
 
 namespace Blogify.Application.Posts.UpdatePost;
 
@@ -22,7 +24,11 @@ internal sealed class UpdatePostCommandHandler(
 
         if (updateResult.IsFailure) return updateResult;
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Only persist if an update domain event was raised (i.e., something actually changed)
+        if (post.DomainEvents.Any(e => e is PostUpdatedDomainEvent))
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return Result.Success();
     }
