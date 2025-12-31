@@ -7,6 +7,8 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <UserSecretsId>f963a43b-79b1-43c3-9f8d-9d9f8f00bb47</UserSecretsId>
         <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+        <!-- Enable XML documentation file generation for OpenAPI support -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <!-- Enable build-time OpenAPI document generation -->
         <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
         <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)</OpenApiDocumentsDirectory>
@@ -18,6 +20,10 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="9.0.6">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
             <PrivateAssets>all</PrivateAssets>
