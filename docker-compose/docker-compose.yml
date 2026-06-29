@@ -43,7 +43,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - blogify-db-data:/var/lib/postgresql/data
+      - blogify-db-data:/var/lib/postgresql
     ports:
       - "5454:5432"
     healthcheck:
@@ -88,6 +88,7 @@ services:
     image: datalust/seq:latest
     environment:
       ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_NOAUTHENTICATION: True
     volumes:
       - blogify-seq-data:/data:rw
     ports:
@@ -119,7 +120,7 @@ services:
       - blogify-network
 
   blogify-aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
     user: "0:0" 
     environment:
       DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
