@@ -26,11 +26,15 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.StackExchangeRedis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Quartz;
+using StackExchange.Redis;
 using AuthenticationOptions = Blogify.Infrastructure.Authentication.AuthenticationOptions;
 using AuthenticationService = Blogify.Infrastructure.Authentication.AuthenticationService;
 using IAuthenticationService = Blogify.Application.Abstractions.Authentication.IAuthenticationService;
@@ -47,12 +51,12 @@ public static class DependencyInjection
 
         services.AddTransient<IEmailService, EmailService>();
 
-        services.AddDataProtection();
-        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
         AddPersistence(services, configuration);
 
         AddCaching(services, configuration);
+
+        AddDataProtection(services);
 
         AddAuthentication(services, configuration);
 
@@ -146,7 +150,34 @@ public static class DependencyInjection
 
         services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
 
+        // One multiplexer per process, shared by the distributed cache and the Data Protection key ring.
+        // Resolved lazily from RedisCacheOptions so configuration overrides (e.g. in tests) apply.
+        services.AddSingleton<IConnectionMultiplexer>(serviceProvider =>
+            ConnectionMultiplexer.Connect(
+                serviceProvider.GetRequiredService<IOptions<RedisCacheOptions>>().Value.Configuration!));
+
+        services.AddOptions<RedisCacheOptions>()
+            .Configure<IServiceProvider>((options, serviceProvider) =>
+                options.ConnectionMultiplexerFactory = () =>
+                    Task.FromResult(serviceProvider.GetRequiredService<IConnectionMultiplexer>()));
+
         services.AddSingleton<ICacheService, CacheService>();
+    }
+
+    private static void AddDataProtection(IServiceCollection services)
+    {
+        // Persist keys in Redis so protected payloads (e.g. pending registration passwords in the
+        // outbox) survive restarts and can be unprotected by any instance.
+        services.AddDataProtection()
+            .SetApplicationName("Blogify");
+
+        services.AddOptions<KeyManagementOptions>()
+            .Configure<IConnectionMultiplexer>((options, multiplexer) =>
+                options.XmlRepository = new RedisXmlRepository(
+                    () => multiplexer.GetDatabase(),
+                    "Blogify:DataProtection:Keys"));
+
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
     }
 
     private static void AddHealthChecks(IServiceCollection services, IConfiguration configuration)
