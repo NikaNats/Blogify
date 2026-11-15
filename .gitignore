@@ -450,8 +450,5 @@ Thumbs.db
 .files/
 .idea/
 seq/data/
-test/Blogify.FunctionalTests/
-Blogify.FunctionalTests.csproj
 all_code.txt
-global.json
 launchSettings.json

@@ -1,6 +1,6 @@
 # Blogify API
 
-A modern, robust, and scalable backend API for a blogging platform. Built with **.NET 9**, following **Clean
+A modern, robust, and scalable backend API for a blogging platform. Built with **.NET 11**, following **Clean
 Architecture** principles, **Domain-Driven Design (DDD)**, and the **CQRS** pattern.
 
 ---
@@ -29,7 +29,7 @@ Architecture** principles, **Domain-Driven Design (DDD)**, and the **CQRS** patt
 
 | Area              | Technology / Library                         |
 |-------------------|----------------------------------------------|
-| Backend Framework | .NET 9 & ASP.NET Core                        |
+| Backend Framework | .NET 11 & ASP.NET Core                       |
 | Architecture      | Clean Architecture, DDD, CQRS                |
 | Database          | PostgreSQL                                   |
 | ORM / Data Access | Entity Framework Core 9, Dapper              |

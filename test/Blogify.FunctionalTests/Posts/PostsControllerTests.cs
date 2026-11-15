@@ -9,11 +9,10 @@ using Blogify.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace Blogify.FunctionalTests.Posts;
 
-public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutputHelper testOutputHelper)
+public class PostsControllerTests(FunctionalTestWebAppFactory factory)
     : BaseFunctionalTest(factory), IAsyncLifetime
 {
     private const string ApiEndpoint = "api/v1/posts";
@@ -25,16 +24,16 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory, ITestOutp
     private string? _accessToken;
     private Guid _authenticatedUserId;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _accessToken = await GetAccessToken();
         _authenticatedUserId = AuthenticatedUserId;
         HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
     }
 
-    public Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return _dbContext.Database.ExecuteSqlRawAsync(
+        await _dbContext.Database.ExecuteSqlRawAsync(
             "TRUNCATE TABLE posts, tags, comments, categories RESTART IDENTITY");
     }
 

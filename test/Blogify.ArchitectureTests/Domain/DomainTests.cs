@@ -3,11 +3,10 @@ using Blogify.ArchitectureTests.Infrastructure;
 using Blogify.Domain.Abstractions;
 using NetArchTest.Rules;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace Blogify.ArchitectureTests.Domain;
 
-public class DomainTests(ITestOutputHelper testOutputHelper) : BaseTest
+public class DomainTests : BaseTest
 {
     [Fact]
     public void DomainEvents_Should_BeSealed()

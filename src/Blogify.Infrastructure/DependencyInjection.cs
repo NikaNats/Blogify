@@ -178,13 +178,27 @@ public static class DependencyInjection
     {
         services.Configure<OutboxOptions>(configuration.GetSection("Outbox"));
 
-        services.AddQuartz();
+        services.AddQuartz(quartz =>
+        {
+            const string jobName = nameof(ProcessOutboxMessagesJob);
+
+            quartz.AddJob<ProcessOutboxMessagesJob>(job => job.WithIdentity(jobName));
+
+            // Resolve the interval lazily so IOptions<OutboxOptions> overrides (e.g. in tests) are honored.
+            quartz.AddTrigger<ProcessOutboxMessagesJob>((serviceProvider, trigger) =>
+            {
+                var outboxOptions = serviceProvider.GetRequiredService<IOptions<OutboxOptions>>().Value;
+
+                trigger
+                    .ForJob(jobName)
+                    .WithSimpleSchedule(schedule =>
+                        schedule.WithInterval(TimeSpan.FromSeconds(outboxOptions.IntervalInSeconds)).RepeatForever());
+            });
+        });
 
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
-        services.ConfigureOptions<ProcessOutboxMessagesJobSetup>();
-
-    // Outbox data access abstraction (enables unit tests without a real DB)
-    services.AddTransient<IOutboxDataAccess, DapperOutboxDataAccess>();
+        // Outbox data access abstraction (enables unit tests without a real DB)
+        services.AddTransient<IOutboxDataAccess, DapperOutboxDataAccess>();
     }
 }

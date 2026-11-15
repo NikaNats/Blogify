@@ -40,8 +40,13 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
         throw new DirectoryNotFoundException("Could not find 'blogify-realm-export.json' in any parent directory structures.");
     }
 
-    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:latest")
+    // Keep image versions in sync with docker-compose/docker-compose.yml.
+    private const string PostgresImage = "postgres:18.7";
+    private const string RedisImage = "redis:8.10";
+    // Must match the Keycloak version the realm export was produced with.
+    private const string KeycloakImage = "quay.io/keycloak/keycloak:26.0.7";
+
+    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder(PostgresImage)
         .WithDatabase("blogify")
         .WithUsername("postgres")
         .WithPassword("postgres")
@@ -49,14 +54,12 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
 
     private readonly KeycloakContainer _keycloakContainer;
 
-    private readonly RedisContainer _redisContainer = new RedisBuilder()
-        .WithImage("redis:latest")
+    private readonly RedisContainer _redisContainer = new RedisBuilder(RedisImage)
         .Build();
 
     public FunctionalTestWebAppFactory()
     {
-        _keycloakContainer = new KeycloakBuilder()
-            .WithImage("quay.io/keycloak/keycloak:26.0.7")
+        _keycloakContainer = new KeycloakBuilder(KeycloakImage)
             .WithResourceMapping(
                 new FileInfo(GetRealmExportPath()),
                 new FileInfo("/opt/keycloak/data/import/realm.json"))
@@ -64,20 +67,23 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
             .Build();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
-        await _dbContainer.StartAsync();
-        await _redisContainer.StartAsync();
-        await _keycloakContainer.StartAsync();
+        await Task.WhenAll(
+            _dbContainer.StartAsync(),
+            _redisContainer.StartAsync(),
+            _keycloakContainer.StartAsync());
 
         await InitializeTestUserAsync();
     }
 
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        await _dbContainer.StopAsync();
-        await _redisContainer.StopAsync();
-        await _keycloakContainer.StopAsync();
+        await base.DisposeAsync();
+        await _dbContainer.DisposeAsync();
+        await _redisContainer.DisposeAsync();
+        await _keycloakContainer.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

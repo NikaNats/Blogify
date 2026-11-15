@@ -2,7 +2,6 @@
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Infrastructure;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
 
 namespace Blogify.ArchitectureTests.Infrastructure;
 

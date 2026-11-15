@@ -21,12 +21,12 @@ internal sealed class ProcessOutboxMessagesJob(
     private const int MaxRetryAttempts = 5;
     private readonly string _workerId = $"{Environment.MachineName}-{Guid.NewGuid():N}";
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
-    logger.LogDebug("Beginning to process outbox messages for worker {WorkerId}", _workerId);
+        logger.LogDebug("Beginning to process outbox messages for worker {WorkerId}", _workerId);
 
         var lockDuration = TimeSpan.FromMinutes(2);
-        var outboxMessages = await dataAccess.ClaimPendingAsync(_outboxOptions.BatchSize, dateTimeProvider.UtcNow, MaxRetryAttempts, lockDuration, _workerId, context.CancellationToken);
+        var outboxMessages = await dataAccess.ClaimPendingAsync(_outboxOptions.BatchSize, dateTimeProvider.UtcNow, MaxRetryAttempts, lockDuration, _workerId, cancellationToken);
 
         if (!outboxMessages.Any())
         {
@@ -46,14 +46,14 @@ internal sealed class ProcessOutboxMessagesJob(
                 {
                     throw new JsonException($"Failed to deserialize domain event of type '{message.Type}' with ID '{message.Id}'.");
                 }
-                await publisher.Publish(domainEvent, context.CancellationToken);
+                await publisher.Publish(domainEvent, cancellationToken);
             }
             catch (Exception ex)
             {
                 exception = ex;
                 logger.LogError(ex, "Exception while processing outbox message {MessageId} (Attempt {Attempt}) by worker {WorkerId}", message.Id, message.Attempts + 1, _workerId);
             }
-            await UpdateOutboxMessageAsync(message, exception, context.CancellationToken);
+            await UpdateOutboxMessageAsync(message, exception, cancellationToken);
         }
 
         logger.LogInformation("Worker {WorkerId} completed processing a batch of outbox messages.", _workerId);

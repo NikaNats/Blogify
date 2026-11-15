@@ -18,16 +18,13 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         _seeder = new BlogifyTestSeeder(SqlConnectionFactory);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var accessToken = await GetAccessToken();
         HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task GetCommentById_WhenCommentExists_ShouldReturnOkAndComment()
