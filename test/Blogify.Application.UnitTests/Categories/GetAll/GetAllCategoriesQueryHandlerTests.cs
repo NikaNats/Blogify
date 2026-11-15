@@ -60,21 +60,17 @@ public class GetAllCategoriesTests
     }
 
     [Fact]
-    public async Task Handle_Should_ReturnFailure_WhenRepositoryThrowsException()
+    public async Task Handle_Should_PropagateException_WhenRepositoryThrows()
     {
-        // Arrange
+        // Arrange: infrastructure failures are not domain failures; the global exception handler owns them.
         _categoryRepositoryMock
             .GetAllAsync(Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("Database error"));
+            .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var query = new GetAllCategoriesQuery();
 
-        // Act
-        var result = await _handler.Handle(query, default);
-
-        // Assert
-        result.IsFailure.ShouldBeTrue();
-        result.Error.ShouldBe(CategoryError.UnexpectedError);
+        // Act & Assert
+        await Should.ThrowAsync<InvalidOperationException>(() => _handler.Handle(query, default));
     }
 
     [Fact]

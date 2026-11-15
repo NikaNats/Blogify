@@ -73,14 +73,16 @@ public class RegisterUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenRepositoryThrows_ReturnsFailure()
+    public async Task Handle_WhenRepositoryThrows_PropagatesAndDoesNotSave()
     {
+        // Infrastructure failures surface to the global exception handler instead of being masked as a Result.
         var command = new RegisterUserCommand(Email, FirstName, LastName, Password);
-        _userRepository.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>()).Returns(ci => throw new Exception("repo"));
+        _userRepository.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw new InvalidOperationException("repo"));
 
-        var result = await _handler.Handle(command, CancellationToken.None);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command, CancellationToken.None));
 
-        Assert.True(result.IsFailure);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     private sealed class PassThroughSecretProtector : ISecretProtector
