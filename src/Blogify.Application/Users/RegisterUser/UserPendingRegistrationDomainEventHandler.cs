@@ -41,6 +41,13 @@ internal sealed class UserPendingRegistrationDomainEventHandler(
             await unitOfWork.SaveChangesAsync(cancellationToken);
             logger.LogInformation("User {UserId} external identity provisioned and activated", user.Id);
         }
+        catch (IdentityAlreadyExistsException ex)
+        {
+            // Permanent failure: retrying cannot succeed and would leave the user stranded as Pending.
+            logger.LogError(ex, "Identity for user {UserId} already exists. Marking registration as failed.", user.Id);
+            user.MarkRegistrationFailed();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
         catch (Exception ex)
         {
             // Rethrow with additional context so the outbox processor can log & retry.

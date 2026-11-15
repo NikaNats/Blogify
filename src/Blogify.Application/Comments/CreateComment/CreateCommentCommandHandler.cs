@@ -17,8 +17,7 @@ internal sealed class CreateCommentCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
     {
-        var authorId = userContext.UserId;
-        if (authorId == Guid.Empty) return Result.Failure<Guid>(UserErrors.UserNotFound);
+        if (userContext.UserId is not { } authorId) return Result.Failure<Guid>(UserErrors.Unauthenticated);
 
         var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
         if (post is null) return Result.Failure<Guid>(PostErrors.NotFound);

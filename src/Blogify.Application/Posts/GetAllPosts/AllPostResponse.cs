@@ -1,5 +1,4 @@
-﻿using Blogify.Application.Comments;
-using Blogify.Application.Tags.GetAllTags;
+﻿using Blogify.Application.Tags.GetAllTags;
 using Blogify.Domain.Posts;
 
 namespace Blogify.Application.Posts.GetAllPosts;
@@ -15,5 +14,5 @@ public sealed record AllPostResponse(
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? PublishedAt,
     PublicationStatus Status,
-    List<CommentResponse> Comments,
+    int CommentCount,
     List<AllTagResponse> Tags);

@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Abstractions.Messaging;
+﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Messaging;
 using Blogify.Application.Categories.GetAllCategories;
 using Blogify.Application.Comments;
 using Blogify.Application.Tags.GetAllTags;
@@ -12,7 +13,8 @@ namespace Blogify.Application.Posts.GetPostById;
 internal sealed class GetPostByIdQueryHandler(
     IPostRepository postRepository,
     ICategoryRepository categoryRepository,
-    ITagRepository tagRepository)
+    ITagRepository tagRepository,
+    IUserContext userContext)
     : IQueryHandler<GetPostByIdQuery, PostResponse>
 {
     public async Task<Result<PostResponse>> Handle(GetPostByIdQuery request, CancellationToken cancellationToken)
@@ -21,6 +23,10 @@ internal sealed class GetPostByIdQueryHandler(
         var post = await postRepository.GetByIdAsync(request.Id, cancellationToken);
         if (post is null) return Result.Failure<PostResponse>(PostErrors.NotFound);
 
+        // NotFound rather than Forbidden so the existence of someone else's draft is not revealed.
+        if (!PostAccess.CanView(post.Status, post.AuthorId, userContext))
+            return Result.Failure<PostResponse>(PostErrors.NotFound);
+
         // --- BATCH FETCH CATEGORIES ---
         // Query 2: Get all required categories in a single database call.
         var categories = new List<Category>();
@@ -28,8 +34,7 @@ internal sealed class GetPostByIdQueryHandler(
         {
             // This assumes an efficient `GetByIdsAsync` method exists.
             // If not, fetching all and filtering is a fallback.
-            var allCategories = await categoryRepository.GetAllAsync(cancellationToken);
-            categories = allCategories.Where(c => post.CategoryIds.Contains(c.Id)).ToList();
+            categories = (await categoryRepository.GetByIdsAsync(post.CategoryIds.ToArray(), cancellationToken)).ToList();
         }
 
         // --- BATCH FETCH TAGS ---
@@ -37,8 +42,7 @@ internal sealed class GetPostByIdQueryHandler(
         var tags = new List<Tag>();
         if (post.TagIds.Any())
         {
-            var allTags = await tagRepository.GetAllAsync(cancellationToken);
-            tags = allTags.Where(t => post.TagIds.Contains(t.Id)).ToList();
+            tags = (await tagRepository.GetByIdsAsync(post.TagIds.ToArray(), cancellationToken)).ToList();
         }
 
         // Assemble the response from the efficiently-loaded entities. Total queries: 3.

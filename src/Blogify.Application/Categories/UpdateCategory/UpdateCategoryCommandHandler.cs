@@ -16,6 +16,11 @@ internal sealed class UpdateCategoryCommandHandler(ICategoryRepository categoryR
 
         if (category.Name.Value == request.Name && category.Description.Value == request.Description)
             return Result.Success();
+
+        var sameName = await categoryRepository.GetByNameAsync(request.Name, cancellationToken);
+        if (sameName is not null && sameName.Id != category.Id)
+            return Result.Failure(CategoryError.NameAlreadyExists);
+
         var updateResult = category.Update(request.Name, request.Description);
         if (updateResult.IsFailure)
             return updateResult;

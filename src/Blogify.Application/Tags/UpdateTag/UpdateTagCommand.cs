@@ -5,5 +5,5 @@ namespace Blogify.Application.Tags.UpdateTag;
 
 public sealed record UpdateTagCommand(Guid Id, string Name) : ICommand, ICacheInvalidatingCommand
 {
-    public IEnumerable<string> CacheKeysToInvalidate => [CacheKeys.AllTags];
+    public IEnumerable<string> CacheTagsToInvalidate => [CacheTagNames.Tag(Id), CacheTagNames.AllTags];
 }

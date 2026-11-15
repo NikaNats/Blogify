@@ -9,4 +9,7 @@ public interface ICachedQuery
     string CacheKey { get; }
 
     TimeSpan? Expiration { get; }
+
+    /// <summary>Tags the cached entry is stored under, enabling tag-based invalidation.</summary>
+    IReadOnlyCollection<string> CacheTags => [];
 }

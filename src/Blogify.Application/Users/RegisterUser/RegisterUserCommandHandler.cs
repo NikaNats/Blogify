@@ -37,6 +37,10 @@ internal sealed class RegisterUserCommandHandler(
         if (userResult.IsFailure)
             return Result.Failure<Guid>(userResult.Error);
 
+        var existingUser = await userRepository.GetByEmailAsync(emailResult.Value.Address, cancellationToken);
+        if (existingUser is not null)
+            return Result.Failure<Guid>(UserErrors.EmailAlreadyExists);
+
         var user = userResult.Value;
 
     // Raise integration (pending registration) domain event containing required data for external provisioning.

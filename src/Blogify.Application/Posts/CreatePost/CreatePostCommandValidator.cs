@@ -13,8 +13,8 @@ internal sealed class CreatePostCommandValidator : AbstractValidator<CreatePostC
 
         RuleFor(x => x.Content)
             .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
-            .MinimumLength(100).WithMessage(PostErrors.ContentTooShort.Description)
-            .MaximumLength(5000).WithMessage(PostErrors.ContentTooLong.Description);
+            .MinimumLength(PostContent.MinLength).WithMessage(PostErrors.ContentTooShort.Description)
+            .MaximumLength(PostContent.MaxLength).WithMessage(PostErrors.ContentTooLong.Description);
 
         RuleFor(x => x.Excerpt)
             .NotEmpty().WithMessage(PostErrors.ExcerptEmpty.Description)

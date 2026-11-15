@@ -22,7 +22,7 @@ internal sealed class GetAllCategoriesWithPostCountQueryHandler(ISqlConnectionFa
                                c.id AS Id,
                                c.name AS Name,
                                c.description AS Description,
-                               (SELECT COUNT(*) FROM posts p WHERE c.id = ANY(p.category_ids)) AS PostCount
+                               (SELECT COUNT(*) FROM posts p WHERE c.id = ANY(p.category_ids))::int AS PostCount
                            FROM categories c
                            ORDER BY c.name
                            """;

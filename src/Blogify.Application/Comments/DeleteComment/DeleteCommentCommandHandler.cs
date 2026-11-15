@@ -3,6 +3,7 @@ using Blogify.Application.Abstractions.Caching;
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
+using Blogify.Domain.Users;
 using MediatR;
 
 namespace Blogify.Application.Comments.DeleteComment;
@@ -21,7 +22,11 @@ internal sealed class DeleteCommentCommandHandler(
         var comment = await commentRepository.GetByIdAsync(request.CommentId, cancellationToken);
         if (comment is null) return Result.Failure<Unit>(CommentError.NotFound);
 
-        if (comment.AuthorId != userContext.UserId) return Result.Failure<Unit>(CommentError.UnauthorizedDeletion);
+        if (userContext.UserId is not { } userId) return Result.Failure<Unit>(UserErrors.Unauthenticated);
+
+        // The aggregate enforces authorship (or administrator moderation) and raises CommentDeletedDomainEvent.
+        var removeResult = comment.Remove(userId, userContext.IsInRole(Role.Administrator.Name));
+        if (removeResult.IsFailure) return Result.Failure<Unit>(removeResult.Error);
 
         await commentRepository.DeleteAsync(comment, cancellationToken);
 

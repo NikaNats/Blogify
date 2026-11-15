@@ -1,16 +1,19 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
+using Blogify.Application.Abstractions.Pagination;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.GetAllTags;
 
 internal sealed class GetAllTagsQueryHandler(ITagRepository tagRepository)
-    : IQueryHandler<GetAllTagsQuery, List<AllTagResponse>>
+    : IQueryHandler<GetAllTagsQuery, PagedResponse<AllTagResponse>>
 {
-    public async Task<Result<List<AllTagResponse>>> Handle(GetAllTagsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResponse<AllTagResponse>>> Handle(GetAllTagsQuery request,
+        CancellationToken cancellationToken)
     {
-        var tags = await tagRepository.GetAllAsync(cancellationToken);
-        var response = tags.Select(tag => new AllTagResponse(tag.Id, tag.Name.Value, tag.CreatedAt)).ToList();
-        return Result.Success(response);
+        var page = await tagRepository.GetPagedAsync(request.Page, request.PageSize, cancellationToken);
+
+        return Result.Success(PagedResponse<AllTagResponse>.From(page, request.Page, request.PageSize,
+            tag => new AllTagResponse(tag.Id, tag.Name.Value, tag.CreatedAt)));
     }
 }

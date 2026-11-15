@@ -1,7 +1,8 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
-using Blogify.Application.Comments;
+using Blogify.Application.Abstractions.Pagination;
 using Blogify.Application.Tags.GetAllTags;
 using Blogify.Domain.Abstractions;
+using Blogify.Domain.Comments;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 
@@ -9,41 +10,28 @@ namespace Blogify.Application.Posts.GetAllPosts;
 
 internal sealed class GetAllPostsQueryHandler(
     IPostRepository postRepository,
-    ITagRepository tagRepository)
-    : IQueryHandler<GetAllPostsQuery, List<AllPostResponse>>
+    ITagRepository tagRepository,
+    ICommentRepository commentRepository)
+    : IQueryHandler<GetAllPostsQuery, PagedResponse<AllPostResponse>>
 {
-    public async Task<Result<List<AllPostResponse>>> Handle(GetAllPostsQuery request,
+    public async Task<Result<PagedResponse<AllPostResponse>>> Handle(GetAllPostsQuery request,
         CancellationToken cancellationToken)
     {
-        var posts = await postRepository.GetAllAsync(cancellationToken);
-        if (!posts.Any()) return Result.Success(new List<AllPostResponse>());
+        var page = await postRepository.GetPagedAsync(
+            request.Page, request.PageSize, publishedOnly: true, cancellationToken);
+        var posts = page.Items;
 
-        // --- NEW: Efficiently batch-load all related tags ---
-        // 1. Collect all unique Tag IDs from all posts
-        var allTagIds = posts.SelectMany(p => p.TagIds).Distinct().ToList();
+        if (posts.Count == 0)
+            return Result.Success(new PagedResponse<AllPostResponse>([], request.Page, request.PageSize,
+                page.TotalCount));
 
-        // 2. Fetch all required Tags in a single database call and create a lookup dictionary
-        var allTags = new Dictionary<Guid, Tag>();
-        if (allTagIds.Any())
-        {
-            // In a real system with a large number of tags, you would add
-            // a `GetByIdsAsync(IEnumerable<Guid> ids)` method to the repository.
-            // For now, we'll get all and filter in memory, which is acceptable for a smaller tag set.
-            var tagEntities = await tagRepository.GetAllAsync(cancellationToken);
-            allTags = tagEntities.Where(t => allTagIds.Contains(t.Id))
-                .ToDictionary(t => t.Id);
-        }
+        var tagIds = posts.SelectMany(p => p.TagIds).Distinct().ToList();
+        var tags = (await tagRepository.GetByIdsAsync(tagIds, cancellationToken)).ToDictionary(t => t.Id);
+        var commentCounts = await commentRepository.GetCountsByPostIdsAsync(
+            posts.Select(p => p.Id).ToList(), cancellationToken);
 
-        // 3. Map each post, looking up its tags from our pre-fetched dictionary
-        var response = posts.Select(post =>
-        {
-            var postTags = post.TagIds
-                .Where(id => allTags.ContainsKey(id))
-                .Select(id => allTags[id])
-                .Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt))
-                .ToList();
-
-            return new AllPostResponse(
+        var response = PagedResponse<AllPostResponse>.From(page, request.Page, request.PageSize, post =>
+            new AllPostResponse(
                 post.Id,
                 post.Title.Value,
                 post.Content.Value,
@@ -54,10 +42,12 @@ internal sealed class GetAllPostsQueryHandler(
                 post.LastModifiedAt,
                 post.PublishedAt,
                 post.Status,
-                post.Comments.Select(c => new CommentResponse(c.Id, c.Content.Value, c.AuthorId, c.PostId, c.CreatedAt))
-                    .ToList(),
-                postTags);
-        }).ToList();
+                commentCounts.GetValueOrDefault(post.Id),
+                post.TagIds
+                    .Select(id => tags.GetValueOrDefault(id))
+                    .OfType<Tag>()
+                    .Select(t => new AllTagResponse(t.Id, t.Name.Value, t.CreatedAt))
+                    .ToList()));
 
         return Result.Success(response);
     }

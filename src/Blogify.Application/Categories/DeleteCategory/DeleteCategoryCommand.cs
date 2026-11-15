@@ -5,5 +5,5 @@ namespace Blogify.Application.Categories.DeleteCategory;
 
 public sealed record DeleteCategoryCommand(Guid Id) : ICommand, ICacheInvalidatingCommand
 {
-    public IEnumerable<string> CacheKeysToInvalidate => [CacheKeys.AllCategories];
+    public IEnumerable<string> CacheTagsToInvalidate => [CacheTagNames.Category(Id), CacheTagNames.AllCategories];
 }

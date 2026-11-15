@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Abstractions.Messaging;
+﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
@@ -8,7 +9,8 @@ namespace Blogify.Application.Posts.RemoveCategoryFromPost;
 internal sealed class RemoveCategoryFromPostCommandHandler(
     IPostRepository postRepository,
     ICategoryRepository categoryRepository,
-    IUnitOfWork unitOfWork) // Added IUnitOfWork
+    IUnitOfWork unitOfWork,
+    IUserContext userContext)
     : ICommandHandler<RemoveCategoryFromPostCommand>
 {
     public async Task<Result> Handle(RemoveCategoryFromPostCommand request, CancellationToken cancellationToken)
@@ -16,6 +18,8 @@ internal sealed class RemoveCategoryFromPostCommandHandler(
         var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
         if (post is null)
             return Result.Failure(PostErrors.NotFound);
+
+        if (!PostAccess.CanModify(post, userContext)) return Result.Failure(PostErrors.Forbidden);
 
         var category = await categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
         if (category is null)

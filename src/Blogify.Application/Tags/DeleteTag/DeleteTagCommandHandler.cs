@@ -1,10 +1,14 @@
 ﻿using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
+using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 
 namespace Blogify.Application.Tags.DeleteTag;
 
-internal sealed class DeleteTagCommandHandler(ITagRepository tagRepository, IUnitOfWork unitOfWork)
+internal sealed class DeleteTagCommandHandler(
+    ITagRepository tagRepository,
+    IPostRepository postRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTagCommand>
 {
     public async Task<Result> Handle(DeleteTagCommand request, CancellationToken cancellationToken)
@@ -15,6 +19,9 @@ internal sealed class DeleteTagCommandHandler(ITagRepository tagRepository, IUni
         await tagRepository.DeleteAsync(tag.Id, cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Posts store tag ids as an array without a foreign key, so clear the dangling references.
+        await postRepository.RemoveTagReferencesAsync(tag.Id, cancellationToken);
 
         return Result.Success();
     }

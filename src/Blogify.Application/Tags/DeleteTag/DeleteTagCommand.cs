@@ -5,5 +5,5 @@ namespace Blogify.Application.Tags.DeleteTag;
 
 public sealed record DeleteTagCommand(Guid Id) : ICommand, ICacheInvalidatingCommand
 {
-    public IEnumerable<string> CacheKeysToInvalidate => [CacheKeys.AllTags];
+    public IEnumerable<string> CacheTagsToInvalidate => [CacheTagNames.Tag(Id), CacheTagNames.AllTags];
 }

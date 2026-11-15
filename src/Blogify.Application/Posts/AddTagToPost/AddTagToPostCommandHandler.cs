@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Abstractions.Messaging;
+﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
@@ -8,13 +9,16 @@ namespace Blogify.Application.Posts.AddTagToPost;
 internal sealed class AddTagToPostCommandHandler(
     IPostRepository postRepository,
     ITagRepository tagRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IUserContext userContext)
     : ICommandHandler<AddTagToPostCommand>
 {
     public async Task<Result> Handle(AddTagToPostCommand request, CancellationToken cancellationToken)
     {
         var post = await postRepository.GetByIdAsync(request.PostId, cancellationToken);
         if (post is null) return Result.Failure(PostErrors.NotFound);
+
+        if (!PostAccess.CanModify(post, userContext)) return Result.Failure(PostErrors.Forbidden);
 
         var tag = await tagRepository.GetByIdAsync(request.TagId, cancellationToken);
         if (tag is null) return Result.Failure(TagErrors.NotFound);

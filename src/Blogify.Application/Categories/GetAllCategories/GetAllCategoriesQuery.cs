@@ -1,12 +1,25 @@
-﻿using Blogify.Application.Abstractions.Caching;
+﻿using FluentValidation;
+using Blogify.Application.Abstractions.Caching;
+using Blogify.Application.Abstractions.Pagination;
 
 namespace Blogify.Application.Categories.GetAllCategories;
 
 // Cached because categories change infrequently compared to read frequency.
-public sealed record GetAllCategoriesQuery : ICachedQuery<List<AllCategoryResponse>>
+// Tagged so any category write evicts every cached page at once.
+public sealed record GetAllCategoriesQuery(int Page = 1, int PageSize = Pagination.DefaultPageSize)
+    : ICachedQuery<PagedResponse<AllCategoryResponse>>, IPagedQuery
 {
-	public string CacheKey => CacheKeys.AllCategories;
+    public string CacheKey => CacheKeys.AllCategories(Page, PageSize);
 
-	// Cache for 5 minutes; adjust if needed based on update patterns.
-	public TimeSpan? Expiration => TimeSpan.FromMinutes(5);
+    public TimeSpan? Expiration => TimeSpan.FromMinutes(5);
+
+    public IReadOnlyCollection<string> CacheTags => [CacheTagNames.AllCategories];
+}
+
+internal sealed class GetAllCategoriesQueryValidator : AbstractValidator<GetAllCategoriesQuery>
+{
+    public GetAllCategoriesQueryValidator()
+    {
+        this.AddPagingRules();
+    }
 }

@@ -3,6 +3,7 @@ using Blogify.Application.Abstractions.Messaging;
 using Blogify.Application.Exceptions;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
+using Blogify.Domain.Users;
 
 namespace Blogify.Application.Posts.CreatePost;
 
@@ -14,7 +15,7 @@ internal sealed class CreatePostCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreatePostCommand request, CancellationToken cancellationToken)
     {
-        var authorId = userContext.UserId;
+        if (userContext.UserId is not { } authorId) return Result.Failure<Guid>(UserErrors.Unauthenticated);
 
         var postResult = Post.Create(
             request.Title,

@@ -18,7 +18,8 @@ internal sealed class UpdatePostCommandValidator : AbstractValidator<UpdatePostC
         // --- FIX: Validate the primitive string 'Content' directly ---
         RuleFor(x => x.Content)
             .NotEmpty().WithMessage(PostErrors.ContentEmpty.Description)
-            .MinimumLength(100).WithMessage(PostErrors.ContentTooShort.Description);
+            .MinimumLength(PostContent.MinLength).WithMessage(PostErrors.ContentTooShort.Description)
+            .MaximumLength(PostContent.MaxLength).WithMessage(PostErrors.ContentTooLong.Description);
 
         // --- FIX: Validate the primitive string 'Excerpt' directly ---
         RuleFor(x => x.Excerpt)

@@ -1,4 +1,6 @@
-﻿using Blogify.Application.Categories.GetAllCategories;
+﻿using System.Text.Json.Serialization;
+using Blogify.Application.Abstractions.Caching;
+using Blogify.Application.Categories.GetAllCategories;
 using Blogify.Application.Comments;
 using Blogify.Application.Tags.GetAllTags;
 using Blogify.Domain.Posts;
@@ -18,4 +20,22 @@ public sealed record PostResponse(
     PublicationStatus Status,
     List<CommentResponse> Comments,
     List<AllTagResponse> Tags,
-    List<AllCategoryResponse> Categories);
+    List<AllCategoryResponse> Categories) : ICacheTagged, ICacheEligible
+{
+    /// <summary>
+    /// Only published posts are cached, so a cache entry is always safe to serve to anonymous callers. A draft
+    /// shown to its author is read fresh every time and never stored.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsCacheable => Status == PublicationStatus.Published;
+
+    /// <summary>Lets tag/category edits evict this post from the cache (see <see cref="CacheTagNames"/>).</summary>
+    [JsonIgnore]
+    public IReadOnlyCollection<string> CacheTags =>
+    [
+        "posts",
+        CacheTagNames.Post(Id),
+        .. Categories.Select(c => CacheTagNames.Category(c.Id)),
+        .. Tags.Select(t => CacheTagNames.Tag(t.Id))
+    ];
+}

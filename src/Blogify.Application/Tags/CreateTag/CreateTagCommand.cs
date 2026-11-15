@@ -5,5 +5,5 @@ namespace Blogify.Application.Tags.CreateTag;
 
 public sealed record CreateTagCommand(string Name) : ICommand<Guid>, ICacheInvalidatingCommand
 {
-    public IEnumerable<string> CacheKeysToInvalidate => [CacheKeys.AllTags];
+    public IEnumerable<string> CacheTagsToInvalidate => [CacheTagNames.AllTags];
 }

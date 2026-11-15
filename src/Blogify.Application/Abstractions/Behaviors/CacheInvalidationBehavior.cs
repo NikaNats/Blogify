@@ -32,6 +32,12 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>(
             logger.LogDebug("Invalidated cache key {CacheKey} after {Command}", key, typeof(TRequest).Name);
         }
 
+        foreach (var tag in request.CacheTagsToInvalidate.Distinct())
+        {
+            await cacheService.RemoveByTagAsync(tag, cancellationToken);
+            logger.LogDebug("Invalidated cache tag {CacheTag} after {Command}", tag, typeof(TRequest).Name);
+        }
+
         return response;
     }
 }
