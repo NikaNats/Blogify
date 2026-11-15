@@ -37,7 +37,7 @@ services:
       - blogify-network
 
   blogify-db:
-    image: postgres:latest
+    image: postgres:18.7
     environment:
       POSTGRES_DB: blogify
       POSTGRES_USER: postgres
@@ -57,16 +57,18 @@ services:
       - blogify-network
 
   blogify-idp:
-    image: quay.io/keycloak/keycloak:latest
+    # Must match the Keycloak version the realm export was produced with (see test/Blogify.FunctionalTests/.files).
+    image: quay.io/keycloak/keycloak:26.0.7
     command:
       - start-dev
       - --import-realm
       - --health-enabled=true
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - blogify-idp-data:/opt/keycloak/data
+      - ../test/Blogify.FunctionalTests/.files/blogify-realm-export.json:/opt/keycloak/data/import/realm.json:ro
     ports:
       - "18080:8080"
       - "19000:9000"  # Expose management port for health checks
@@ -85,7 +87,7 @@ services:
       - blogify-network
 
   blogify-seq:
-    image: datalust/seq:latest
+    image: datalust/seq:2026.1
     environment:
       ACCEPT_EULA: Y
       SEQ_FIRSTRUN_NOAUTHENTICATION: True
@@ -105,8 +107,10 @@ services:
       - blogify-network
 
   blogify-redis:
-    image: redis:latest
+    image: redis:8.10
     command: [ "redis-server", "--save", "900 1", "--appendonly", "yes" ]
+    volumes:
+      - blogify-redis-data:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -120,7 +124,7 @@ services:
       - blogify-network
 
   blogify-aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.6
     user: "0:0" 
     environment:
       DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
