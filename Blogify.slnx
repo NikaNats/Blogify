@@ -31,6 +31,7 @@
         </Project>
     </Folder>
     <Folder Name="/test/">
+        <Project Path="test/Blogify.Infrastructure.UnitTests/Blogify.Infrastructure.UnitTests.csproj" />
         <Project Path="test\Blogify.Application.UnitTests\Blogify.Application.UnitTests.csproj">
             <Configuration Solution="Debug|x64" Project="Debug|Any CPU" />
             <Configuration Solution="Debug|x86" Project="Debug|Any CPU" />
