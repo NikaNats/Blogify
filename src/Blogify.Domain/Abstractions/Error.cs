@@ -31,6 +31,11 @@ public sealed record Error(string Code, string Description, ErrorType Type)
         return Create(code, description, ErrorType.Conflict);
     }
 
+    public static Error Forbidden(string code, string description)
+    {
+        return Create(code, description, ErrorType.Forbidden);
+    }
+
     public static Error Validation(string code, string description)
     {
         return Create(code, description, ErrorType.Validation);

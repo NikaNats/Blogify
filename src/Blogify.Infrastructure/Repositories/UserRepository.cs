@@ -18,11 +18,16 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) : Repositor
     {
         ArgumentNullException.ThrowIfNull(email);
 
+        var emailResult = Domain.Users.Email.Create(email);
+        if (emailResult.IsFailure) return null;
+
+        var normalizedEmail = emailResult.Value;
+
         return await DbContext
             .Set<User>()
             .AsNoTracking()
             .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Email.Address == email, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
     }
 
     public void Add(User user)

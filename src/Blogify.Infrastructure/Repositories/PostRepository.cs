@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Posts;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,19 +9,32 @@ internal sealed class PostRepository(ApplicationDbContext dbContext) : IPostRepo
 {
     public async Task<Post?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // We apply includes here because when you fetch a single Post for a command,
-        // you often need its full state, including composed entities like comments.
-        return await ApplyIncludes(dbContext.Set<Post>())
+        // A single post for a command or detail view needs its full state, including comments.
+        return await dbContext.Set<Post>()
+            .Include(p => p.Comments)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Post>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        // For GetAll, we typically don't include child collections to keep the query light.
-        // The query handler can decide if it needs more data.
         return await dbContext.Set<Post>()
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task RemoveCategoryReferencesAsync(Guid categoryId, CancellationToken cancellationToken = default)
+    {
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE posts SET category_ids = array_remove(category_ids, {categoryId}) WHERE {categoryId} = ANY(category_ids)",
+            cancellationToken);
+    }
+
+    public async Task RemoveTagReferencesAsync(Guid tagId, CancellationToken cancellationToken = default)
+    {
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE posts SET tag_ids = array_remove(tag_ids, {tagId}) WHERE {tagId} = ANY(tag_ids)",
+            cancellationToken);
     }
 
     public Task AddAsync(Post entity, CancellationToken cancellationToken = default)
@@ -41,49 +55,69 @@ internal sealed class PostRepository(ApplicationDbContext dbContext) : IPostRepo
         return Task.CompletedTask;
     }
 
+    public async Task<PostVisibility?> GetVisibilityAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Set<Post>()
+            .AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new PostVisibility(p.Status, p.AuthorId))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<bool> ExistsAsync(Expression<Func<Post, bool>> predicate,
         CancellationToken cancellationToken = default)
     {
         return await dbContext.Set<Post>().AnyAsync(predicate, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Post>> GetByAuthorIdAsync(Guid authorId,
+    public async Task<PagedList<Post>> GetPagedAsync(int page, int pageSize, bool publishedOnly = true,
         CancellationToken cancellationToken = default)
     {
-        // This query is now simpler as it doesn't need includes for Category/Tag.
-        return await dbContext.Set<Post>()
-            .AsNoTracking()
-            .Where(post => post.AuthorId == authorId)
-            .ToListAsync(cancellationToken);
+        return await ToPagedAsync(Posts(publishedOnly), page, pageSize, cancellationToken);
     }
 
-    // --- FIXED: Filtering logic for Category and Tag ---
-
-    public async Task<IReadOnlyList<Post>> GetByCategoryIdAsync(Guid categoryId,
-        CancellationToken cancellationToken = default)
+    public async Task<PagedList<Post>> GetByAuthorIdAsync(Guid authorId, int page, int pageSize,
+        bool publishedOnly = true, CancellationToken cancellationToken = default)
     {
-        // CORRECT: We now query the primitive collection of IDs.
-        // EF Core is capable of translating `.Contains()` on a collection of primitives
-        // into an efficient SQL query (often using `JSON_VALUE` or array functions).
-        return await dbContext.Set<Post>()
-            .AsNoTracking()
-            .Where(post => post.CategoryIds.Contains(categoryId))
-            .ToListAsync(cancellationToken);
+        return await ToPagedAsync(
+            Posts(publishedOnly).Where(post => post.AuthorId == authorId),
+            page, pageSize, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Post>> GetByTagIdAsync(Guid tagId, CancellationToken cancellationToken = default)
+    public async Task<PagedList<Post>> GetByCategoryIdAsync(Guid categoryId, int page, int pageSize,
+        bool publishedOnly = true, CancellationToken cancellationToken = default)
     {
-        // CORRECT: The logic is identical for tags.
-        return await dbContext.Set<Post>()
-            .AsNoTracking()
-            .Where(post => post.TagIds.Contains(tagId))
-            .ToListAsync(cancellationToken);
+        return await ToPagedAsync(
+            Posts(publishedOnly).Where(post => post.CategoryIds.Contains(categoryId)),
+            page, pageSize, cancellationToken);
     }
 
-    // A private helper to apply includes consistently.
-    // Note: We only include Comments, as Category/Tag are no longer navigation properties.
-    private static IQueryable<Post> ApplyIncludes(IQueryable<Post> query)
+    public async Task<PagedList<Post>> GetByTagIdAsync(Guid tagId, int page, int pageSize,
+        bool publishedOnly = true, CancellationToken cancellationToken = default)
     {
-        return query.Include(p => p.Comments);
+        return await ToPagedAsync(
+            Posts(publishedOnly).Where(post => post.TagIds.Contains(tagId)),
+            page, pageSize, cancellationToken);
+    }
+
+    // The status filter is applied in SQL so counts and paging only ever see visible posts.
+    private IQueryable<Post> Posts(bool publishedOnly)
+    {
+        var query = dbContext.Set<Post>().AsNoTracking();
+        return publishedOnly ? query.Where(post => post.Status == PublicationStatus.Published) : query;
+    }
+
+    private static async Task<PagedList<Post>> ToPagedAsync(IQueryable<Post> query, int page, int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedList<Post>(items, total);
     }
 }

@@ -33,6 +33,9 @@ internal sealed class AuthenticationService(HttpClient httpClient, ILogger<Authe
             userRepresentationModel,
             cancellationToken);
 
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            throw new IdentityAlreadyExistsException("An identity with this email already exists in Keycloak.");
+
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);

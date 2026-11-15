@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Blogify.Infrastructure.Authentication;
 
-internal sealed class JwtService(IHttpClientFactory httpClientFactory, IOptions<KeycloakOptions> keycloakOptions)
+internal sealed class JwtService(HttpClient httpClient, IOptions<KeycloakOptions> keycloakOptions)
     : IJwtService
 {
     private static readonly Error AuthenticationFailed = new(
@@ -35,7 +35,6 @@ internal sealed class JwtService(IHttpClientFactory httpClientFactory, IOptions<
 
             using var authorizationRequestContent = new FormUrlEncodedContent(authRequestParameters);
 
-            var httpClient = httpClientFactory.CreateClient();
             var response = await httpClient.PostAsync(
                 _keycloakOptions.TokenUrl,
                 authorizationRequestContent,
@@ -43,7 +42,6 @@ internal sealed class JwtService(IHttpClientFactory httpClientFactory, IOptions<
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 return Result.Failure<string>(AuthenticationFailed);
             }
 
@@ -53,7 +51,8 @@ internal sealed class JwtService(IHttpClientFactory httpClientFactory, IOptions<
                 ? Result.Failure<string>(AuthenticationFailed)
                 : Result.Success(authorizationToken.AccessToken);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or Polly.CircuitBreaker.BrokenCircuitException
+                                  or Polly.Timeout.TimeoutRejectedException)
         {
             return Result.Failure<string>(AuthenticationFailed);
         }

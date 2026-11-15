@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Blogify.Domain.Abstractions;
 
 namespace Blogify.Domain.Comments;
 
@@ -12,5 +13,9 @@ public interface ICommentRepository
     Task<bool> ExistsAsync(Expression<Func<Comment, bool>> predicate, CancellationToken cancellationToken = default);
 
     // Specific methods for Comment
-    Task<List<Comment>> GetByPostIdAsync(Guid postId, CancellationToken cancellationToken);
+    Task<PagedList<Comment>> GetByPostIdAsync(Guid postId, int page, int pageSize,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, int>> GetCountsByPostIdsAsync(IReadOnlyCollection<Guid> postIds,
+        CancellationToken cancellationToken = default);
 }

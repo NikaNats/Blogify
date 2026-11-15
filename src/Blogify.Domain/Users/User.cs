@@ -132,6 +132,12 @@ public sealed class User : AuditableEntity
         return Result.Success();
     }
 
+    /// <summary>Marks a pending registration as permanently failed (e.g. identity already exists).</summary>
+    public void MarkRegistrationFailed()
+    {
+        if (Status == UserStatus.Pending) Status = UserStatus.Failed;
+    }
+
     public void Activate(string identityId)
     {
         if (Status == UserStatus.Active)

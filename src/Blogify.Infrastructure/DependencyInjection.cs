@@ -1,4 +1,5 @@
-﻿using Asp.Versioning;
+﻿using Microsoft.Extensions.Http.Resilience;
+using Asp.Versioning;
 using Blogify.Application.Abstractions.Authentication;
 using Blogify.Application.Abstractions.Caching;
 using Blogify.Application.Abstractions.Clock;
@@ -115,6 +116,7 @@ public static class DependencyInjection
 
         services.Configure<KeycloakOptions>(configuration.GetSection("Keycloak"));
 
+        services.AddMemoryCache();
         services.AddTransient<AdminAuthorizationDelegatingHandler>();
 
         services.AddHttpClient<IAuthenticationService, AuthenticationService>((serviceProvider, httpClient) =>
@@ -123,9 +125,25 @@ public static class DependencyInjection
 
                 httpClient.BaseAddress = new Uri(keycloakOptions.AdminUrl);
             })
-            .AddHttpMessageHandler<AdminAuthorizationDelegatingHandler>();
+            .AddHttpMessageHandler<AdminAuthorizationDelegatingHandler>()
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
+                // Never auto-retry user creation/deletion: a retried POST could create a duplicate identity.
+                options.Retry.DisableForUnsafeHttpMethods();
+            });
 
-        services.AddTransient<IJwtService, JwtService>();
+        services.AddHttpClient<IJwtService, JwtService>()
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
+                // Password-grant logins are not retried: a 401 is a real answer and a replay would hammer lockouts.
+                options.Retry.DisableForUnsafeHttpMethods();
+            });
 
         services.AddHttpContextAccessor();
 
@@ -183,9 +201,9 @@ public static class DependencyInjection
     private static void AddHealthChecks(IServiceCollection services, IConfiguration configuration)
     {
         services.AddHealthChecks()
-            .AddNpgSql(configuration.GetConnectionString("Database")!)
-            .AddRedis(configuration.GetConnectionString("Cache")!)
-            .AddUrlGroup(new Uri(configuration["Keycloak:BaseUrl"]!), HttpMethod.Get, "keycloak");
+            .AddNpgSql(configuration.GetConnectionString("Database")!, tags: ["ready"])
+            .AddRedis(configuration.GetConnectionString("Cache")!, tags: ["ready"])
+            .AddUrlGroup(new Uri(configuration["Keycloak:BaseUrl"]!), HttpMethod.Get, "keycloak", tags: ["ready"]);
     }
 
     private static void AddApiVersioning(IServiceCollection services)
@@ -225,6 +243,11 @@ public static class DependencyInjection
                     .WithSimpleSchedule(schedule =>
                         schedule.WithInterval(TimeSpan.FromSeconds(outboxOptions.IntervalInSeconds)).RepeatForever());
             });
+
+            quartz.AddJob<OutboxCleanupJob>(job => job.WithIdentity(nameof(OutboxCleanupJob)));
+            quartz.AddTrigger<OutboxCleanupJob>((_, trigger) => trigger
+                .ForJob(nameof(OutboxCleanupJob))
+                .WithSimpleSchedule(schedule => schedule.WithInterval(TimeSpan.FromHours(1)).RepeatForever()));
         });
 
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);

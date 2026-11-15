@@ -17,7 +17,7 @@ namespace Blogify.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -158,6 +158,16 @@ namespace Blogify.Infrastructure.Migrations
                     b.HasIndex("AuthorId")
                         .HasDatabaseName("ix_posts_author_id");
 
+                    b.HasIndex("CategoryIds")
+                        .HasDatabaseName("ix_posts_category_ids");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("CategoryIds"), "gin");
+
+                    b.HasIndex("TagIds")
+                        .HasDatabaseName("ix_posts_tag_ids");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("TagIds"), "gin");
+
                     b.ToTable("posts", (string)null);
                 });
 
@@ -243,6 +253,11 @@ namespace Blogify.Infrastructure.Migrations
                         {
                             Id = 1,
                             Name = "Registered"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Administrator"
                         });
                 });
 

@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,11 +40,31 @@ internal sealed class CommentRepository(ApplicationDbContext dbContext) : IComme
         return await dbContext.Set<Comment>().AnyAsync(predicate, cancellationToken);
     }
 
-    public async Task<List<Comment>> GetByPostIdAsync(Guid postId, CancellationToken cancellationToken)
+    public async Task<PagedList<Comment>> GetByPostIdAsync(Guid postId, int page, int pageSize,
+        CancellationToken cancellationToken = default)
     {
+        var query = dbContext.Set<Comment>().AsNoTracking().Where(comment => comment.PostId == postId);
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderBy(c => c.CreatedAt)
+            .ThenBy(c => c.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedList<Comment>(items, total);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCountsByPostIdsAsync(IReadOnlyCollection<Guid> postIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (postIds.Count == 0) return new Dictionary<Guid, int>();
+
         return await dbContext.Set<Comment>()
             .AsNoTracking()
-            .Where(comment => comment.PostId == postId)
-            .ToListAsync(cancellationToken);
+            .Where(c => postIds.Contains(c.PostId))
+            .GroupBy(c => c.PostId)
+            .Select(g => new { PostId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.PostId, x => x.Count, cancellationToken);
     }
 }

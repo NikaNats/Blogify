@@ -52,9 +52,10 @@ public sealed class Comment : AuditableEntity
         return Result.Success();
     }
 
-    public Result Remove(Guid userId)
+    /// <summary>Authors may remove their own comments; administrators may remove any comment (moderation).</summary>
+    public Result Remove(Guid userId, bool isAdministrator = false)
     {
-        if (AuthorId != userId)
+        if (AuthorId != userId && !isAdministrator)
             return Result.Failure(CommentError.UnauthorizedDeletion);
 
         RaiseDomainEvent(new CommentDeletedDomainEvent(Id, PostId));

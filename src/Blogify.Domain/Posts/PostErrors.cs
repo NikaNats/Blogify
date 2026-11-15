@@ -12,6 +12,10 @@ public static class PostErrors
         "Post.NotFound",
         "The post was not found.");
 
+    public static readonly Error Forbidden = Error.Forbidden(
+        "Post.Forbidden",
+        "You are not authorized to modify this post.");
+
     public static readonly Error CommentToUnpublishedPost = Error.Validation(
         "Post.AddComment",
         "Cannot add comments to unpublished posts.");
@@ -34,7 +38,7 @@ public static class PostErrors
 
     public static Error ContentTooLong => Error.Validation(
         "Post.Content.TooLong",
-        "The post content cannot exceed 500 characters.");
+        $"The post content cannot exceed {PostContent.MaxLength} characters.");
 
     public static Error ExcerptEmpty => Error.Validation(
         "Post.Excerpt.Empty",

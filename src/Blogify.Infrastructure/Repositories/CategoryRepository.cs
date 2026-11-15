@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,32 @@ internal sealed class CategoryRepository(ApplicationDbContext dbContext) : ICate
     public async Task<IReadOnlyList<Category>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.Set<Category>().AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    public async Task<PagedList<Category>> GetPagedAsync(int page, int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var total = await dbContext.Set<Category>().CountAsync(cancellationToken);
+        var items = await dbContext.Set<Category>()
+            .AsNoTracking()
+            .OrderBy(c => c.CreatedAt)
+            .ThenBy(c => c.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedList<Category>(items, total);
+    }
+
+    public async Task<IReadOnlyList<Category>> GetByIdsAsync(IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0) return [];
+
+        return await dbContext.Set<Category>()
+            .AsNoTracking()
+            .Where(c => ids.Contains(c.Id))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(Category entity, CancellationToken cancellationToken = default)

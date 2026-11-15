@@ -28,18 +28,18 @@ public static class CommentError
 
     public static readonly Error ContentTooLong = Error.Validation(
         $"{Prefix}.ContentTooLong",
-        "Comment content exceeds the maximum allowed length of 1000 characters.");
+        $"Comment content exceeds the maximum allowed length of {CommentContent.MaxLength} characters.");
 
     public static readonly Error DisallowedContent = Error.Validation(
         $"{Prefix}.DisallowedContent",
         "Comment contains disallowed content. Please review our community guidelines.");
 
     // Domain rule errors
-    public static readonly Error UnauthorizedUpdate = Error.Conflict(
+    public static readonly Error UnauthorizedUpdate = Error.Forbidden(
         $"{Prefix}.UnauthorizedUpdate",
         "Only the author can update this comment.");
 
-    public static readonly Error UnauthorizedDeletion = Error.Conflict(
+    public static readonly Error UnauthorizedDeletion = Error.Forbidden(
         $"{Prefix}.UnauthorizedDeletion",
         "Only the author can delete this comment.");
 

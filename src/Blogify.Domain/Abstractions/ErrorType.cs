@@ -8,5 +8,6 @@ public enum ErrorType
     NotFound = 3,
     Conflict = 4,
     Unexpected = 5,
-    AuthenticationFailed = 6
+    AuthenticationFailed = 6,
+    Forbidden = 7
 }

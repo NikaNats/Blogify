@@ -4,8 +4,8 @@ namespace Blogify.Domain.Comments;
 
 public class CommentContent : ValueObject
 {
-    internal const int MinLength = 1;
-    internal const int MaxLength = 1000;
+    public const int MinLength = 1;
+    public const int MaxLength = 1000;
 
     private CommentContent(string value)
     {

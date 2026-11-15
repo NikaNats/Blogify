@@ -37,6 +37,15 @@ public static class UserErrors
         "User.CannotRemoveRegisteredRole",
         "Cannot remove the Registered role from a user");
 
+    public static readonly Error EmailAlreadyExists = Error.Conflict(
+        "User.EmailAlreadyExists",
+        "A user with this email address already exists.");
+
+    public static readonly Error Unauthenticated = new(
+        "User.Unauthenticated",
+        "The caller is not authenticated.",
+        ErrorType.AuthenticationFailed);
+
     public static readonly Error UserNotFound = Error.NotFound(
         "User.NotFound",
         "The specified user was not found");

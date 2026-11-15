@@ -13,6 +13,9 @@ internal interface IOutboxDataAccess
     Task MarkSuccessAsync(Guid id, DateTime processedOnUtc, string workerId, CancellationToken ct);
     Task MarkRetryAsync(Guid id, int attempts, DateTime nextRetryUtc, string error, string workerId, CancellationToken ct);
     Task MarkPoisonAsync(Guid id, int attempts, DateTime processedOnUtc, string error, string workerId, CancellationToken ct);
+
+    /// <summary>Deletes messages that finished processing before <paramref name="olderThanUtc"/>; returns the number removed.</summary>
+    Task<int> DeleteProcessedAsync(DateTime olderThanUtc, CancellationToken ct);
 }
 
 internal sealed record OutboxMessageRecord(Guid Id, string Type, string Content, int Attempts);
@@ -32,7 +35,7 @@ internal sealed class DapperOutboxDataAccess(ISqlConnectionFactory sqlConnection
     {
         using var connection = sqlConnectionFactory.CreateConnection();
         // Atomic claim: pick eligible rows and set lock (attempts unchanged)
-        var sql = $"""
+        const string sql = """
             WITH cte AS (
                 SELECT id
                 FROM outbox_messages
@@ -41,7 +44,7 @@ internal sealed class DapperOutboxDataAccess(ISqlConnectionFactory sqlConnection
                   AND (locked_until_utc IS NULL OR locked_until_utc < @Now)
                   AND attempts < @MaxAttempts
                 ORDER BY occurred_on_utc
-                LIMIT {batchSize}
+                LIMIT @BatchSize
                 FOR UPDATE SKIP LOCKED
             )
             UPDATE outbox_messages o
@@ -56,6 +59,7 @@ internal sealed class DapperOutboxDataAccess(ISqlConnectionFactory sqlConnection
         {
             Now = now,
             MaxAttempts = maxAttempts,
+            BatchSize = batchSize,
             LockUntil = now.Add(lockDuration),
             WorkerId = workerId
         }, cancellationToken: ct));
@@ -65,7 +69,7 @@ internal sealed class DapperOutboxDataAccess(ISqlConnectionFactory sqlConnection
     public async Task MarkSuccessAsync(Guid id, DateTime processedOnUtc, string workerId, CancellationToken ct)
     {
         using var connection = sqlConnectionFactory.CreateConnection();
-        const string sql = "UPDATE outbox_messages SET processed_on_utc = @ProcessedOnUtc, error = NULL, locked_until_utc=NULL, locked_by=NULL WHERE id = @Id AND locked_by=@WorkerId";
+        var sql = $"UPDATE outbox_messages SET processed_on_utc = @ProcessedOnUtc, error = NULL, locked_until_utc=NULL, locked_by=NULL, content = {Scrub} WHERE id = @Id AND locked_by=@WorkerId";
         await connection.ExecuteAsync(new CommandDefinition(sql, new { Id = id, ProcessedOnUtc = ToUtcOffset(processedOnUtc), WorkerId = workerId }, cancellationToken: ct));
     }
 
@@ -79,9 +83,20 @@ internal sealed class DapperOutboxDataAccess(ISqlConnectionFactory sqlConnection
     public async Task MarkPoisonAsync(Guid id, int attempts, DateTime processedOnUtc, string error, string workerId, CancellationToken ct)
     {
         using var connection = sqlConnectionFactory.CreateConnection();
-        const string sql = "UPDATE outbox_messages SET error = @Error, processed_on_utc = @ProcessedOnUtc, attempts = @Attempts, locked_until_utc=NULL, locked_by=NULL WHERE id = @Id AND locked_by=@WorkerId";
+        var sql = $"UPDATE outbox_messages SET error = @Error, processed_on_utc = @ProcessedOnUtc, attempts = @Attempts, locked_until_utc=NULL, locked_by=NULL, content = {Scrub} WHERE id = @Id AND locked_by=@WorkerId";
         await connection.ExecuteAsync(new CommandDefinition(sql, new { Id = id, Error = error, ProcessedOnUtc = ToUtcOffset(processedOnUtc), Attempts = attempts, WorkerId = workerId }, cancellationToken: ct));
     }
+
+    public async Task<int> DeleteProcessedAsync(DateTime olderThanUtc, CancellationToken ct)
+    {
+        using var connection = sqlConnectionFactory.CreateConnection();
+        const string sql = "DELETE FROM outbox_messages WHERE processed_on_utc IS NOT NULL AND processed_on_utc < @Cutoff";
+        return await connection.ExecuteAsync(new CommandDefinition(sql, new { Cutoff = ToUtcOffset(olderThanUtc) }, cancellationToken: ct));
+    }
+
+    // Registration events carry the (encrypted) password; once a message is finished it must not stay in the table.
+    // jsonb_set with create_missing=false leaves every other event type untouched.
+    private const string Scrub = "jsonb_set(content, '{password}', '\"\"'::jsonb, false)";
 
     private static DateTimeOffset ToUtcOffset(DateTime value) =>
         new(value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value.ToUniversalTime(), DateTimeKind.Utc));

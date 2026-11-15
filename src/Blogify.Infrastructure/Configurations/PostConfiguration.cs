@@ -147,5 +147,7 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
     private static void ConfigureIndexes(EntityTypeBuilder<Post> builder)
     {
         builder.HasIndex(p => p.AuthorId);
+        builder.HasIndex(p => p.CategoryIds).HasMethod("gin");
+        builder.HasIndex(p => p.TagIds).HasMethod("gin");
     }
 }
