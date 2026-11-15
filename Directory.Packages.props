@@ -17,6 +17,7 @@
         <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="$(AspNetCoreVersion)" />
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="$(AspNetCoreVersion)" />
         <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="$(AspNetCoreVersion)" />
+        <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="$(AspNetCoreVersion)" />
         <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(AspNetCoreVersion)" />
         <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(AspNetCoreVersion)" />
         <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="$(EfCoreVersion)" />
@@ -47,7 +48,6 @@
         <PackageVersion Include="MediatR" Version="12.5.0" />
         <PackageVersion Include="Quartz.Extensions.Hosting" Version="4.7.3" />
         <PackageVersion Include="Scalar.AspNetCore" Version="2.21.0" />
-        <PackageVersion Include="Swashbuckle.AspNetCore" Version="11.0.1" />
     </ItemGroup>
 
     <ItemGroup Label="Observability">
