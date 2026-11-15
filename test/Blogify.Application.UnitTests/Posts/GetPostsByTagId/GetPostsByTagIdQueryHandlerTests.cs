@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Blogify.Domain.Comments;
+using System.Linq.Expressions;
 using Blogify.Application.Posts.GetPostsByTagId;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
@@ -27,7 +28,7 @@ public class GetPostsByTagIdQueryHandlerTests
         _handler = new GetPostsByTagIdQueryHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _tagRepositoryMock);
+            _tagRepositoryMock, Substitute.For<ICommentRepository>());
     }
 
     [Fact]
@@ -46,16 +47,16 @@ public class GetPostsByTagIdQueryHandlerTests
 
         // --- FIXED: Mock the actual methods called by the handler ---
         _tagRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Tag, bool>>>()).Returns(true);
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Post> { post });
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
-        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
+        _postRepositoryMock.GetByTagIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post> { post }));
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        var response = result.Value.Single();
+        var response = result.Value.Items.Single();
 
         response.Id.ShouldBe(post.Id);
         response.Tags.ShouldHaveSingleItem().Id.ShouldBe(tag.Id);
@@ -74,8 +75,8 @@ public class GetPostsByTagIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty();
-        await _postRepositoryMock.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());
+        result.Value.Items.ShouldBeEmpty();
+        await _postRepositoryMock.DidNotReceive().GetByTagIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -86,16 +87,14 @@ public class GetPostsByTagIdQueryHandlerTests
         var query = new GetPostsByTagIdQuery(tag.Id);
 
         _tagRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Tag, bool>>>()).Returns(true);
-        // Return a post that is NOT associated with the tag
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new List<Post> { TestFactory.CreatePost() });
+        _postRepositoryMock.GetByTagIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post>()));
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty();
+        result.Value.Items.ShouldBeEmpty();
     }
 
     #region TestFactory

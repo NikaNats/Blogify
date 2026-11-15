@@ -16,7 +16,7 @@ public class PublishPostCommandHandlerTests
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new PublishPostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
+        _handler = new PublishPostCommandHandler(_postRepositoryMock, _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     // A robust helper that creates a valid Post or throws if setup fails.

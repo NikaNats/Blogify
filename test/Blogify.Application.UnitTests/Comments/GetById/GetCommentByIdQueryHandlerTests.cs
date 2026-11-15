@@ -13,7 +13,15 @@ public class GetCommentByIdQueryHandlerTests
     public GetCommentByIdQueryHandlerTests()
     {
         _commentRepositoryMock = Substitute.For<ICommentRepository>();
-        _handler = new GetCommentByIdQueryHandler(_commentRepositoryMock);
+        _handler = new GetCommentByIdQueryHandler(_commentRepositoryMock, PublishedPostRepository(), Substitute.For<Blogify.Application.Abstractions.Authentication.IUserContext>());
+    }
+
+    private static Blogify.Domain.Posts.IPostRepository PublishedPostRepository()
+    {
+        var posts = Substitute.For<Blogify.Domain.Posts.IPostRepository>();
+        posts.GetVisibilityAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(
+            new Blogify.Domain.Posts.PostVisibility(Blogify.Domain.Posts.PublicationStatus.Published, Guid.NewGuid()));
+        return posts;
     }
 
     [Fact]

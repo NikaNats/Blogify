@@ -49,6 +49,7 @@ public class DeleteCommentCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBe(Unit.Value);
+        comment.DomainEvents.ShouldContain(e => e is Blogify.Domain.Comments.Events.CommentDeletedDomainEvent);
 
         // Verify that the DeleteAsync and SaveChangesAsync methods were called
         await _commentRepository.Received(1).DeleteAsync(comment, Arg.Any<CancellationToken>());

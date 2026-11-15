@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Blogify.Domain.Comments;
+using System.Linq.Expressions;
 using Blogify.Application.Posts.GetPostsByCategoryId;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
@@ -24,7 +25,7 @@ public class GetPostsByCategoryIdQueryHandlerTests
         _handler = new GetPostsByCategoryIdQueryHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _tagRepositoryMock);
+            _tagRepositoryMock, Substitute.For<ICommentRepository>());
     }
 
     [Fact]
@@ -43,16 +44,16 @@ public class GetPostsByCategoryIdQueryHandlerTests
 
         // Mock the actual methods called by the refactored handler
         _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>()).Returns(true);
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Post> { post });
-        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
+        _postRepositoryMock.GetByCategoryIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post> { post }));
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        var response = result.Value.Single();
+        var response = result.Value.Items.Single();
 
         response.Id.ShouldBe(post.Id);
         response.Categories.ShouldHaveSingleItem().Id.ShouldBe(category.Id);
@@ -72,7 +73,7 @@ public class GetPostsByCategoryIdQueryHandlerTests
         // Assert
         result.IsSuccess.ShouldBeFalse();
         result.Error.ShouldBe(CategoryError.NotFound);
-        await _postRepositoryMock.DidNotReceive().GetAllAsync(Arg.Any<CancellationToken>());
+        await _postRepositoryMock.DidNotReceive().GetByCategoryIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -83,16 +84,14 @@ public class GetPostsByCategoryIdQueryHandlerTests
         var query = new GetPostsByCategoryIdQuery(category.Id);
 
         _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>()).Returns(true);
-        // Return a post that is NOT associated with the category
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new List<Post> { TestFactory.CreatePost() });
+        _postRepositoryMock.GetByCategoryIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post>()));
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty("The handler should correctly filter posts by category ID.");
+        result.Value.Items.ShouldBeEmpty("The handler should correctly filter posts by category ID.");
     }
 
     #region TestFactory

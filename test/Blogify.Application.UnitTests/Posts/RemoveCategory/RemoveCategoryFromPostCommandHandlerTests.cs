@@ -25,7 +25,7 @@ public class RemoveCategoryFromPostCommandHandlerTests
         _handler = new RemoveCategoryFromPostCommandHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _unitOfWorkMock);
+            _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     [Fact]

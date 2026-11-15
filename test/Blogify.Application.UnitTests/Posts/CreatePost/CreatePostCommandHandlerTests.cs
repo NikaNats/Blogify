@@ -21,6 +21,7 @@ public class CreatePostCommandHandlerTests
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _userContextMock = Substitute.For<IUserContext>();
+        _userContextMock.UserId.Returns(Guid.NewGuid());
 
         _handler = new CreatePostCommandHandler(
             _postRepositoryMock,

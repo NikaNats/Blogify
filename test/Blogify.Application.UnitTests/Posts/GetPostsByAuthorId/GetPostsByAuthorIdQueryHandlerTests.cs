@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Posts.GetPostsByAuthorId;
+﻿using Blogify.Domain.Comments;
+using Blogify.Application.Posts.GetPostsByAuthorId;
 using Blogify.Domain.Categories;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
@@ -26,7 +27,7 @@ public class GetPostsByAuthorIdQueryHandlerTests
         _handler = new GetPostsByAuthorIdQueryHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _tagRepositoryMock);
+            _tagRepositoryMock, Substitute.For<ICommentRepository>(), TestUserContexts.Administrator());
     }
 
     [Fact]
@@ -34,14 +35,14 @@ public class GetPostsByAuthorIdQueryHandlerTests
     {
         // Arrange
         var authorId = Guid.NewGuid();
-        _postRepositoryMock.GetByAuthorIdAsync(authorId, Arg.Any<CancellationToken>()).Returns(new List<Post>());
+        _postRepositoryMock.GetByAuthorIdAsync(authorId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post>()));
 
         // Act
         var result = await _handler.Handle(new GetPostsByAuthorIdQuery(authorId), CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty();
+        result.Value.Items.ShouldBeEmpty();
     }
 
     [Fact]
@@ -62,24 +63,24 @@ public class GetPostsByAuthorIdQueryHandlerTests
         var posts = new List<Post> { post1, post2 };
 
         // --- FIXED: Mock all repository calls made by the handler ---
-        _postRepositoryMock.GetByAuthorIdAsync(authorId, Arg.Any<CancellationToken>()).Returns(posts);
+        _postRepositoryMock.GetByAuthorIdAsync(authorId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(posts));
         // Mock the batch-loading calls
-        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Category> { category });
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag });
 
         // Act
         var result = await _handler.Handle(new GetPostsByAuthorIdQuery(authorId), CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(2);
+        result.Value.Items.Count.ShouldBe(2);
 
-        var responseForPost1 = result.Value.Single(r => r.Id == post1.Id);
+        var responseForPost1 = result.Value.Items.Single(r => r.Id == post1.Id);
         responseForPost1.AuthorId.ShouldBe(authorId);
         responseForPost1.Categories.ShouldHaveSingleItem().Id.ShouldBe(category.Id);
         responseForPost1.Tags.ShouldHaveSingleItem().Id.ShouldBe(tag.Id);
 
-        var responseForPost2 = result.Value.Single(r => r.Id == post2.Id);
+        var responseForPost2 = result.Value.Items.Single(r => r.Id == post2.Id);
         responseForPost2.AuthorId.ShouldBe(authorId);
         responseForPost2.Categories.ShouldBeEmpty();
         responseForPost2.Tags.ShouldBeEmpty();

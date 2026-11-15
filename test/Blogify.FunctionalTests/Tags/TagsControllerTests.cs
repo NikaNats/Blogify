@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Blogify.Application.Abstractions.Pagination;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Blogify.Api.Controllers.Tags;
@@ -76,7 +77,9 @@ public class TagsControllerTests : BaseFunctionalTest, IAsyncLifetime
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var tags = await response.Content.ReadFromJsonAsync<List<AllTagResponse>>();
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<AllTagResponse>>();
+        page.ShouldNotBeNull();
+        var tags = page.Items;
         tags.ShouldNotBeNull();
         tags.Count.ShouldBeGreaterThanOrEqualTo(2);
         tags.ShouldContain(t => t.Name == "Go");

@@ -23,7 +23,7 @@ public class RemoveTagFromPostCommandHandlerTests
         _handler = new RemoveTagFromPostCommandHandler(
             _postRepositoryMock,
             _tagRepositoryMock,
-            _unitOfWorkMock);
+            _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     [Fact]

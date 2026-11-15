@@ -47,6 +47,13 @@ internal sealed class InMemoryOutboxDataAccess : IOutboxDataAccess
         return Task.CompletedTask;
     }
 
+    public Task<int> DeleteProcessedAsync(DateTime olderThanUtc, CancellationToken ct)
+    {
+        var stale = _store.Where(k => k.Value.ProcessedOnUtc is { } p && p < olderThanUtc).Select(k => k.Key).ToList();
+        foreach (var id in stale) _store.TryRemove(id, out _);
+        return Task.FromResult(stale.Count);
+    }
+
     public Task MarkPoisonAsync(Guid id, int attempts, DateTime processedOnUtc, string error, string workerId, CancellationToken ct)
     {
         _store.AddOrUpdate(id, _ => throw new InvalidOperationException(), (_, old) => (old.Record with { Attempts = attempts }, old.NextRetryUtc, processedOnUtc, error, null, null));

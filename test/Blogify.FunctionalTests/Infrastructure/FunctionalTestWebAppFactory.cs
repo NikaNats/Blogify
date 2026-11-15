@@ -99,6 +99,13 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
                     .UseNpgsql(connectionString)
                     .UseSnakeCaseNamingConvention());
 
+            // Rate limiting is covered by its own tests; every other test must never be throttled.
+            services.Configure<Blogify.Api.RateLimiting.RateLimitingOptions>(o =>
+            {
+                o.AuthPermitLimit = 100_000;
+                o.ApiPermitLimit = 100_000;
+            });
+
             services.RemoveAll(typeof(ISqlConnectionFactory));
 
             services.AddSingleton<ISqlConnectionFactory>(_ =>

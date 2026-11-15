@@ -35,6 +35,7 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory)
     {
         await _dbContext.Database.ExecuteSqlRawAsync(
             "TRUNCATE TABLE posts, tags, comments, categories RESTART IDENTITY");
+        await ResetCacheAsync();
     }
 
     private static CreatePostRequest CreateUniquePost()
@@ -134,13 +135,12 @@ public class PostsControllerTests(FunctionalTestWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AddCommentToPost_WithValidRequest_ShouldReturnNoContent()
+    public async Task CreateComment_OnPublishedPost_ShouldReturnCreated()
     {
         var (postId, _) = await SeedTestPost();
-        var request = new AddCommentToPostRequest("This is a valid test comment.");
-        var response = await HttpClient.PostAsJsonAsync($"{ApiEndpoint}/{postId}/comments", request);
-        // --- FIX: The expected status code is now NoContent ---
-        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var request = new Blogify.Api.Controllers.Comments.CreateCommentRequest(postId, "This is a valid test comment.");
+        var response = await HttpClient.PostAsJsonAsync("api/v1/comments", request);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     [Fact]

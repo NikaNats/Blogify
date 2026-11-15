@@ -16,7 +16,7 @@ public class UpdatePostCommandHandlerTests
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new UpdatePostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
+        _handler = new UpdatePostCommandHandler(_postRepositoryMock, _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     private static Post CreateTestPost(PublicationStatus initialStatus = PublicationStatus.Draft)

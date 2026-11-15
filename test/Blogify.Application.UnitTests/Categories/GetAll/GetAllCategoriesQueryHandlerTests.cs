@@ -22,8 +22,8 @@ public class GetAllCategoriesTests
     {
         // Arrange
         _categoryRepositoryMock
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new List<Category>().AsReadOnly());
+            .GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(TestPaging.Of(new List<Category>().AsReadOnly()));
 
         var query = new GetAllCategoriesQuery();
 
@@ -32,7 +32,7 @@ public class GetAllCategoriesTests
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty();
+        result.Value.Items.ShouldBeEmpty();
     }
 
     [Fact]
@@ -44,8 +44,8 @@ public class GetAllCategoriesTests
         var categories = new List<Category> { category1, category2 }.AsReadOnly();
 
         _categoryRepositoryMock
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(categories);
+            .GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(TestPaging.Of(categories));
 
         var query = new GetAllCategoriesQuery();
 
@@ -54,9 +54,9 @@ public class GetAllCategoriesTests
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(2);
-        result.Value[0].Name.ShouldBe("Category1");
-        result.Value[1].Name.ShouldBe("Category2");
+        result.Value.Items.Count.ShouldBe(2);
+        result.Value.Items[0].Name.ShouldBe("Category1");
+        result.Value.Items[1].Name.ShouldBe("Category2");
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class GetAllCategoriesTests
     {
         // Arrange: infrastructure failures are not domain failures; the global exception handler owns them.
         _categoryRepositoryMock
-            .GetAllAsync(Arg.Any<CancellationToken>())
+            .GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var query = new GetAllCategoriesQuery();
@@ -81,8 +81,8 @@ public class GetAllCategoriesTests
         var categories = new List<Category> { category }.AsReadOnly();
 
         _categoryRepositoryMock
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(categories);
+            .GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(TestPaging.Of(categories));
 
         var query = new GetAllCategoriesQuery();
 
@@ -90,6 +90,6 @@ public class GetAllCategoriesTests
         await _handler.Handle(query, default);
 
         // Assert
-        await _categoryRepositoryMock.Received(1).GetAllAsync(Arg.Any<CancellationToken>());
+        await _categoryRepositoryMock.Received(1).GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 }

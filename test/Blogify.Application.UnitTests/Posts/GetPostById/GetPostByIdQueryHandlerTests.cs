@@ -23,7 +23,8 @@ public class GetPostByIdQueryHandlerTests
         _handler = new GetPostByIdQueryHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _tagRepositoryMock);
+            _tagRepositoryMock,
+            TestUserContexts.Administrator());
     }
 
     [Fact]
@@ -64,12 +65,11 @@ public class GetPostByIdQueryHandlerTests
         // Mock the repository calls to simulate the data layer.
         _postRepositoryMock.GetByIdAsync(query.Id, Arg.Any<CancellationToken>()).Returns(post);
 
-        // The handler calls GetAllAsync, so we mock it to return a list containing
-        // both the relevant category and the distractor.
-        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new List<Category> { category, unrelatedCategory });
+        // The repository filters by id in SQL, so only the post's own category is returned.
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { category });
 
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Tag> { tag });
 
         // Act
@@ -104,9 +104,9 @@ public class GetPostByIdQueryHandlerTests
         _postRepositoryMock.GetByIdAsync(query.Id, Arg.Any<CancellationToken>()).Returns(post);
 
         // The repositories might still have data, but none of it is related to our post.
-        _categoryRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Category> { TestFactory.CreateCategory("Some Category") });
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>())
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Tag> { TestFactory.CreateTag("Some Tag") });
 
         // Act

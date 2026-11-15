@@ -1,5 +1,6 @@
 ﻿using Blogify.Application.Tags.DeleteTag;
 using Blogify.Domain.Abstractions;
+using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 using NSubstitute;
 using Shouldly;
@@ -9,13 +10,15 @@ namespace Blogify.Application.UnitTests.Tags;
 public class DeleteTagCommandHandlerTests
 {
     private readonly DeleteTagCommandHandler _handler;
+    private readonly IPostRepository _postRepository;
     private readonly ITagRepository _tagRepository;
 
     public DeleteTagCommandHandlerTests()
     {
         _tagRepository = Substitute.For<ITagRepository>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        _handler = new DeleteTagCommandHandler(_tagRepository, unitOfWork);
+        _postRepository = Substitute.For<IPostRepository>();
+        _handler = new DeleteTagCommandHandler(_tagRepository, _postRepository, unitOfWork);
     }
 
     [Fact]
@@ -41,6 +44,7 @@ public class DeleteTagCommandHandlerTests
         result.IsSuccess.ShouldBeTrue();
 
         await _tagRepository.Received(1).DeleteAsync(tagId, Arg.Any<CancellationToken>());
+        await _postRepository.Received(1).RemoveTagReferencesAsync(tagId, Arg.Any<CancellationToken>());
     }
 
     [Fact]

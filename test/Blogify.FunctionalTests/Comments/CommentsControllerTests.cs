@@ -61,7 +61,7 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateComment_WhenUserIsNotAuthor_ShouldReturnConflict()
+    public async Task UpdateComment_WhenUserIsNotAuthor_ShouldReturnForbidden()
     {
         // Arrange
         var postId = await _seeder.SeedPostAsync();
@@ -73,7 +73,7 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
         var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{otherAuthorsCommentId}", request);
 
         // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -91,13 +91,13 @@ public class CommentsControllerTests : BaseFunctionalTest, IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteComment_WhenUserIsNotAuthor_ShouldReturnConflict()
+    public async Task DeleteComment_WhenUserIsAdministratorButNotAuthor_ShouldReturnNoContent()
     {
         var postId = await _seeder.SeedPostAsync();
         var otherAuthorsCommentId = await _seeder.SeedCommentAsync(postId, Guid.NewGuid());
 
         var response = await HttpClient.DeleteAsync($"{ApiEndpoint}/{otherAuthorsCommentId}");
 
-        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 }

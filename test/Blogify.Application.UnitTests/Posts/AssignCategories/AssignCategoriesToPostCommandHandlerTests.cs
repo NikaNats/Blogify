@@ -22,7 +22,7 @@ public class AssignCategoriesToPostCommandHandlerTests
         _handler = new AssignCategoriesToPostCommandHandler(
             _postRepositoryMock,
             _categoryRepositoryMock,
-            _unitOfWorkMock);
+            _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     [Fact]
@@ -53,9 +53,8 @@ public class AssignCategoriesToPostCommandHandlerTests
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
 
         // --- FIXED: Mock the GetByIdAsync calls precisely ---
-        _categoryRepositoryMock.GetByIdAsync(validCategory.Id, Arg.Any<CancellationToken>()).Returns(validCategory);
-        _categoryRepositoryMock.GetByIdAsync(invalidCategoryId, Arg.Any<CancellationToken>())
-            .Returns((Category?)null); // This category is not found
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { validCategory });
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -76,8 +75,8 @@ public class AssignCategoriesToPostCommandHandlerTests
         var command = new AssignCategoriesToPostCommand(post.Id, [category1.Id, category2.Id]);
 
         _postRepositoryMock.GetByIdAsync(command.PostId, Arg.Any<CancellationToken>()).Returns(post);
-        _categoryRepositoryMock.GetByIdAsync(category1.Id, Arg.Any<CancellationToken>()).Returns(category1);
-        _categoryRepositoryMock.GetByIdAsync(category2.Id, Arg.Any<CancellationToken>()).Returns(category2);
+        _categoryRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Category> { category1, category2 });
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);

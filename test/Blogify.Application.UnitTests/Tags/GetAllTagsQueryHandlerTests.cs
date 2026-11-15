@@ -27,7 +27,7 @@ public class GetAllTagsQueryHandlerTests
             Tag.Create("Tag 2").Value
         };
 
-        _tagRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(tags);
+        _tagRepository.GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(tags));
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -35,8 +35,8 @@ public class GetAllTagsQueryHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBeNull();
-        result.Value.Count.ShouldBe(2);
-        result.Value[0].Name.ShouldBe("Tag 1");
+        result.Value.Items.Count.ShouldBe(2);
+        result.Value.Items[0].Name.ShouldBe("Tag 1");
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class GetAllTagsQueryHandlerTests
     {
         // Arrange
         var query = new GetAllTagsQuery();
-        _tagRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag>());
+        _tagRepository.GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Tag>()));
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -52,6 +52,6 @@ public class GetAllTagsQueryHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBeNull();
-        result.Value.ShouldBeEmpty();
+        result.Value.Items.ShouldBeEmpty();
     }
 }

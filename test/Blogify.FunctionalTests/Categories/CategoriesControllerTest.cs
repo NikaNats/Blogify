@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Blogify.Application.Abstractions.Pagination;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Blogify.Api.Controllers.Categories;
@@ -60,7 +61,9 @@ public class CategoriesControllerTests : BaseFunctionalTest, IAsyncLifetime
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var categories = await response.Content.ReadFromJsonAsync<List<AllCategoryResponse>>();
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<AllCategoryResponse>>();
+        page.ShouldNotBeNull();
+        var categories = page.Items;
         categories.ShouldNotBeNull();
         categories.Count.ShouldBeGreaterThanOrEqualTo(2);
         categories.ShouldContain(c => c.Name == "Tech");
@@ -98,7 +101,7 @@ public class CategoriesControllerTests : BaseFunctionalTest, IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateCategory_WhenCategoryExists_ShouldReturnOk()
+    public async Task UpdateCategory_WhenCategoryExists_ShouldReturnNoContent()
     {
         // Arrange
         var categoryId = await _seeder.SeedCategoryAsync();
@@ -108,7 +111,7 @@ public class CategoriesControllerTests : BaseFunctionalTest, IAsyncLifetime
         var response = await HttpClient.PutAsJsonAsync($"{ApiEndpoint}/{categoryId}", request);
 
         // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         var updatedCategory = await HttpClient.GetFromJsonAsync<AllCategoryResponse>($"{ApiEndpoint}/{categoryId}");
         updatedCategory.ShouldNotBeNull();

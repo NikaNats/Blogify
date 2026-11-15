@@ -1,6 +1,7 @@
 ﻿using Blogify.Application.Categories.DeleteCategory;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Categories;
+using Blogify.Domain.Posts;
 using NSubstitute;
 using Shouldly;
 
@@ -12,13 +13,15 @@ public class DeleteCategoryCommandHandlerTests
 {
     private readonly ICategoryRepository _categoryRepositoryMock;
     private readonly DeleteCategoryCommandHandler _handler;
+    private readonly IPostRepository _postRepositoryMock;
     private readonly IUnitOfWork _unitOfWorkMock;
 
     public DeleteCategoryCommandHandlerTests()
     {
         _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new DeleteCategoryCommandHandler(_categoryRepositoryMock, _unitOfWorkMock);
+        _postRepositoryMock = Substitute.For<IPostRepository>();
+        _handler = new DeleteCategoryCommandHandler(_categoryRepositoryMock, _postRepositoryMock, _unitOfWorkMock);
     }
 
     private static Category CreateTestCategory()
@@ -44,7 +47,7 @@ public class DeleteCategoryCommandHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         await _categoryRepositoryMock.Received(1).DeleteAsync(category, Arg.Any<CancellationToken>());
-        await _unitOfWorkMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _postRepositoryMock.Received(1).RemoveCategoryReferencesAsync(category.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Posts.GetAllPosts;
+﻿using Blogify.Domain.Comments;
+using Blogify.Application.Posts.GetAllPosts;
 using Blogify.Domain.Posts;
 using Blogify.Domain.Tags;
 using NSubstitute;
@@ -19,21 +20,21 @@ public class GetAllPostsQueryHandlerTests
         _tagRepositoryMock = Substitute.For<ITagRepository>();
 
         // --- CHANGED: Inject all required dependencies ---
-        _handler = new GetAllPostsQueryHandler(_postRepositoryMock, _tagRepositoryMock);
+        _handler = new GetAllPostsQueryHandler(_postRepositoryMock, _tagRepositoryMock, Substitute.For<ICommentRepository>());
     }
 
     [Fact]
     public async Task Handle_WhenNoPostsExist_ShouldReturnEmptyList()
     {
         // Arrange
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Post>());
+        _postRepositoryMock.GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(new List<Post>()));
 
         // Act
         var result = await _handler.Handle(new GetAllPostsQuery(), CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBeEmpty();
+        result.Value.Items.ShouldBeEmpty();
     }
 
     [Fact]
@@ -49,21 +50,21 @@ public class GetAllPostsQueryHandlerTests
         var posts = new List<Post> { post1, post2 };
 
         // --- FIXED: Mock all repository calls made by the handler ---
-        _postRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(posts);
-        _tagRepositoryMock.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag1 });
+        _postRepositoryMock.GetPagedAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(posts));
+        _tagRepositoryMock.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Tag> { tag1 });
 
         // Act
         var result = await _handler.Handle(new GetAllPostsQuery(), CancellationToken.None);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(2);
+        result.Value.Items.Count.ShouldBe(2);
 
-        var responseForPost1 = result.Value.Single(r => r.Id == post1.Id);
+        var responseForPost1 = result.Value.Items.Single(r => r.Id == post1.Id);
         responseForPost1.Status.ShouldBe(PublicationStatus.Draft);
         responseForPost1.Tags.ShouldHaveSingleItem().Name.ShouldBe(tag1.Name.Value);
 
-        var responseForPost2 = result.Value.Single(r => r.Id == post2.Id);
+        var responseForPost2 = result.Value.Items.Single(r => r.Id == post2.Id);
         responseForPost2.Status.ShouldBe(PublicationStatus.Published);
         responseForPost2.Tags.ShouldBeEmpty();
     }

@@ -18,7 +18,7 @@ public class CacheServiceTests
 
     public CacheServiceTests()
     {
-        _sut = new CacheService(_cache, NullLogger<CacheService>.Instance);
+        _sut = new CacheService(_cache, Substitute.For<StackExchange.Redis.IConnectionMultiplexer>(), NullLogger<CacheService>.Instance);
     }
 
     public sealed record SampleResponse(Guid Id, string Title, List<string> Tags);
@@ -82,7 +82,7 @@ public class CacheServiceTests
         var failingCache = Substitute.For<IDistributedCache>();
         failingCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("redis down"));
-        var sut = new CacheService(failingCache, NullLogger<CacheService>.Instance);
+        var sut = new CacheService(failingCache, Substitute.For<StackExchange.Redis.IConnectionMultiplexer>(), NullLogger<CacheService>.Instance);
 
         var cached = await sut.GetAsync<Result<SampleResponse>>("k", ct);
 

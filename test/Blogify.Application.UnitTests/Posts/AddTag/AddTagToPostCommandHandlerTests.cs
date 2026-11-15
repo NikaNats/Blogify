@@ -23,7 +23,7 @@ public class AddTagToPostCommandHandlerTests
         _handler = new AddTagToPostCommandHandler(
             _postRepositoryMock,
             _tagRepositoryMock,
-            _unitOfWorkMock);
+            _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     [Fact]

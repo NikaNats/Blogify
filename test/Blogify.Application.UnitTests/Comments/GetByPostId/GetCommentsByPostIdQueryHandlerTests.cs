@@ -13,7 +13,15 @@ public class GetCommentsByPostIdQueryHandlerTests
     public GetCommentsByPostIdQueryHandlerTests()
     {
         _commentRepositoryMock = Substitute.For<ICommentRepository>();
-        _handler = new GetCommentsByPostIdQueryHandler(_commentRepositoryMock);
+        _handler = new GetCommentsByPostIdQueryHandler(_commentRepositoryMock, PublishedPostRepository(), Substitute.For<Blogify.Application.Abstractions.Authentication.IUserContext>());
+    }
+
+    private static Blogify.Domain.Posts.IPostRepository PublishedPostRepository()
+    {
+        var posts = Substitute.For<Blogify.Domain.Posts.IPostRepository>();
+        posts.GetVisibilityAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(
+            new Blogify.Domain.Posts.PostVisibility(Blogify.Domain.Posts.PublicationStatus.Published, Guid.NewGuid()));
+        return posts;
     }
 
     [Fact]
@@ -26,7 +34,7 @@ public class GetCommentsByPostIdQueryHandlerTests
             Comment.Create("Content 1", Guid.NewGuid(), postId).Value,
             Comment.Create("Content 2", Guid.NewGuid(), postId).Value
         };
-        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<CancellationToken>()).Returns(comments);
+        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(TestPaging.Of(comments));
 
         var query = new GetCommentsByPostIdQuery(postId);
 
@@ -36,10 +44,10 @@ public class GetCommentsByPostIdQueryHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBeNull();
-        result.Value.Count.ShouldBe(2);
-        result.Value.ShouldContain(c => c.Content == "Content 1" && c.PostId == postId);
-        result.Value.ShouldContain(c => c.Content == "Content 2" && c.PostId == postId);
-        await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<CancellationToken>());
+        result.Value.Items.Count.ShouldBe(2);
+        result.Value.Items.ShouldContain(c => c.Content == "Content 1" && c.PostId == postId);
+        result.Value.Items.ShouldContain(c => c.Content == "Content 2" && c.PostId == postId);
+        await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -47,8 +55,8 @@ public class GetCommentsByPostIdQueryHandlerTests
     {
         // Arrange
         var postId = Guid.NewGuid();
-        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<CancellationToken>())
-            .Returns(new List<Comment>());
+        _commentRepositoryMock.GetByPostIdAsync(postId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(TestPaging.Of(new List<Comment>()));
 
         var query = new GetCommentsByPostIdQuery(postId);
 
@@ -58,8 +66,8 @@ public class GetCommentsByPostIdQueryHandlerTests
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBeNull();
-        result.Value.ShouldBeEmpty();
-        await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<CancellationToken>());
+        result.Value.Items.ShouldBeEmpty();
+        await _commentRepositoryMock.Received(1).GetByPostIdAsync(postId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -74,7 +82,7 @@ public class GetCommentsByPostIdQueryHandlerTests
         // Assert
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(CommentError.EmptyPostId);
-        await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -88,6 +96,6 @@ public class GetCommentsByPostIdQueryHandlerTests
 
         // Act & Assert
         await Should.ThrowAsync<OperationCanceledException>(() => _handler.Handle(query, cancellationToken));
-        await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _commentRepositoryMock.DidNotReceive().GetByPostIdAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 }

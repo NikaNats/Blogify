@@ -16,7 +16,7 @@ public class ArchivePostCommandHandlerTests
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new ArchivePostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
+        _handler = new ArchivePostCommandHandler(_postRepositoryMock, _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     // A robust helper that creates a valid Post or throws if setup fails.

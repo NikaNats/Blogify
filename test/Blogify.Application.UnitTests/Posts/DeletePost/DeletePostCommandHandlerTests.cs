@@ -18,7 +18,7 @@ public class DeletePostCommandHandlerTests
     {
         _postRepositoryMock = Substitute.For<IPostRepository>();
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _handler = new DeletePostCommandHandler(_postRepositoryMock, _unitOfWorkMock);
+        _handler = new DeletePostCommandHandler(_postRepositoryMock, _unitOfWorkMock, TestUserContexts.Administrator());
     }
 
     private static Post CreateTestPost()
