@@ -1,48 +1,77 @@
-﻿using System.Buffers;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Blogify.Application.Abstractions.Caching;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 
 namespace Blogify.Infrastructure.Caching;
 
-internal sealed class CacheService(IDistributedCache cache) : ICacheService
+/// <summary>
+/// Distributed cache wrapper. The cache is an optimization, never a hard dependency: connectivity
+/// and serialization problems are logged and treated as a cache miss instead of failing the request.
+/// </summary>
+internal sealed class CacheService(IDistributedCache cache, ILogger<CacheService> logger) : ICacheService
 {
+    internal static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new ResultJsonConverterFactory() }
+    };
+
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        var bytes = await cache.GetAsync(key, cancellationToken);
+        byte[]? bytes;
+        try
+        {
+            bytes = await cache.GetAsync(key, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Cache read failed for {CacheKey}; treating as a miss", key);
+            return default;
+        }
 
-        return bytes is null ? default : Deserialize<T>(bytes);
+        if (bytes is null)
+            return default;
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(bytes, SerializerOptions);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        {
+            // Outdated schema or corrupt entry: drop it so the next request repopulates it.
+            logger.LogWarning(ex, "Cache entry {CacheKey} could not be deserialized as {Type}; evicting", key, typeof(T).Name);
+            await RemoveAsync(key, cancellationToken);
+            return default;
+        }
     }
 
-    public Task SetAsync<T>(
+    public async Task SetAsync<T>(
         string key,
         T value,
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
     {
-        var bytes = Serialize(value);
-
-        return cache.SetAsync(key, bytes, CacheOptions.Create(expiration), cancellationToken);
+        try
+        {
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, SerializerOptions);
+            await cache.SetAsync(key, bytes, CacheOptions.Create(expiration), cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Cache write failed for {CacheKey}", key);
+        }
     }
 
-    public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        return cache.RemoveAsync(key, cancellationToken);
-    }
-
-    private static T Deserialize<T>(byte[] bytes)
-    {
-        return JsonSerializer.Deserialize<T>(bytes)!;
-    }
-
-    private static byte[] Serialize<T>(T value)
-    {
-        var buffer = new ArrayBufferWriter<byte>();
-
-        using var writer = new Utf8JsonWriter(buffer);
-
-        JsonSerializer.Serialize(writer, value);
-
-        return buffer.WrittenSpan.ToArray();
+        try
+        {
+            await cache.RemoveAsync(key, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The entry still expires via its TTL.
+            logger.LogError(ex, "Cache eviction failed for {CacheKey}; entry may be stale until it expires", key);
+        }
     }
 }

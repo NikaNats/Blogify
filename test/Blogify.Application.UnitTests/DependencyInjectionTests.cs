@@ -39,11 +39,12 @@ public class DependencyInjectionTests
             .ToList();
 
         behaviors.ShouldNotBeEmpty();
-        behaviors.Count.ShouldBe(3);
+        behaviors.Count.ShouldBe(4);
 
         behaviors.ShouldContain(d => d.ImplementationType == typeof(LoggingBehavior<,>));
         behaviors.ShouldContain(d => d.ImplementationType == typeof(ValidationBehavior<,>));
         behaviors.ShouldContain(d => d.ImplementationType == typeof(QueryCachingBehavior<,>));
+        behaviors.ShouldContain(d => d.ImplementationType == typeof(CacheInvalidationBehavior<,>));
     }
 
     [Fact]

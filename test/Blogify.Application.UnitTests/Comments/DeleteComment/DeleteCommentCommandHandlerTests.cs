@@ -3,6 +3,7 @@ using Blogify.Application.Comments.DeleteComment;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
 using MediatR;
+using Blogify.Application.Abstractions.Caching;
 using NSubstitute;
 using Shouldly;
 
@@ -22,7 +23,7 @@ public class DeleteCommentCommandHandlerTests
         _userContext = Substitute.For<IUserContext>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
 
-        _handler = new DeleteCommentCommandHandler(_commentRepository, _userContext, _unitOfWork);
+        _handler = new DeleteCommentCommandHandler(_commentRepository, _userContext, _unitOfWork, Substitute.For<ICacheService>());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Caching;
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
@@ -9,7 +10,8 @@ namespace Blogify.Application.Comments.UpdateComment;
 internal sealed class UpdateCommentCommandHandler(
     ICommentRepository commentRepository,
     IUserContext userContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICacheService cacheService)
     : ICommandHandler<UpdateCommentCommand, Unit>
 {
     public async Task<Result<Unit>> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
@@ -25,6 +27,9 @@ internal sealed class UpdateCommentCommandHandler(
         if (updateResult.IsFailure) return Result.Failure<Unit>(updateResult.Error);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // The command only carries the comment id, so the owning post is evicted here.
+        await cacheService.RemoveAsync(CacheKeys.Post(comment.PostId), cancellationToken);
 
         return Result.Success(Unit.Value);
     }

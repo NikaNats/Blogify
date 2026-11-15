@@ -1,5 +1,9 @@
-﻿using Blogify.Application.Abstractions.Messaging;
+﻿using Blogify.Application.Abstractions.Caching;
+using Blogify.Application.Abstractions.Messaging;
 
 namespace Blogify.Application.Tags.DeleteTag;
 
-public sealed record DeleteTagCommand(Guid Id) : ICommand;
+public sealed record DeleteTagCommand(Guid Id) : ICommand, ICacheInvalidatingCommand
+{
+    public IEnumerable<string> CacheKeysToInvalidate => [CacheKeys.AllTags];
+}

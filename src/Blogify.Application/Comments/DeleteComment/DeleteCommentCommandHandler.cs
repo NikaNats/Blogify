@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Caching;
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Comments;
@@ -9,7 +10,8 @@ namespace Blogify.Application.Comments.DeleteComment;
 internal sealed class DeleteCommentCommandHandler(
     ICommentRepository commentRepository,
     IUserContext userContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICacheService cacheService)
     : ICommandHandler<DeleteCommentCommand, Unit>
 {
     public async Task<Result<Unit>> Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
@@ -24,6 +26,9 @@ internal sealed class DeleteCommentCommandHandler(
         await commentRepository.DeleteAsync(comment, cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // The command only carries the comment id, so the owning post is evicted here.
+        await cacheService.RemoveAsync(CacheKeys.Post(comment.PostId), cancellationToken);
 
         return Result.Success(Unit.Value);
     }
