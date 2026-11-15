@@ -8,8 +8,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Blogify.FunctionalTests.Infrastructure;
 
+[CollectionDefinition("FunctionalTests")]
+public class FunctionalTestsCollection : ICollectionFixture<FunctionalTestWebAppFactory>
+{
+}
+
+[Collection("FunctionalTests")]
 public abstract class BaseFunctionalTest(FunctionalTestWebAppFactory factory)
-    : IClassFixture<FunctionalTestWebAppFactory>
 {
     protected readonly HttpClient HttpClient = factory.CreateClient();
 
@@ -18,10 +23,32 @@ public abstract class BaseFunctionalTest(FunctionalTestWebAppFactory factory)
 
     protected Guid AuthenticatedUserId { get; private set; }
 
-    // Get the factory for direct DB access in tests
+    protected async Task WaitUntilUserActiveAsync(string email)
+    {
+        var timeout = DateTime.UtcNow.AddSeconds(15);
+        while (DateTime.UtcNow < timeout)
+        {
+            using var connection = SqlConnectionFactory.CreateConnection();
+            var status = await connection.QuerySingleOrDefaultAsync<int?>(
+                "SELECT status FROM users WHERE email = @Email",
+                new { Email = email });
+
+            // A NULL status means the user row was never written: fail fast.
+            if (status == null)
+            {
+                throw new Exception($"CRITICAL ERROR: User {email} DOES NOT EXIST in the database! Registration completely failed.");
+            }
+
+            if (status == 1) return; // UserStatus.Active
+            await Task.Delay(150);
+        }
+        throw new TimeoutException($"User {email} was found, but remained 'Pending' and was not activated in time by Outbox processor.");
+    }
 
     protected async Task<string> GetAccessToken()
     {
+        await WaitUntilUserActiveAsync(UserData.RegisterTestUserRequest.Email);
+
         var loginResponse = await HttpClient.PostAsJsonAsync(
             "api/v1/users/login",
             new LogInUserRequest(
@@ -33,8 +60,6 @@ public abstract class BaseFunctionalTest(FunctionalTestWebAppFactory factory)
         var accessTokenResponse = await loginResponse.Content.ReadFromJsonAsync<AccessTokenResponse>();
         var accessToken = accessTokenResponse!.AccessToken;
 
-        // After logging in, we need our internal application User ID, not Keycloak's ID.
-        // We can get this from the database directly.
         using var connection = SqlConnectionFactory.CreateConnection();
         const string sql = "SELECT id FROM users WHERE email = @Email";
         var userId = await connection.QuerySingleOrDefaultAsync<Guid>(

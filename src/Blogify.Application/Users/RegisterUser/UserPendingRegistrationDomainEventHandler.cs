@@ -1,4 +1,5 @@
 using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Cryptography;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Users;
 using Blogify.Domain.Users.Events;
@@ -11,6 +12,7 @@ internal sealed class UserPendingRegistrationDomainEventHandler(
     IAuthenticationService authenticationService,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
+    ISecretProtector secretProtector,
     ILogger<UserPendingRegistrationDomainEventHandler> logger)
     : INotificationHandler<UserPendingRegistrationDomainEvent>
 {
@@ -32,7 +34,9 @@ internal sealed class UserPendingRegistrationDomainEventHandler(
 
         try
         {
-            var identityId = await authenticationService.RegisterAsync(user, notification.Password, cancellationToken);
+            var password = secretProtector.Unprotect(notification.Password);
+
+            var identityId = await authenticationService.RegisterAsync(user, password, cancellationToken);
             user.Activate(identityId);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             logger.LogInformation("User {UserId} external identity provisioned and activated", user.Id);

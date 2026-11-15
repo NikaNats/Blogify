@@ -20,11 +20,11 @@ internal sealed class GetAllCategoriesWithPostCountQueryHandler(ISqlConnectionFa
         const string sql = """
                            SELECT
                                c.id AS Id,
-                               c.title AS Name,
+                               c.name AS Name,
                                c.description AS Description,
                                (SELECT COUNT(*) FROM posts p WHERE c.id = ANY(p.category_ids)) AS PostCount
                            FROM categories c
-                           ORDER BY c.title
+                           ORDER BY c.name
                            """;
 
         var categories = await connection.QueryAsync<CategoryWithPostCountResponse>(sql);

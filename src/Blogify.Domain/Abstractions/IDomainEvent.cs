@@ -24,7 +24,9 @@ namespace Blogify.Domain.Abstractions;
 [JsonDerivedType(typeof(TagCreatedDomainEvent), typeDiscriminator: "TagCreated")]
 [JsonDerivedType(typeof(EmailChangedDomainEvent), typeDiscriminator: "EmailChanged")]
 [JsonDerivedType(typeof(RoleAssignedDomainEvent), typeDiscriminator: "RoleAssigned")]
+[JsonDerivedType(typeof(UserActivatedDomainEvent), typeDiscriminator: "UserActivated")]
 [JsonDerivedType(typeof(UserCreatedDomainEvent), typeDiscriminator: "UserCreated")]
+[JsonDerivedType(typeof(UserPendingRegistrationDomainEvent), typeDiscriminator: "UserPendingRegistration")]
 [JsonDerivedType(typeof(UserNameChangedDomainEvent), typeDiscriminator: "UserNameChanged")]
 public interface IDomainEvent : INotification
 {

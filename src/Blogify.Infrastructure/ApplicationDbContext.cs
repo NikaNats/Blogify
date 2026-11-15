@@ -45,7 +45,9 @@ public sealed class ApplicationDbContext(
             .Select(entry => entry.Entity)
             .SelectMany(entity =>
             {
-                var domainEvents = entity.DomainEvents;
+                // Snapshot first: DomainEvents is a live read-only view, so clearing
+                // before materializing would silently drop every event.
+                var domainEvents = entity.DomainEvents.ToList();
 
                 entity.ClearDomainEvents();
 

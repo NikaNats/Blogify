@@ -1,4 +1,5 @@
 ﻿using Blogify.Application.Abstractions.Authentication;
+using Blogify.Application.Abstractions.Cryptography;
 using Blogify.Application.Abstractions.Messaging;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Users;
@@ -9,6 +10,7 @@ namespace Blogify.Application.Users.RegisterUser;
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
+    ISecretProtector secretProtector,
     ILogger<RegisterUserCommandHandler> logger)
     : ICommandHandler<RegisterUserCommand, Guid>
 {
@@ -37,8 +39,9 @@ public sealed class RegisterUserCommandHandler(
 
         var user = userResult.Value;
 
-    // Raise integration (pending registration) domain event containing required data for external provisioning
-    user.ScheduleRegistration(request.Password);
+    // Raise integration (pending registration) domain event containing required data for external provisioning.
+    // The password is protected because the event is persisted in the outbox until processed.
+    user.ScheduleRegistration(secretProtector.Protect(request.Password));
 
     await userRepository.AddAsync(user, cancellationToken);
     await unitOfWork.SaveChangesAsync(cancellationToken);

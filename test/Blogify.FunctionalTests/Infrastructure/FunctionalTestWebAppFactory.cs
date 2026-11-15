@@ -5,6 +5,7 @@ using Blogify.FunctionalTests.Users;
 using Blogify.Infrastructure;
 using Blogify.Infrastructure.Authentication;
 using Blogify.Infrastructure.Data;
+using Blogify.Infrastructure.Outbox;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -20,6 +21,25 @@ namespace Blogify.FunctionalTests.Infrastructure;
 
 public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private static string GetRealmExportPath()
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var directory = new DirectoryInfo(baseDir);
+
+        while (directory != null)
+        {
+            var targetFile = Path.Combine(directory.FullName, "test", "Blogify.FunctionalTests", ".files", "blogify-realm-export.json");
+            if (File.Exists(targetFile)) return targetFile;
+
+            var localFile = Path.Combine(directory.FullName, ".files", "blogify-realm-export.json");
+            if (File.Exists(localFile)) return localFile;
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Could not find 'blogify-realm-export.json' in any parent directory structures.");
+    }
+
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
         .WithImage("postgres:latest")
         .WithDatabase("blogify")
@@ -27,17 +47,22 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
         .WithPassword("postgres")
         .Build();
 
-    private readonly KeycloakContainer _keycloakContainer = new KeycloakBuilder()
-        .WithImage("quay.io/keycloak/keycloak:latest")
-        .WithResourceMapping(
-            new FileInfo(".files/blogify-realm-export.json"),
-            new FileInfo("/opt/keycloak/data/import/realm.json"))
-        .WithCommand("--import-realm")
-        .Build();
+    private readonly KeycloakContainer _keycloakContainer;
 
     private readonly RedisContainer _redisContainer = new RedisBuilder()
         .WithImage("redis:latest")
         .Build();
+
+    public FunctionalTestWebAppFactory()
+    {
+        _keycloakContainer = new KeycloakBuilder()
+            .WithImage("quay.io/keycloak/keycloak:26.0.7")
+            .WithResourceMapping(
+                new FileInfo(GetRealmExportPath()),
+                new FileInfo("/opt/keycloak/data/import/realm.json"))
+            .WithCommand("--import-realm")
+            .Build();
+    }
 
     public async Task InitializeAsync()
     {
@@ -89,20 +114,27 @@ public class FunctionalTestWebAppFactory : WebApplicationFactory<Program>, IAsyn
                 o.Issuer = $"{keycloakAddress}realms/Blogify/";
                 o.MetadataUrl = $"{keycloakAddress}realms/Blogify/.well-known/openid-configuration";
             });
+
+            services.RemoveAll(typeof(Microsoft.Extensions.Options.IOptions<OutboxOptions>));
+            services.AddSingleton<Microsoft.Extensions.Options.IOptions<OutboxOptions>>(_ =>
+                new Microsoft.Extensions.Options.OptionsWrapper<OutboxOptions>(new OutboxOptions
+                {
+                    IntervalInSeconds = 1,
+                    BatchSize = 10
+                }));
         });
     }
 
     private async Task InitializeTestUserAsync()
     {
-        try
-        {
-            using var httpClient = CreateClient();
+        using var httpClient = CreateClient();
+        var response = await httpClient.PostAsJsonAsync("api/v1/users/register", UserData.RegisterTestUserRequest);
 
-            await httpClient.PostAsJsonAsync("api/v1/users/register", UserData.RegisterTestUserRequest);
-        }
-        catch
+        // Fail fast: a failed seed registration would otherwise surface as confusing test failures later.
+        if (!response.IsSuccessStatusCode)
         {
-            // Do nothing.
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"CRITICAL ERROR: InitializeTestUserAsync failed! Status: {response.StatusCode}, Details: {errorContent}");
         }
     }
 }

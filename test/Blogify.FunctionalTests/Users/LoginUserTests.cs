@@ -32,6 +32,9 @@ public class LoginUserTests(FunctionalTestWebAppFactory factory) : BaseFunctiona
         (await HttpClient.PostAsJsonAsync("api/v1/users/register", registerRequest))
             .EnsureSuccessStatusCode();
 
+        // Wait for the outbox processor to asynchronously activate the user before logging in.
+        await WaitUntilUserActiveAsync(Email);
+
         var request = new LogInUserRequest(Email, Password);
 
         // Act

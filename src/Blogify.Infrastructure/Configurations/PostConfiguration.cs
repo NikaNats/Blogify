@@ -132,10 +132,16 @@ internal sealed class PostConfiguration : IEntityTypeConfiguration<Post>
         //        });
 
         builder.Property(p => p.CategoryIds)
-            .HasColumnName("category_ids"); // Store as a JSON array or other provider-specific format
+                    .HasColumnName("category_ids")
+                    .HasColumnType("uuid[]")
+                    .HasField("_categoryIds")
+                    .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(p => p.TagIds)
-            .HasColumnName("tag_ids");
+            .HasColumnName("tag_ids")
+            .HasColumnType("uuid[]")
+            .HasField("_tagIds")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 
     private static void ConfigureIndexes(EntityTypeBuilder<Post> builder)

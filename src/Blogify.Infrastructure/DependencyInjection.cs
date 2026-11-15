@@ -2,6 +2,7 @@
 using Blogify.Application.Abstractions.Authentication;
 using Blogify.Application.Abstractions.Caching;
 using Blogify.Application.Abstractions.Clock;
+using Blogify.Application.Abstractions.Cryptography;
 using Blogify.Application.Abstractions.Data;
 using Blogify.Application.Abstractions.Email;
 using Blogify.Domain.Abstractions;
@@ -14,6 +15,7 @@ using Blogify.Infrastructure.Authentication;
 using Blogify.Infrastructure.Authorization;
 using Blogify.Infrastructure.Caching;
 using Blogify.Infrastructure.Clock;
+using Blogify.Infrastructure.Cryptography;
 using Blogify.Infrastructure.Data;
 using Blogify.Infrastructure.Email;
 using Blogify.Infrastructure.Interceptors;
@@ -23,6 +25,7 @@ using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,6 +46,9 @@ public static class DependencyInjection
         services.AddTransient<IDateTimeProvider, DateTimeProvider>();
 
         services.AddTransient<IEmailService, EmailService>();
+
+        services.AddDataProtection();
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
         AddPersistence(services, configuration);
 

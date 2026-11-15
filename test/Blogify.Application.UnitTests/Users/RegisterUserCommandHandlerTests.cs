@@ -1,4 +1,5 @@
-﻿using Blogify.Application.Users.RegisterUser;
+﻿using Blogify.Application.Abstractions.Cryptography;
+using Blogify.Application.Users.RegisterUser;
 using Blogify.Domain.Abstractions;
 using Blogify.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,7 @@ public class RegisterUserCommandHandlerTests
         _handler = new RegisterUserCommandHandler(
             _userRepository,
             _unitOfWork,
+            new PassThroughSecretProtector(),
             _logger);
     }
 
@@ -79,5 +81,12 @@ public class RegisterUserCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
+    }
+
+    private sealed class PassThroughSecretProtector : ISecretProtector
+    {
+        public string Protect(string plaintext) => plaintext;
+
+        public string Unprotect(string protectedValue) => protectedValue;
     }
 }
