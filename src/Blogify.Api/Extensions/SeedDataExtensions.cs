@@ -153,9 +153,10 @@ ON CONFLICT (id) DO NOTHING;";
             Email.Create(faker.Internet.Email()).Value
         ).Value);
 
-        const string sql = @"INSERT INTO users (id, first_name, last_name, email, identity_id)
-VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId)
-ON CONFLICT (identity_id) DO NOTHING;";
+        // Seeded authors are Active with a synthetic identity: they exist only as post/comment authors and cannot log in.
+        const string sql = @"INSERT INTO users (id, first_name, last_name, email, identity_id, status, created_at)
+VALUES (@Id, @FirstName, @LastName, @Email, @IdentityId, @Status, @CreatedAt)
+ON CONFLICT DO NOTHING;";
 
         await connection.ExecuteAsync(sql, users.Select(u => new
         {
@@ -163,7 +164,9 @@ ON CONFLICT (identity_id) DO NOTHING;";
             FirstName = u.FirstName.Value,
             LastName = u.LastName.Value,
             Email = u.Email.Address,
-            u.IdentityId
+            IdentityId = $"seed-{u.Id}",
+            Status = (int)UserStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow
         }), transaction);
 
         return users.Select(u => u.Id).ToList();

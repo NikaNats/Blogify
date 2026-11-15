@@ -28,6 +28,7 @@ public sealed class CommentsController(ISender sender) : ApiControllerBase(sende
             : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetCommentById(Guid id, CancellationToken cancellationToken)
     {
@@ -36,10 +37,12 @@ public sealed class CommentsController(ISender sender) : ApiControllerBase(sende
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet("by-post/{postId:guid}")]
-    public async Task<IActionResult> GetCommentsByPostId(Guid postId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetCommentsByPostId(Guid postId, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var query = new GetCommentsByPostIdQuery(postId);
+        var query = new GetCommentsByPostIdQuery(postId, page, pageSize);
         var result = await Sender.Send(query, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }

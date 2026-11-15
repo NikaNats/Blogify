@@ -1,6 +1,7 @@
 ﻿using Blogify.Api.Middleware;
 using Blogify.Infrastructure;
 using Blogify.Application.Users.RegisterUser; // for RegisterUserCommand masking
+using Blogify.Application.Users.LogInUser;
 using Blogify.Api.Controllers.Users; // for LogInUserRequest masking
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -53,6 +54,11 @@ internal static class ApplicationBuilderExtensions
                     c.Email,
                     c.FirstName,
                     c.LastName,
+                    Password = "*** MASKED ***"
+                })
+                .Destructure.ByTransforming<LogInUserCommand>(c => new
+                {
+                    c.Email,
                     Password = "*** MASKED ***"
                 })
                 .Destructure.ByTransforming<LogInUserRequest>(r => new

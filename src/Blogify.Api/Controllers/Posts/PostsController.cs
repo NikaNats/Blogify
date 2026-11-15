@@ -1,15 +1,17 @@
 ﻿using Asp.Versioning;
-using Blogify.Application.Posts.AddCommentToPost;
 using Blogify.Application.Posts.AddTagToPost;
+using Blogify.Application.Posts.AssignCategoriesToPost;
 using Blogify.Application.Posts.ArchivePost;
 using Blogify.Application.Posts.CreatePost;
 using Blogify.Application.Posts.DeletePost;
 using Blogify.Application.Posts.GetAllPosts;
+using Blogify.Application.Posts.GetMyPosts;
 using Blogify.Application.Posts.GetPostById;
 using Blogify.Application.Posts.GetPostsByAuthorId;
 using Blogify.Application.Posts.GetPostsByCategoryId;
 using Blogify.Application.Posts.GetPostsByTagId;
 using Blogify.Application.Posts.PublishPost;
+using Blogify.Application.Posts.RemoveCategoryFromPost;
 using Blogify.Application.Posts.RemoveTagFromPost;
 using Blogify.Application.Posts.UpdatePost;
 using MediatR;
@@ -23,6 +25,7 @@ namespace Blogify.Api.Controllers.Posts;
 [Route("api/v{version:apiVersion}/posts")]
 public class PostsController(ISender sender) : ApiControllerBase(sender)
 {
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetPost(Guid id, CancellationToken cancellationToken)
     {
@@ -49,17 +52,6 @@ public class PostsController(ISender sender) : ApiControllerBase(sender)
             : HandleFailure(result.Error);
     }
 
-    [HttpPost("{postId:guid}/comments")]
-    public async Task<IActionResult> AddCommentToPost(Guid postId, [FromBody] AddCommentToPostRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new AddCommentToPostCommand(postId, request.Content);
-
-        var result = await Sender.Send(command, cancellationToken);
-
-        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
-    }
-
     [HttpPost("{id:guid}/tags")]
     public async Task<IActionResult> AddTagToPost(Guid id, [FromBody] AddTagToPostRequest request,
         CancellationToken cancellationToken)
@@ -75,6 +67,24 @@ public class PostsController(ISender sender) : ApiControllerBase(sender)
     {
         var command = new RemoveTagFromPostCommand(postId, tagId);
         var result = await Sender.Send(command, cancellationToken);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
+    }
+
+    [HttpPost("{id:guid}/categories")]
+    public async Task<IActionResult> AssignCategoriesToPost(Guid id, [FromBody] AssignCategoriesToPostRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new AssignCategoriesToPostCommand(id, request.CategoryIds), cancellationToken);
+
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
+    }
+
+    [HttpDelete("{postId:guid}/categories/{categoryId:guid}")]
+    public async Task<IActionResult> RemoveCategoryFromPost(Guid postId, Guid categoryId,
+        CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new RemoveCategoryFromPostCommand(postId, categoryId), cancellationToken);
 
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
@@ -110,31 +120,48 @@ public class PostsController(ISender sender) : ApiControllerBase(sender)
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet]
-    public async Task<IActionResult> GetAllPosts(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await Sender.Send(new GetAllPostsQuery(), cancellationToken);
+        var result = await Sender.Send(new GetAllPostsQuery(page, pageSize), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    /// <summary>The caller's own posts in every status. Requires authentication.</summary>
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMyPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await Sender.Send(new GetMyPostsQuery(page, pageSize), cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
+    }
+
+    [AllowAnonymous]
     [HttpGet("author/{authorId:guid}")]
-    public async Task<IActionResult> GetPostsByAuthorId(Guid authorId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPostsByAuthorId(Guid authorId, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var result = await Sender.Send(new GetPostsByAuthorIdQuery(authorId), cancellationToken);
+        var result = await Sender.Send(new GetPostsByAuthorIdQuery(authorId, page, pageSize), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet("category/{categoryId:guid}")]
-    public async Task<IActionResult> GetPostsByCategoryId(Guid categoryId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPostsByCategoryId(Guid categoryId, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var result = await Sender.Send(new GetPostsByCategoryIdQuery(categoryId), cancellationToken);
+        var result = await Sender.Send(new GetPostsByCategoryIdQuery(categoryId, page, pageSize), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet("tag/{tagId:guid}")]
-    public async Task<IActionResult> GetPostsByTagId(Guid tagId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPostsByTagId(Guid tagId, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var result = await Sender.Send(new GetPostsByTagIdQuery(tagId), cancellationToken);
+        var result = await Sender.Send(new GetPostsByTagIdQuery(tagId, page, pageSize), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 

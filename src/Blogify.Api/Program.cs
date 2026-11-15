@@ -1,8 +1,7 @@
 using System.IO.Compression;
-using Asp.Versioning.ApiExplorer;
 using Blogify.Api.Controllers;
 using Blogify.Api.Extensions;
-using Blogify.Api.OpenApi;
+using Blogify.Api.RateLimiting;
 using Blogify.Application;
 using Blogify.Infrastructure;
 using HealthChecks.UI.Client;
@@ -21,13 +20,20 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 
+builder.Services.AddBlogifyForwardedHeaders(builder.Configuration);
+builder.Services.AddBlogifyRateLimiting(builder.Configuration);
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (allowedOrigins.Length > 0)
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        else if (builder.Environment.IsDevelopment())
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod(); // local convenience only
+        // Outside Development with no configured origins, cross-origin requests are not allowed.
     });
 });
 
@@ -65,9 +71,6 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
-builder.Services.AddSwaggerGen();
-builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
-
 var app = builder.Build();
 
 // Apply DB migrations on startup if enabled (with retry for container orchestration race conditions)
@@ -101,6 +104,10 @@ if (migrateOpt.GetValue<bool>("MigrateOnStartup"))
     }
 }
 
+// First in the pipeline: everything after it (exception handling, request logging, rate limiting) must see the
+// real client IP and scheme rather than the reverse proxy's.
+app.UseForwardedHeaders();
+
 app.UseCustomExceptionHandler();
 
 if (!app.Environment.IsDevelopment()) app.UseHsts();
@@ -117,24 +124,32 @@ app.UseCors("DefaultCorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// After authentication so the "api" limiter can partition by user.
+app.UseRateLimiter();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapScalarApiReference();
     app.MapOpenApi();
-
-    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        provider.ApiVersionDescriptions
-            .Select(d => d.GroupName)
-            .ToList()
-            .ForEach(g => options.SwaggerEndpoint($"/swagger/{g}/swagger.json", g.ToUpperInvariant()));
-    });
 }
 
 app.MapControllers();
 
+// Liveness: the process is up. Deliberately checks no dependency, so a Keycloak/Redis/Postgres blip never makes an
+// orchestrator restart a healthy API.
+app.MapHealthChecks("health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+// Readiness: dependencies (Postgres, Redis, Keycloak) are reachable; use to gate traffic, not to restart.
+app.MapHealthChecks("health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Kept for backward compatibility (docker-compose healthcheck): all checks.
 app.MapHealthChecks("health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse

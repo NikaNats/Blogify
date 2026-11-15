@@ -1,4 +1,4 @@
-﻿using Blogify.Domain.Abstractions;
+using Blogify.Domain.Abstractions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,33 +11,33 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
 
     protected ActionResult HandleFailure(Error error)
     {
-        return error.Type switch
+        var statusCode = MapStatusCode(error.Type);
+        var detail = statusCode == StatusCodes.Status500InternalServerError
+            ? "An unexpected server error occurred."
+            : error.Description;
+
+        return StatusCode(statusCode, CreateProblemDetails(error, statusCode, detail));
+    }
+
+    private static int MapStatusCode(ErrorType type)
+    {
+        return type switch
         {
-            ErrorType.Validation => BadRequest(CreateProblemDetails(error)),
-            ErrorType.NotFound => NotFound(CreateProblemDetails(error)),
-            ErrorType.Conflict => Conflict(CreateProblemDetails(error)),
-            ErrorType.AuthenticationFailed => Unauthorized(CreateProblemDetails(error)),
-            _ => StatusCode(
-                StatusCodes.Status500InternalServerError,
-                CreateProblemDetails(error, "An unexpected server error occurred."))
+            ErrorType.Validation => StatusCodes.Status400BadRequest,
+            ErrorType.AuthenticationFailed => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+            ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Conflict => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status500InternalServerError
         };
     }
 
-    private ProblemDetails CreateProblemDetails(Error error, string? defaultDetail = null)
+    private ProblemDetails CreateProblemDetails(Error error, int statusCode, string detail)
     {
-        var statusCode = error.Type switch
-        {
-            ErrorType.Validation => StatusCodes.Status400BadRequest,
-            ErrorType.NotFound => StatusCodes.Status404NotFound,
-            ErrorType.Conflict => StatusCodes.Status409Conflict,
-            ErrorType.AuthenticationFailed => StatusCodes.Status401Unauthorized,
-            _ => StatusCodes.Status500InternalServerError
-        };
-
-        var problemDetails = new ProblemDetails
+        return new ProblemDetails
         {
             Title = error.Type.ToString(),
-            Detail = defaultDetail ?? error.Description,
+            Detail = detail,
             Status = statusCode,
             Instance = HttpContext.Request.Path.Value,
             Type = $"https://api.blogify.com/errors/{error.Type.ToString().ToLower()}",
@@ -47,7 +47,5 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
                 ["errorCode"] = error.Code
             }
         };
-
-        return problemDetails;
     }
 }

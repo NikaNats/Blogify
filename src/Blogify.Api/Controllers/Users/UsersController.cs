@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using Blogify.Api.RateLimiting;
 using Blogify.Application.Users.GetLoggedInUser;
 using Blogify.Application.Users.LogInUser;
 using Blogify.Application.Users.RegisterUser;
@@ -6,6 +7,7 @@ using Blogify.Infrastructure.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Blogify.Api.Controllers.Users;
 
@@ -23,6 +25,7 @@ public class UsersController(ISender sender) : ApiControllerBase(sender)
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserRequest request, CancellationToken cancellationToken)
     {
@@ -32,6 +35,7 @@ public class UsersController(ISender sender) : ApiControllerBase(sender)
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [HttpPost("login")]
     public async Task<IActionResult> LogIn(LogInUserRequest request, CancellationToken cancellationToken)
     {

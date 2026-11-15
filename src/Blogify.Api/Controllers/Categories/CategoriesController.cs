@@ -2,6 +2,7 @@
 using Blogify.Application.Categories.CreateCategory;
 using Blogify.Application.Categories.DeleteCategory;
 using Blogify.Application.Categories.GetAllCategories;
+using Blogify.Application.Categories.GetAllCategoriesWithPostCount;
 using Blogify.Application.Categories.GetCategoryById;
 using Blogify.Application.Categories.UpdateCategory;
 using MediatR;
@@ -15,6 +16,7 @@ namespace Blogify.Api.Controllers.Categories;
 [Route("api/v{version:apiVersion}/categories")]
 public sealed class CategoriesController(ISender sender) : ApiControllerBase(sender)
 {
+    [Authorize(Roles = Roles.Administrator)]
     [HttpPost]
     public async Task<IActionResult> CreateCategory(
         CreateCategoryRequest request,
@@ -27,15 +29,26 @@ public sealed class CategoriesController(ISender sender) : ApiControllerBase(sen
             : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
     [HttpGet]
-    public async Task<IActionResult> GetAllCategories(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllCategories([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetAllCategoriesQuery();
+        var query = new GetAllCategoriesQuery(page, pageSize);
         var result = await Sender.Send(query, cancellationToken);
 
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
+    [HttpGet("with-post-count")]
+    public async Task<IActionResult> GetAllCategoriesWithPostCount(CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new GetAllCategoriesWithPostCountQuery(), cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
+    }
+
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetCategoryById(Guid id, CancellationToken cancellationToken)
     {
@@ -44,6 +57,7 @@ public sealed class CategoriesController(ISender sender) : ApiControllerBase(sen
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [Authorize(Roles = Roles.Administrator)]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateCategory(
         Guid id,
@@ -52,9 +66,10 @@ public sealed class CategoriesController(ISender sender) : ApiControllerBase(sen
     {
         var command = new UpdateCategoryCommand(id, request.Name, request.Description);
         var result = await Sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : HandleFailure(result.Error);
+        return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
+    [Authorize(Roles = Roles.Administrator)]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
     {
